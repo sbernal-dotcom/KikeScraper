@@ -42,6 +42,10 @@ A futuro, podría incluir una sección de análisis de rentabilidad para compara
 <!-- Registrar aquí cambios importantes, decisiones técnicas, hitos del proyecto -->
 
 - **2026-05-15** — Bitácora creada e inicialización del proyecto.
+- **2026-05-15** — Repo Git local conectado a `origin` (GitHub). Primer commit con `bitacora.md` y `.gitignore` empujado a `main`.
+- **2026-05-15** — Node.js v24.15.0 (LTS) instalado vía winget.
+- **2026-05-15** — Proyecto Next.js inicializado en la raíz con: TypeScript, Tailwind CSS v4, ESLint, App Router, `src/` directory, import alias `@/*`, npm. Next.js 16.2.6, React 19.2.4.
+- **Pendiente (mucho después)** — Scraper con Node.js + Playwright.
 
 ## Notas Pendientes
 
