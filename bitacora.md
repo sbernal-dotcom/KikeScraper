@@ -45,7 +45,17 @@ A futuro, podría incluir una sección de análisis de rentabilidad para compara
 - **2026-05-15** — Repo Git local conectado a `origin` (GitHub). Primer commit con `bitacora.md` y `.gitignore` empujado a `main`.
 - **2026-05-15** — Node.js v24.15.0 (LTS) instalado vía winget.
 - **2026-05-15** — Proyecto Next.js inicializado en la raíz con: TypeScript, Tailwind CSS v4, ESLint, App Router, `src/` directory, import alias `@/*`, npm. Next.js 16.2.6, React 19.2.4.
-- **Pendiente (mucho después)** — Scraper con Node.js + Playwright.
+- **2026-05-15** — shadcn/ui inicializado (template `next`, preset `base-nova`, color `neutral`). Generados `components.json`, `src/components/ui/button.tsx`, `src/lib/utils.ts` (helper `cn`), variables CSS en `globals.css`.
+- **2026-05-15** — Mapbox GL JS instalado (`mapbox-gl` + `@types/mapbox-gl`). Configuración en `src/lib/mapbox/config.ts` (centro Panamá: -79.5199, 8.9824; estilo `streets-v12`).
+- **2026-05-15** — Estructura de carpetas del dominio creada: `src/features/propiedades/` (types.ts), `src/features/fuentes/` (types.ts), `src/components/map/MapView.tsx`, `src/components/layout/`.
+- **2026-05-15** — Home (`src/app/page.tsx`) actualizada para mostrar `MapView` a pantalla completa con header overlay. Layout con `lang="es"` y metadata del proyecto.
+- **2026-05-15** — `.env.example` creado con `NEXT_PUBLIC_MAPBOX_TOKEN`. `.env.local` queda en local (gitignored) — falta pegar el token real de Mapbox.
+
+### Pendientes
+
+- **Token de Mapbox** — agregar `NEXT_PUBLIC_MAPBOX_TOKEN` en `.env.local`. Obtener en https://account.mapbox.com/access-tokens/.
+- **Supabase** — pospuesto por decisión del usuario.
+- **Scraper (Node.js + Playwright)** — pospuesto para fase muy posterior.
 
 ## Notas Pendientes
 
