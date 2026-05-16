@@ -50,10 +50,11 @@ A futuro, podría incluir una sección de análisis de rentabilidad para compara
 - **2026-05-15** — Estructura de carpetas del dominio creada: `src/features/propiedades/` (types.ts), `src/features/fuentes/` (types.ts), `src/components/map/MapView.tsx`, `src/components/layout/`.
 - **2026-05-15** — Home (`src/app/page.tsx`) actualizada para mostrar `MapView` a pantalla completa con header overlay. Layout con `lang="es"` y metadata del proyecto.
 - **2026-05-15** — `.env.example` creado con `NEXT_PUBLIC_MAPBOX_TOKEN`. `.env.local` queda en local (gitignored) — falta pegar el token real de Mapbox.
+- **2026-05-16** — Token público de Mapbox (`pk.…`) creado en cuenta `abilendesign` con nombre `mapa-interactivo-inteligente`. Scopes: solo los públicos por defecto (`STYLES:TILES`, `STYLES:READ`, `FONTS:READ`, `DATASETS:READ`, `VISION:READ`). Guardado en `.env.local`. Verificado: dev server en `http://localhost:3000` renderiza el mapa con centro en Ciudad de Panamá y `NavigationControl`.
 
 ### Pendientes
 
-- **Token de Mapbox** — agregar `NEXT_PUBLIC_MAPBOX_TOKEN` en `.env.local`. Obtener en https://account.mapbox.com/access-tokens/.
+- **Token restrictions en Mapbox** — agregar `http://localhost:3000/*` a la URL allowlist del token. Cuando exista dominio de Vercel, agregarlo también. Sin restricciones cualquiera puede usar el token desde otro sitio.
 - **Supabase** — pospuesto por decisión del usuario.
 - **Scraper (Node.js + Playwright)** — pospuesto para fase muy posterior.
 
