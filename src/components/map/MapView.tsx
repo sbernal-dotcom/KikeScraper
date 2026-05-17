@@ -37,13 +37,23 @@ export function MapView({
       zoom,
     });
 
-    mapRef.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+    mapRef.current.addControl(
+      new mapboxgl.NavigationControl({ showCompass: false }),
+      "top-right",
+    );
+
+    const observer = new ResizeObserver(() => {
+      mapRef.current?.resize();
+    });
+    observer.observe(containerRef.current);
 
     return () => {
+      observer.disconnect();
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, [center, zoom]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!MAPBOX_TOKEN) {
     return (
@@ -58,7 +68,11 @@ export function MapView({
           <code className="rounded bg-background px-1.5 py-0.5 font-mono text-xs">
             NEXT_PUBLIC_MAPBOX_TOKEN
           </code>{" "}
-          en <code className="rounded bg-background px-1.5 py-0.5 font-mono text-xs">.env.local</code> para mostrar el mapa.
+          en{" "}
+          <code className="rounded bg-background px-1.5 py-0.5 font-mono text-xs">
+            .env.local
+          </code>{" "}
+          para mostrar el mapa.
         </p>
       </div>
     );
