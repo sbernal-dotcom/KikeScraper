@@ -6,6 +6,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { mockPropiedades } from "@/features/propiedades/mock";
 
 export default function Home() {
   return (
@@ -17,7 +18,7 @@ export default function Home() {
             aria-label="Abrir navegación"
             className="absolute left-3 top-3 z-20 size-9 rounded-md border bg-background/80 shadow-sm backdrop-blur hover:bg-background"
           />
-          <MapView className="h-full w-full" />
+          <MapView className="h-full w-full" propiedades={mockPropiedades} />
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>
