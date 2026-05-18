@@ -72,16 +72,7 @@ export function MapView({
     propiedades.forEach((p) => {
       const el = document.createElement("div");
       el.className = "mii-marker";
-      el.innerHTML = `
-        <svg viewBox="0 0 24 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M4 1 H20 Q23 1 23 4 V18 Q23 21 20 21 H14 L12 27 L10 21 H4 Q1 21 1 18 V4 Q1 1 4 1 Z"
-                fill="${MARKER_COLOR}"
-                stroke="rgba(0,0,0,0.6)"
-                stroke-width="1.25"
-                stroke-linejoin="round" />
-        </svg>
-      `;
-      const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
+      const marker = new mapboxgl.Marker({ element: el })
         .setLngLat([p.ubicacion.lng, p.ubicacion.lat])
         .addTo(map);
       markersRef.current.push(marker);
@@ -115,20 +106,23 @@ export function MapView({
     <>
       <style>{`
         .mii-marker {
-          width: 26px;
-          height: 32px;
+          width: 13px;
+          height: 13px;
+          border-radius: 9999px;
+          background: ${MARKER_COLOR};
+          border: 1.5px solid rgba(0, 0, 0, 0.6);
+          box-shadow:
+            0 0 0 3px rgba(214, 255, 0, 0.18),
+            0 0 12px rgba(214, 255, 0, 0.45);
           cursor: pointer;
-          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55))
-                  drop-shadow(0 0 6px rgba(214,255,0,0.35));
-          transition: transform 120ms ease, filter 120ms ease;
-          transform-origin: 50% 100%;
+          transition: transform 120ms ease, box-shadow 120ms ease;
         }
         .mii-marker:hover {
-          transform: scale(1.15);
-          filter: drop-shadow(0 3px 6px rgba(0,0,0,0.6))
-                  drop-shadow(0 0 10px rgba(214,255,0,0.6));
+          transform: scale(1.3);
+          box-shadow:
+            0 0 0 4px rgba(214, 255, 0, 0.28),
+            0 0 16px rgba(214, 255, 0, 0.7);
         }
-        .mii-marker svg { width: 100%; height: 100%; display: block; }
       `}</style>
       <div ref={containerRef} className={cn("h-full w-full", className)} />
     </>
