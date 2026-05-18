@@ -35,17 +35,61 @@ export function MapView({
     if (!containerRef.current || mapRef.current || !MAPBOX_TOKEN) return;
 
     mapboxgl.accessToken = MAPBOX_TOKEN;
-    mapRef.current = new mapboxgl.Map({
+    const map = new mapboxgl.Map({
       container: containerRef.current,
       style: MAPBOX_STYLE,
       center,
       zoom,
+      pitch: 45,
+      bearing: -12,
     });
+    mapRef.current = map;
 
-    mapRef.current.addControl(
-      new mapboxgl.NavigationControl({ showCompass: false }),
+    map.addControl(
+      new mapboxgl.NavigationControl({ visualizePitch: true }),
       "top-right",
     );
+
+    map.on("load", () => {
+      const layers = map.getStyle()?.layers ?? [];
+      const labelLayerId = layers.find(
+        (l) => l.type === "symbol" && l.layout && "text-field" in l.layout,
+      )?.id;
+
+      map.addLayer(
+        {
+          id: "3d-buildings",
+          source: "composite",
+          "source-layer": "building",
+          filter: ["==", "extrude", "true"],
+          type: "fill-extrusion",
+          minzoom: 13,
+          paint: {
+            "fill-extrusion-color": "#1d1d20",
+            "fill-extrusion-height": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              13,
+              0,
+              15.05,
+              ["get", "height"],
+            ],
+            "fill-extrusion-base": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              13,
+              0,
+              15.05,
+              ["get", "min_height"],
+            ],
+            "fill-extrusion-opacity": 0.85,
+          },
+        },
+        labelLayerId,
+      );
+    });
 
     const observer = new ResizeObserver(() => {
       mapRef.current?.resize();
