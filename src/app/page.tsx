@@ -33,13 +33,11 @@ export default function Home() {
             onSelect={setSeleccionada}
           />
           {seleccionada ? (
-            <div className="pointer-events-none absolute bottom-4 left-4 z-20 max-w-full">
-              <div className="pointer-events-auto">
-                <PropertyCard
-                  propiedad={seleccionada}
-                  onClose={() => setSeleccionada(null)}
-                />
-              </div>
+            <div className="absolute inset-y-0 right-0 z-20 flex">
+              <PropertyCard
+                propiedad={seleccionada}
+                onClose={() => setSeleccionada(null)}
+              />
             </div>
           ) : null}
         </SidebarInset>

@@ -48,7 +48,7 @@ export function MapView({
 
     mapRef.current.addControl(
       new mapboxgl.NavigationControl({ showCompass: false }),
-      "top-right",
+      "bottom-left",
     );
 
     const observer = new ResizeObserver(() => {
