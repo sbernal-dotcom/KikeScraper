@@ -112,13 +112,13 @@ export function MapView({
     <>
       <style>{`
         .mii-marker {
-          width: 26px;
-          height: 34px;
+          width: 18px;
+          height: 24px;
           cursor: pointer;
           transform-origin: 50% 100%;
           filter:
-            drop-shadow(0 2px 4px rgba(0, 0, 0, 0.55))
-            drop-shadow(0 0 6px rgba(214, 255, 0, 0.35));
+            drop-shadow(0 1.5px 3px rgba(0, 0, 0, 0.55))
+            drop-shadow(0 0 4px rgba(214, 255, 0, 0.3));
           transition: transform 140ms ease, filter 140ms ease;
         }
         .mii-marker svg {
