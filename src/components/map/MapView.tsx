@@ -50,13 +50,62 @@ export function MapView({
       style: MAPBOX_STYLE,
       center,
       zoom,
+      pitch: 32,
+      bearing: 0,
+      dragRotate: false,
+      pitchWithRotate: false,
+      touchPitch: false,
     });
+    map.touchZoomRotate.disableRotation();
+    map.keyboard.disableRotation();
     mapRef.current = map;
 
     map.addControl(
       new mapboxgl.NavigationControl({ showCompass: false }),
       "bottom-left",
     );
+
+    map.on("load", () => {
+      const layers = map.getStyle()?.layers ?? [];
+      const labelLayerId = layers.find(
+        (l) => l.type === "symbol" && l.layout && "text-field" in l.layout,
+      )?.id;
+
+      map.addLayer(
+        {
+          id: "3d-buildings",
+          source: "composite",
+          "source-layer": "building",
+          filter: ["==", "extrude", "true"],
+          type: "fill-extrusion",
+          minzoom: 13,
+          paint: {
+            "fill-extrusion-color": "#2c2c30",
+            "fill-extrusion-height": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              13,
+              0,
+              15,
+              ["get", "height"],
+            ],
+            "fill-extrusion-base": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              13,
+              0,
+              15,
+              ["get", "min_height"],
+            ],
+            "fill-extrusion-opacity": 1,
+            "fill-extrusion-vertical-gradient": false,
+          },
+        },
+        labelLayerId,
+      );
+    });
 
     const geocoder = new MapboxGeocoder({
       accessToken: MAPBOX_TOKEN,
