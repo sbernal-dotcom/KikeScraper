@@ -10,6 +10,10 @@ export type CategoriaPropiedad =
 
 export type Moneda = "USD" | "PAB";
 
+export type Condicion = "nueva" | "usada";
+
+export type EstadoAnuncio = "activo" | "vendido" | "alquilado" | "retirado";
+
 export interface Ubicacion {
   lat: number;
   lng: number;
@@ -32,9 +36,14 @@ export interface Propiedad {
   habitaciones?: number;
   banos?: number;
   estacionamientos?: number;
+  condicion?: Condicion;
+  estadoAnuncio: EstadoAnuncio;
+  resumenIA?: string;
   fuenteId: string;
+  fuenteNombre: string;
   urlOriginal: string;
   imagenes: string[];
   fechaPublicacion: string;
+  fechaDeteccion: string;
   fechaActualizacion: string;
 }

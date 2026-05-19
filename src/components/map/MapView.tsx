@@ -19,6 +19,8 @@ type MapViewProps = {
   center?: [number, number];
   zoom?: number;
   propiedades?: Propiedad[];
+  selectedId?: string | null;
+  onSelect?: (propiedad: Propiedad) => void;
 };
 
 export function MapView({
@@ -26,6 +28,8 @@ export function MapView({
   center = PANAMA_CITY_CENTER,
   zoom = DEFAULT_ZOOM,
   propiedades = [],
+  selectedId = null,
+  onSelect,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -72,18 +76,23 @@ export function MapView({
     propiedades.forEach((p) => {
       const el = document.createElement("div");
       el.className = "mii-marker";
+      if (selectedId === p.id) el.classList.add("mii-marker--active");
       el.innerHTML = `
         <svg viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <path fill-rule="evenodd" clip-rule="evenodd"
                 d="M12 0C5.373 0 0 5.373 0 12c0 8.4 12 20 12 20s12-11.6 12-20c0-6.627-5.373-12-12-12zm0 7a5 5 0 100 10 5 5 0 000-10z" />
         </svg>
       `;
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        onSelect?.(p);
+      });
       const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
         .setLngLat([p.ubicacion.lng, p.ubicacion.lat])
         .addTo(map);
       markersRef.current.push(marker);
     });
-  }, [propiedades]);
+  }, [propiedades, onSelect, selectedId]);
 
   if (!MAPBOX_TOKEN) {
     return (
@@ -127,11 +136,12 @@ export function MapView({
           display: block;
           fill: ${MARKER_COLOR};
         }
-        .mii-marker:hover {
-          transform: scale(1.15);
+        .mii-marker:hover,
+        .mii-marker--active {
+          transform: scale(1.25);
           filter:
             drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6))
-            drop-shadow(0 0 12px rgba(214, 255, 0, 0.65));
+            drop-shadow(0 0 12px rgba(214, 255, 0, 0.7));
         }
       `}</style>
       <div ref={containerRef} className={cn("h-full w-full", className)} />
