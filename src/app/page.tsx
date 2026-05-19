@@ -31,6 +31,7 @@ export default function Home() {
             propiedades={mockPropiedades}
             selectedId={seleccionada?.id ?? null}
             onSelect={setSeleccionada}
+            rightInsetPx={seleccionada ? 380 : 0}
           />
           {seleccionada ? (
             <div className="absolute inset-y-0 right-0 z-20 flex">

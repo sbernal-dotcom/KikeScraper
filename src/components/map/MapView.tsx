@@ -23,6 +23,8 @@ type MapViewProps = {
   propiedades?: Propiedad[];
   selectedId?: string | null;
   onSelect?: (propiedad: Propiedad) => void;
+  /** Px to reserve on the right of the map (e.g. width of the open detail card). */
+  rightInsetPx?: number;
 };
 
 export function MapView({
@@ -32,6 +34,7 @@ export function MapView({
   propiedades = [],
   selectedId = null,
   onSelect,
+  rightInsetPx = 0,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const geocoderRef = useRef<HTMLDivElement>(null);
@@ -183,6 +186,18 @@ export function MapView({
           padding: 6px 36px;
           font-size: 14px;
         }
+        .mii-geocoder .mapboxgl-ctrl-geocoder--input:focus,
+        .mii-geocoder .mapboxgl-ctrl-geocoder--input:focus-visible {
+          outline: none;
+          box-shadow: none;
+          color: #fff;
+        }
+        .mii-geocoder .mapboxgl-ctrl-geocoder:focus-within {
+          border-color: rgba(214, 255, 0, 0.45);
+          box-shadow:
+            0 0 0 3px rgba(214, 255, 0, 0.18),
+            0 6px 20px rgba(0, 0, 0, 0.5);
+        }
         .mii-geocoder .mapboxgl-ctrl-geocoder--input::placeholder {
           color: rgba(255, 255, 255, 0.45);
         }
@@ -213,7 +228,8 @@ export function MapView({
       <div ref={containerRef} className={cn("h-full w-full", className)} />
       <div
         ref={geocoderRef}
-        className="mii-geocoder pointer-events-auto absolute left-1/2 top-3 z-20 w-[420px] max-w-[calc(100vw-7rem)] -translate-x-1/2"
+        className="mii-geocoder pointer-events-auto absolute top-3 z-20 w-[420px] max-w-[calc(100vw-7rem)] -translate-x-1/2 transition-[left] duration-300 ease-out"
+        style={{ left: `calc(50% - ${rightInsetPx / 2}px)` }}
       />
     </>
   );
