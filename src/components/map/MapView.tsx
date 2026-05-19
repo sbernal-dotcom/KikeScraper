@@ -73,12 +73,12 @@ export function MapView({
       const el = document.createElement("div");
       el.className = "mii-marker";
       el.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-          <polyline points="9 22 9 12 15 12 15 22"/>
+        <svg viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path fill-rule="evenodd" clip-rule="evenodd"
+                d="M12 0C5.373 0 0 5.373 0 12c0 8.4 12 20 12 20s12-11.6 12-20c0-6.627-5.373-12-12-12zm0 7a5 5 0 100 10 5 5 0 000-10z" />
         </svg>
       `;
-      const marker = new mapboxgl.Marker({ element: el })
+      const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
         .setLngLat([p.ubicacion.lng, p.ubicacion.lat])
         .addTo(map);
       markersRef.current.push(marker);
@@ -112,35 +112,26 @@ export function MapView({
     <>
       <style>{`
         .mii-marker {
-          width: 28px;
-          height: 28px;
-          border-radius: 9999px;
-          background: #0a0a0a;
-          border: 1.5px solid ${MARKER_COLOR};
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          width: 26px;
+          height: 34px;
           cursor: pointer;
-          box-shadow:
-            0 0 0 3px rgba(214, 255, 0, 0.14),
-            0 2px 6px rgba(0, 0, 0, 0.6);
-          transition: transform 140ms ease, box-shadow 140ms ease;
+          transform-origin: 50% 100%;
+          filter:
+            drop-shadow(0 2px 4px rgba(0, 0, 0, 0.55))
+            drop-shadow(0 0 6px rgba(214, 255, 0, 0.35));
+          transition: transform 140ms ease, filter 140ms ease;
         }
         .mii-marker svg {
-          width: 14px;
-          height: 14px;
-          stroke: ${MARKER_COLOR};
-          stroke-width: 2;
-          stroke-linecap: round;
-          stroke-linejoin: round;
-          fill: none;
+          width: 100%;
+          height: 100%;
+          display: block;
+          fill: ${MARKER_COLOR};
         }
         .mii-marker:hover {
           transform: scale(1.15);
-          box-shadow:
-            0 0 0 4px rgba(214, 255, 0, 0.22),
-            0 4px 10px rgba(0, 0, 0, 0.7),
-            0 0 14px rgba(214, 255, 0, 0.55);
+          filter:
+            drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6))
+            drop-shadow(0 0 12px rgba(214, 255, 0, 0.65));
         }
       `}</style>
       <div ref={containerRef} className={cn("h-full w-full", className)} />
