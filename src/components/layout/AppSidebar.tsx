@@ -33,7 +33,7 @@ type NavItem = {
 
 const primaryNav: NavItem[] = [
   { title: "Mapa", href: "/", icon: MapIcon },
-  { title: "Propiedades", href: "/propiedades", icon: Building2, comingSoon: true },
+  { title: "Propiedades", href: "/propiedades", icon: Building2 },
   { title: "Fuentes", href: "/fuentes", icon: Globe2, comingSoon: true },
   { title: "Análisis", href: "/analisis", icon: TrendingUp, comingSoon: true },
 ];
