@@ -65,23 +65,21 @@ export function FilterPanel({
 
   return (
     <div className={cn("flex h-full w-full flex-col", className)}>
-      <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
-        <div className="flex items-baseline gap-2">
-          <h2 className="text-sm font-semibold tracking-tight">Filtros</h2>
-          {activos > 0 ? (
-            <span
-              className="rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none"
-              style={{ background: "rgba(214,255,0,0.15)", color: "#D6FF00" }}
-            >
-              {activos}
-            </span>
-          ) : null}
-        </div>
+      <div className="flex items-center gap-2 border-b border-border/60 px-4 py-3 pr-14">
+        <h2 className="text-sm font-semibold tracking-tight">Filtros</h2>
+        {activos > 0 ? (
+          <span
+            className="rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none"
+            style={{ background: "rgba(214,255,0,0.15)", color: "#D6FF00" }}
+          >
+            {activos}
+          </span>
+        ) : null}
         {activos > 0 ? (
           <button
             type="button"
             onClick={() => onChange(emptyFilters)}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
             <X className="size-3" />
             Limpiar
