@@ -196,24 +196,28 @@ export function MapView({
   return (
     <>
       <style>{`
+        /* Marker root: positioned by mapbox via transform — NEVER transition this */
         .mii-marker {
           width: 18px;
           height: 24px;
           cursor: pointer;
+          will-change: transform;
+        }
+        /* Hover/active effects live on the inner SVG so they don't fight
+           the positional transform set by mapbox on the root. */
+        .mii-marker svg {
+          width: 100%;
+          height: 100%;
+          display: block;
+          fill: ${MARKER_COLOR};
           transform-origin: 50% 100%;
           filter:
             drop-shadow(0 1.5px 3px rgba(0, 0, 0, 0.55))
             drop-shadow(0 0 4px rgba(214, 255, 0, 0.3));
           transition: transform 140ms ease, filter 140ms ease;
         }
-        .mii-marker svg {
-          width: 100%;
-          height: 100%;
-          display: block;
-          fill: ${MARKER_COLOR};
-        }
-        .mii-marker:hover,
-        .mii-marker--active {
+        .mii-marker:hover svg,
+        .mii-marker--active svg {
           transform: scale(1.25);
           filter:
             drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6))
