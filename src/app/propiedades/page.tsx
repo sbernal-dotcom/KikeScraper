@@ -37,26 +37,32 @@ export default function PropiedadesPage() {
 
   return (
     <div className="flex h-dvh flex-col">
-      <header className="flex items-center gap-3 border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur">
-        <SidebarTrigger
-          aria-label={dict.nav.open_nav}
-          className="size-9 shrink-0 rounded-md border bg-background"
-        />
-        <div className="flex min-w-0 flex-1 items-center gap-2">
+      <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur">
+        <div className="flex items-center gap-3 min-w-0">
+          <SidebarTrigger
+            aria-label={dict.nav.open_nav}
+            className="size-9 shrink-0 rounded-md border bg-background"
+          />
           <h1 className="hidden text-base font-semibold tracking-tight sm:block">
             {dict.properties.title}
           </h1>
-          <span className="mx-1 hidden h-4 w-px bg-border sm:block" />
-          <div className="relative w-full max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="search"
-              placeholder={dict.properties.search_placeholder}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="h-10 w-full rounded-lg border border-border/60 bg-card/40 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground/70 outline-none transition-all focus:border-[#D6FF00]/45 focus:ring-3 focus:ring-[#D6FF00]/15"
-            />
-          </div>
+        </div>
+
+        <div className="relative w-[420px] max-w-[calc(100vw-12rem)]">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="search"
+            placeholder={dict.properties.search_placeholder}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-10 w-full rounded-lg border border-border/60 bg-card/40 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground/70 outline-none transition-all focus:border-[#D6FF00]/45 focus:ring-3 focus:ring-[#D6FF00]/15"
+          />
+        </div>
+
+        <div className="flex items-center justify-end gap-3">
+          <span className="hidden text-xs text-muted-foreground sm:block">
+            {filtradas.length} {dict.common.of} {mockPropiedades.length}
+          </span>
           <Button
             type="button"
             variant="outline"
@@ -77,9 +83,6 @@ export default function PropiedadesPage() {
               </span>
             ) : null}
           </Button>
-        </div>
-        <div className="hidden text-xs text-muted-foreground sm:block">
-          {filtradas.length} {dict.common.of} {mockPropiedades.length}
         </div>
       </header>
 
