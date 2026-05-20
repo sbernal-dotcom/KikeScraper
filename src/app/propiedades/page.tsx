@@ -4,34 +4,24 @@ import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { FilterPanel } from "@/features/propiedades/components/FilterPanel";
 import { PropertyGridCard } from "@/features/propiedades/components/PropertyGridCard";
+import { applyFilters, emptyFilters, type PropiedadFilters } from "@/features/propiedades/filters";
 import { mockPropiedades } from "@/features/propiedades/mock";
-import {
-  labelCategoria,
-  labelTipoOperacion,
-} from "@/features/propiedades/format";
 
 export default function PropiedadesPage() {
   const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState<PropiedadFilters>(emptyFilters);
 
-  const filtradas = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return mockPropiedades;
-    return mockPropiedades.filter((p) => {
-      const haystack = [
-        p.titulo,
-        p.ubicacion.corregimiento,
-        p.ubicacion.distrito,
-        labelCategoria(p.categoria),
-        labelTipoOperacion(p.tipoOperacion),
-        p.fuenteNombre,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(q);
-    });
-  }, [query]);
+  const fuentesDisponibles = useMemo(
+    () => Array.from(new Set(mockPropiedades.map((p) => p.fuenteNombre))).sort(),
+    [],
+  );
+
+  const filtradas = useMemo(
+    () => applyFilters(mockPropiedades, query, filters),
+    [query, filters],
+  );
 
   return (
     <div className="flex h-dvh flex-col">
@@ -61,21 +51,30 @@ export default function PropiedadesPage() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          {filtradas.length === 0 ? (
-            <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
-              No hay propiedades que coincidan con “{query}”.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filtradas.map((p) => (
-                <PropertyGridCard key={p.id} propiedad={p} />
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
+      <div className="flex min-h-0 flex-1">
+        <FilterPanel
+          filters={filters}
+          onChange={setFilters}
+          fuentesDisponibles={fuentesDisponibles}
+          className="hidden lg:flex"
+        />
+
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            {filtradas.length === 0 ? (
+              <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
+                No hay propiedades que coincidan con los filtros aplicados.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {filtradas.map((p) => (
+                  <PropertyGridCard key={p.id} propiedad={p} />
+                ))}
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
