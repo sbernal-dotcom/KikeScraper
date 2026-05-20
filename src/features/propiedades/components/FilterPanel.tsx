@@ -64,12 +64,7 @@ export function FilterPanel({
   };
 
   return (
-    <aside
-      className={cn(
-        "flex h-full w-[280px] shrink-0 flex-col border-r border-border/60 bg-card/30",
-        className,
-      )}
-    >
+    <div className={cn("flex h-full w-full flex-col", className)}>
       <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
         <div className="flex items-baseline gap-2">
           <h2 className="text-sm font-semibold tracking-tight">Filtros</h2>
@@ -210,7 +205,7 @@ export function FilterPanel({
           </>
         ) : null}
       </div>
-    </aside>
+    </div>
   );
 }
 
