@@ -5,6 +5,7 @@ import {
   BedDouble,
   Car,
   ExternalLink,
+  Globe2,
   MapPin,
   Maximize2,
   Sparkles,
@@ -179,6 +180,48 @@ export function PropertyCard({
             </dd>
           </div>
         </dl>
+
+        {propiedad.otrosAnuncios && propiedad.otrosAnuncios.length > 0 ? (
+          <>
+            <Separator className="my-5" />
+            <section>
+              <div className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                <Globe2 className="size-3.5" />
+                <span>
+                  {dict.card.also_listed_on} · {propiedad.otrosAnuncios.length}{" "}
+                  {dict.card.other_listings_count}
+                </span>
+              </div>
+              <ul className="space-y-1.5">
+                {propiedad.otrosAnuncios.map((a) => (
+                  <li key={a.urlOriginal}>
+                    <a
+                      href={a.urlOriginal}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between gap-2 rounded-md border border-border/50 bg-card/30 px-3 py-2 text-xs transition-colors hover:border-[#D6FF00]/40 hover:bg-card/60"
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        <ExternalLink className="size-3.5 shrink-0 text-muted-foreground" />
+                        <span className="truncate font-medium">
+                          {a.fuenteNombre}
+                        </span>
+                      </span>
+                      {a.precio !== undefined ? (
+                        <span
+                          className="shrink-0 tabular-nums"
+                          style={{ color: "#D6FF00" }}
+                        >
+                          {fmt.currency(a.precio)}
+                        </span>
+                      ) : null}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </>
+        ) : null}
       </div>
 
       <footer className="border-t border-border/60 px-5 py-3">

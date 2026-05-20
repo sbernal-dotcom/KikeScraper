@@ -57,6 +57,8 @@ export type Dictionary = {
     parking: string;
     condition_label: string;
     listing_status: string;
+    also_listed_on: string;
+    other_listings_count: string;
   };
   domain: {
     operation: Record<"venta" | "alquiler", string>;
@@ -133,6 +135,8 @@ const es: Dictionary = {
     parking: "Estacionamientos",
     condition_label: "Condición",
     listing_status: "Estado anuncio",
+    also_listed_on: "También publicado en",
+    other_listings_count: "otras fuentes",
   },
   domain: {
     operation: { venta: "en venta", alquiler: "en alquiler" },
@@ -213,6 +217,8 @@ const en: Dictionary = {
     parking: "Parking",
     condition_label: "Condition",
     listing_status: "Listing status",
+    also_listed_on: "Also listed on",
+    other_listings_count: "other sources",
   },
   domain: {
     operation: { venta: "for sale", alquiler: "for rent" },

@@ -23,6 +23,15 @@ export interface Ubicacion {
   corregimiento?: string;
 }
 
+export interface AnuncioAdicional {
+  fuenteId: string;
+  fuenteNombre: string;
+  urlOriginal: string;
+  precio?: number;
+  moneda?: Moneda;
+  fechaDeteccion?: string;
+}
+
 export interface Propiedad {
   id: string;
   titulo: string;
@@ -42,6 +51,7 @@ export interface Propiedad {
   fuenteId: string;
   fuenteNombre: string;
   urlOriginal: string;
+  otrosAnuncios?: AnuncioAdicional[];
   imagenes: string[];
   fechaPublicacion: string;
   fechaDeteccion: string;

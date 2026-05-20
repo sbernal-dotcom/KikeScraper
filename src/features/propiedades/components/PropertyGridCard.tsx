@@ -5,6 +5,7 @@ import {
   BedDouble,
   Car,
   ExternalLink,
+  Globe2,
   MapPin,
   Maximize2,
   Sparkles,
@@ -38,19 +39,18 @@ export function PropertyGridCard({ propiedad, className }: Props) {
     propiedad.ubicacion.distrito ??
     "—";
 
+  const otros = propiedad.otrosAnuncios ?? [];
+
   return (
     <article
       className={cn(
-        "group flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card/40 transition-colors hover:border-[#D6FF00]/40 hover:bg-card/60",
+        "group flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card/40 transition-colors hover:border-[#D6FF00]/40 hover:bg-card/55",
         className,
       )}
     >
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-zinc-800 via-zinc-900 to-black">
-        <div className="absolute inset-0 flex items-center justify-center text-[10px] uppercase tracking-widest text-muted-foreground/60">
-          {dict.card.no_image}
-        </div>
-        <div className="absolute left-2 top-2 flex flex-wrap gap-1">
-          <span className="rounded-sm bg-background/80 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider backdrop-blur">
+      <div className="flex items-center justify-between gap-2 border-b border-border/50 bg-card/60 px-4 py-2.5">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <span className="rounded-sm bg-background/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider">
             {labels.categoria(propiedad.categoria)}
           </span>
           <span
@@ -61,10 +61,10 @@ export function PropertyGridCard({ propiedad, className }: Props) {
           </span>
         </div>
         <span
-          className="absolute right-2 top-2 rounded-sm px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider"
+          className="shrink-0 rounded-sm px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider"
           style={{
-            background: "rgba(0,0,0,0.6)",
-            color: "rgba(255,255,255,0.9)",
+            background: "rgba(0,0,0,0.5)",
+            color: "rgba(255,255,255,0.85)",
           }}
         >
           {labels.estado(propiedad.estadoAnuncio)}
@@ -77,7 +77,7 @@ export function PropertyGridCard({ propiedad, className }: Props) {
             <MapPin className="size-3" />
             <span className="truncate">{localizacion}</span>
           </div>
-          <h3 className="mt-1 line-clamp-1 text-sm font-semibold tracking-tight">
+          <h3 className="mt-1 line-clamp-2 text-sm font-semibold leading-snug tracking-tight">
             {propiedad.titulo}
           </h3>
         </div>
@@ -113,8 +113,19 @@ export function PropertyGridCard({ propiedad, className }: Props) {
         </div>
 
         <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
-          <KV label={dict.card.condition_label} value={labels.condicion(propiedad.condicion)} />
+          <KV
+            label={dict.card.condition_label}
+            value={labels.condicion(propiedad.condicion)}
+          />
           <KV label={dict.card.source} value={propiedad.fuenteNombre} />
+          <KV
+            label={dict.card.detected}
+            value={fmt.date(propiedad.fechaDeteccion)}
+          />
+          <KV
+            label={dict.card.published}
+            value={fmt.date(propiedad.fechaPublicacion)}
+          />
         </dl>
 
         {propiedad.resumenIA ? (
@@ -132,13 +143,52 @@ export function PropertyGridCard({ propiedad, className }: Props) {
           </>
         ) : null}
 
-        <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-          <span className="text-[10px] text-muted-foreground">
-            {dict.card.detected}: {fmt.date(propiedad.fechaDeteccion)}
-          </span>
+        {otros.length > 0 ? (
+          <>
+            <Separator />
+            <div>
+              <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                <Globe2 className="size-3" />
+                <span>
+                  {dict.card.also_listed_on} · {otros.length}{" "}
+                  {dict.card.other_listings_count}
+                </span>
+              </div>
+              <ul className="space-y-1">
+                {otros.map((a) => (
+                  <li key={a.urlOriginal}>
+                    <a
+                      href={a.urlOriginal}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between gap-2 rounded-md border border-border/50 bg-card/30 px-2 py-1.5 text-xs transition-colors hover:border-[#D6FF00]/40 hover:bg-card/60"
+                    >
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <ExternalLink className="size-3 shrink-0 text-muted-foreground" />
+                        <span className="truncate font-medium">
+                          {a.fuenteNombre}
+                        </span>
+                      </span>
+                      {a.precio !== undefined ? (
+                        <span
+                          className="shrink-0 tabular-nums"
+                          style={{ color: "#D6FF00" }}
+                        >
+                          {fmt.currency(a.precio)}
+                        </span>
+                      ) : null}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </>
+        ) : null}
+
+        <div className="mt-auto pt-1">
           <Button
             size="sm"
-            className="font-medium"
+            className="w-full font-medium"
             style={{ background: "#D6FF00", color: "#0a0a0a" }}
             render={
               <a
@@ -148,7 +198,7 @@ export function PropertyGridCard({ propiedad, className }: Props) {
               />
             }
           >
-            {dict.card.view_original}
+            {dict.card.view_original} — {propiedad.fuenteNombre}
             <ExternalLink className="ml-1 size-3" />
           </Button>
         </div>
