@@ -4,7 +4,6 @@ import type {
   Propiedad,
   TipoOperacion,
 } from "./types";
-import { labelCategoria, labelTipoOperacion } from "./format";
 
 export type PropiedadFilters = {
   operacion: TipoOperacion[];
@@ -48,8 +47,8 @@ export function applyFilters(
         p.titulo,
         p.ubicacion.corregimiento,
         p.ubicacion.distrito,
-        labelCategoria(p.categoria),
-        labelTipoOperacion(p.tipoOperacion),
+        p.categoria,
+        p.tipoOperacion,
         p.fuenteNombre,
       ]
         .filter(Boolean)

@@ -23,42 +23,46 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useDict } from "@/i18n/LocaleProvider";
+
+import { LanguageToggle } from "./LanguageToggle";
 
 type NavItem = {
-  title: string;
+  key: "map" | "properties" | "sources" | "analysis" | "about";
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   comingSoon?: boolean;
 };
 
 const primaryNav: NavItem[] = [
-  { title: "Mapa", href: "/", icon: MapIcon },
-  { title: "Propiedades", href: "/propiedades", icon: Building2 },
-  { title: "Fuentes", href: "/fuentes", icon: Globe2, comingSoon: true },
-  { title: "Análisis", href: "/analisis", icon: TrendingUp, comingSoon: true },
+  { key: "map", href: "/", icon: MapIcon },
+  { key: "properties", href: "/propiedades", icon: Building2 },
+  { key: "sources", href: "/fuentes", icon: Globe2, comingSoon: true },
+  { key: "analysis", href: "/analisis", icon: TrendingUp, comingSoon: true },
 ];
 
 const secondaryNav: NavItem[] = [
-  { title: "Acerca de", href: "/acerca", icon: Info, comingSoon: true },
+  { key: "about", href: "/acerca", icon: Info, comingSoon: true },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const dict = useDict();
 
   return (
     <Sidebar collapsible="offcanvas" variant="sidebar">
       <SidebarHeader className="border-b">
         <div className="px-2 py-3">
           <h2 className="text-sm font-semibold tracking-tight">
-            Mapa Interactivo
+            {dict.brand.name}
           </h2>
-          <p className="text-xs text-muted-foreground">Inmobiliario Panamá</p>
+          <p className="text-xs text-muted-foreground">{dict.brand.tagline}</p>
         </div>
       </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navegación</SidebarGroupLabel>
+          <SidebarGroupLabel>{dict.nav.section}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {primaryNav.map((item) => (
@@ -73,7 +77,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Proyecto</SidebarGroupLabel>
+          <SidebarGroupLabel>{dict.nav.section_project}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {secondaryNav.map((item) => (
@@ -89,8 +93,9 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t">
-        <div className="px-2 py-2 text-[10px] text-muted-foreground">
-          v0.1.0 · alpha
+        <LanguageToggle />
+        <div className="px-2 pb-2 text-[10px] text-muted-foreground">
+          {dict.brand.version}
         </div>
       </SidebarFooter>
     </Sidebar>
@@ -98,20 +103,22 @@ export function AppSidebar() {
 }
 
 function NavMenuItem({ item, active }: { item: NavItem; active: boolean }) {
+  const dict = useDict();
   const Icon = item.icon;
+  const label = dict.nav[item.key];
 
   if (item.comingSoon) {
     return (
       <SidebarMenuItem>
         <SidebarMenuButton
           disabled
-          tooltip={`${item.title} — pronto`}
+          tooltip={`${label} — ${dict.nav.soon}`}
           className="cursor-not-allowed opacity-60"
         >
           <Icon className="size-4" />
-          <span>{item.title}</span>
+          <span>{label}</span>
         </SidebarMenuButton>
-        <SidebarMenuBadge>Pronto</SidebarMenuBadge>
+        <SidebarMenuBadge>{dict.nav.soon}</SidebarMenuBadge>
       </SidebarMenuItem>
     );
   }
@@ -121,10 +128,10 @@ function NavMenuItem({ item, active }: { item: NavItem; active: boolean }) {
       <SidebarMenuButton
         render={<Link href={item.href} />}
         isActive={active}
-        tooltip={item.title}
+        tooltip={label}
       >
         <Icon className="size-4" />
-        <span>{item.title}</span>
+        <span>{label}</span>
       </SidebarMenuButton>
     </SidebarMenuItem>
   );

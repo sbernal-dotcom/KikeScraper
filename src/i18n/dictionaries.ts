@@ -1,0 +1,241 @@
+export type Locale = "es" | "en";
+
+export const LOCALES: { code: Locale; label: string; short: string }[] = [
+  { code: "es", label: "Español", short: "ES" },
+  { code: "en", label: "English", short: "EN" },
+];
+
+export type Dictionary = {
+  brand: { name: string; tagline: string; version: string };
+  nav: {
+    section: string;
+    section_project: string;
+    map: string;
+    properties: string;
+    sources: string;
+    analysis: string;
+    about: string;
+    soon: string;
+    open_nav: string;
+    language: string;
+  };
+  common: {
+    of: string;
+    clear: string;
+    min: string;
+    max: string;
+    close: string;
+  };
+  properties: {
+    title: string;
+    search_placeholder: string;
+    filters: string;
+    empty_state: string;
+    missing_token: string;
+  };
+  filters: {
+    operation: string;
+    category: string;
+    price_usd: string;
+    bedrooms_min: string;
+    bathrooms_min: string;
+    condition: string;
+    source: string;
+  };
+  card: {
+    no_image: string;
+    ai_summary: string;
+    source: string;
+    detected: string;
+    published: string;
+    view_original: string;
+    per_m2: string;
+    per_month: string;
+    area: string;
+    bedrooms: string;
+    bathrooms: string;
+    parking: string;
+    condition_label: string;
+    listing_status: string;
+  };
+  domain: {
+    operation: Record<"venta" | "alquiler", string>;
+    operation_short: Record<"venta" | "alquiler", string>;
+    category: Record<
+      | "apartamento"
+      | "casa"
+      | "terreno"
+      | "local-comercial"
+      | "oficina"
+      | "galera",
+      string
+    >;
+    condition: Record<"nueva" | "usada", string>;
+    status: Record<"activo" | "vendido" | "alquilado" | "retirado", string>;
+  };
+  geocoder: { placeholder: string };
+};
+
+const es: Dictionary = {
+  brand: {
+    name: "Mapa Interactivo",
+    tagline: "Inmobiliario Panamá",
+    version: "v0.1.0 · alpha",
+  },
+  nav: {
+    section: "Navegación",
+    section_project: "Proyecto",
+    map: "Mapa",
+    properties: "Propiedades",
+    sources: "Fuentes",
+    analysis: "Análisis",
+    about: "Acerca de",
+    soon: "Pronto",
+    open_nav: "Abrir navegación",
+    language: "Idioma",
+  },
+  common: {
+    of: "de",
+    clear: "Limpiar",
+    min: "Mín",
+    max: "Máx",
+    close: "Cerrar",
+  },
+  properties: {
+    title: "Propiedades",
+    search_placeholder: "Buscar por título, zona, categoría…",
+    filters: "Filtros",
+    empty_state: "No hay propiedades que coincidan con los filtros aplicados.",
+    missing_token:
+      "Configura NEXT_PUBLIC_MAPBOX_TOKEN en .env.local para mostrar el mapa.",
+  },
+  filters: {
+    operation: "Operación",
+    category: "Categoría",
+    price_usd: "Precio (USD)",
+    bedrooms_min: "Recámaras (mín)",
+    bathrooms_min: "Baños (mín)",
+    condition: "Condición",
+    source: "Fuente",
+  },
+  card: {
+    no_image: "sin imagen",
+    ai_summary: "Resumen IA",
+    source: "Fuente",
+    detected: "Detectada",
+    published: "Publicada",
+    view_original: "Ver anuncio original",
+    per_m2: "por m²",
+    per_month: "/ mes",
+    area: "Área",
+    bedrooms: "Recámaras",
+    bathrooms: "Baños",
+    parking: "Estacionamientos",
+    condition_label: "Condición",
+    listing_status: "Estado anuncio",
+  },
+  domain: {
+    operation: { venta: "en venta", alquiler: "en alquiler" },
+    operation_short: { venta: "Venta", alquiler: "Alquiler" },
+    category: {
+      apartamento: "Apartamento",
+      casa: "Casa",
+      terreno: "Terreno",
+      "local-comercial": "Local comercial",
+      oficina: "Oficina",
+      galera: "Galera",
+    },
+    condition: { nueva: "Nueva", usada: "Usada" },
+    status: {
+      activo: "Activo",
+      vendido: "Vendido",
+      alquilado: "Alquilado",
+      retirado: "Retirado",
+    },
+  },
+  geocoder: { placeholder: "Buscar dirección o lugar…" },
+};
+
+const en: Dictionary = {
+  brand: {
+    name: "Interactive Map",
+    tagline: "Panama Real Estate",
+    version: "v0.1.0 · alpha",
+  },
+  nav: {
+    section: "Navigation",
+    section_project: "Project",
+    map: "Map",
+    properties: "Properties",
+    sources: "Sources",
+    analysis: "Analytics",
+    about: "About",
+    soon: "Soon",
+    open_nav: "Open navigation",
+    language: "Language",
+  },
+  common: {
+    of: "of",
+    clear: "Clear",
+    min: "Min",
+    max: "Max",
+    close: "Close",
+  },
+  properties: {
+    title: "Properties",
+    search_placeholder: "Search by title, area, category…",
+    filters: "Filters",
+    empty_state: "No properties match the applied filters.",
+    missing_token:
+      "Set NEXT_PUBLIC_MAPBOX_TOKEN in .env.local to display the map.",
+  },
+  filters: {
+    operation: "Operation",
+    category: "Category",
+    price_usd: "Price (USD)",
+    bedrooms_min: "Bedrooms (min)",
+    bathrooms_min: "Bathrooms (min)",
+    condition: "Condition",
+    source: "Source",
+  },
+  card: {
+    no_image: "no image",
+    ai_summary: "AI summary",
+    source: "Source",
+    detected: "Detected",
+    published: "Published",
+    view_original: "View original listing",
+    per_m2: "per m²",
+    per_month: "/ month",
+    area: "Area",
+    bedrooms: "Bedrooms",
+    bathrooms: "Bathrooms",
+    parking: "Parking",
+    condition_label: "Condition",
+    listing_status: "Listing status",
+  },
+  domain: {
+    operation: { venta: "for sale", alquiler: "for rent" },
+    operation_short: { venta: "Sale", alquiler: "Rent" },
+    category: {
+      apartamento: "Apartment",
+      casa: "House",
+      terreno: "Land",
+      "local-comercial": "Commercial space",
+      oficina: "Office",
+      galera: "Warehouse",
+    },
+    condition: { nueva: "New", usada: "Used" },
+    status: {
+      activo: "Active",
+      vendido: "Sold",
+      alquilado: "Rented",
+      retirado: "Withdrawn",
+    },
+  },
+  geocoder: { placeholder: "Search address or place…" },
+};
+
+export const dictionaries: Record<Locale, Dictionary> = { es, en };
+
+export const DEFAULT_LOCALE: Locale = "es";

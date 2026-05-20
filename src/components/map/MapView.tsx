@@ -7,6 +7,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-geocoder/lib/mapbox-gl-geocoder.css";
 
 import type { Propiedad } from "@/features/propiedades/types";
+import { useDict, useLocale } from "@/i18n/LocaleProvider";
 import {
   DEFAULT_ZOOM,
   MAPBOX_STYLE,
@@ -36,10 +37,13 @@ export function MapView({
   onSelect,
   rightInsetPx = 0,
 }: MapViewProps) {
+  const dict = useDict();
+  const { locale } = useLocale();
   const containerRef = useRef<HTMLDivElement>(null);
   const geocoderRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const geocoderInstanceRef = useRef<MapboxGeocoder | null>(null);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current || !MAPBOX_TOKEN) return;
@@ -112,11 +116,12 @@ export function MapView({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mapboxgl: mapboxgl as any,
       countries: "pa",
-      language: "es",
-      placeholder: "Buscar dirección o lugar…",
+      language: locale,
+      placeholder: dict.geocoder.placeholder,
       marker: false,
       flyTo: { speed: 1.4 },
     });
+    geocoderInstanceRef.current = geocoder;
 
     if (geocoderRef.current) {
       geocoderRef.current.appendChild(geocoder.onAdd(map));
@@ -132,11 +137,20 @@ export function MapView({
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
       geocoder.onRemove();
+      geocoderInstanceRef.current = null;
       mapRef.current?.remove();
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Update geocoder placeholder/language when locale changes
+  useEffect(() => {
+    const g = geocoderInstanceRef.current;
+    if (!g) return;
+    g.setLanguage(locale);
+    g.setPlaceholder(dict.geocoder.placeholder);
+  }, [locale, dict.geocoder.placeholder]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -174,17 +188,7 @@ export function MapView({
           className,
         )}
       >
-        <p>
-          Configura{" "}
-          <code className="rounded bg-background px-1.5 py-0.5 font-mono text-xs">
-            NEXT_PUBLIC_MAPBOX_TOKEN
-          </code>{" "}
-          en{" "}
-          <code className="rounded bg-background px-1.5 py-0.5 font-mono text-xs">
-            .env.local
-          </code>{" "}
-          para mostrar el mapa.
-        </p>
+        <p>{dict.properties.missing_token}</p>
       </div>
     );
   }

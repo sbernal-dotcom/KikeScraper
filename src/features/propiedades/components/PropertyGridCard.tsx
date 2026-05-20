@@ -1,14 +1,15 @@
+"use client";
+
 import { Bath, BedDouble, Car, MapPin, Maximize2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-
 import {
-  formatoPrecio,
-  labelCategoria,
-  labelEstado,
-  labelTipoOperacion,
-  precioPorM2,
-} from "../format";
+  useDict,
+  useDomainLabels,
+  useFormatters,
+} from "@/i18n/LocaleProvider";
+
+import { precioPorM2 } from "../format";
 import type { Propiedad } from "../types";
 
 type Props = {
@@ -17,6 +18,10 @@ type Props = {
 };
 
 export function PropertyGridCard({ propiedad, className }: Props) {
+  const dict = useDict();
+  const labels = useDomainLabels();
+  const fmt = useFormatters();
+
   const ppm2 = precioPorM2(propiedad);
   const localizacion =
     propiedad.ubicacion.corregimiento ??
@@ -35,17 +40,17 @@ export function PropertyGridCard({ propiedad, className }: Props) {
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-zinc-800 via-zinc-900 to-black">
         <div className="absolute inset-0 flex items-center justify-center text-[10px] uppercase tracking-widest text-muted-foreground/60">
-          sin imagen
+          {dict.card.no_image}
         </div>
         <div className="absolute left-2 top-2 flex flex-wrap gap-1">
           <span className="rounded-sm bg-background/80 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider backdrop-blur">
-            {labelCategoria(propiedad.categoria)}
+            {labels.categoria(propiedad.categoria)}
           </span>
           <span
             className="rounded-sm px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider"
             style={{ background: "rgba(214,255,0,0.14)", color: "#D6FF00" }}
           >
-            {labelTipoOperacion(propiedad.tipoOperacion)}
+            {labels.tipoOperacion(propiedad.tipoOperacion)}
           </span>
         </div>
         <span
@@ -55,7 +60,7 @@ export function PropertyGridCard({ propiedad, className }: Props) {
             color: "rgba(255,255,255,0.9)",
           }}
         >
-          {labelEstado(propiedad.estadoAnuncio)}
+          {labels.estado(propiedad.estadoAnuncio)}
         </span>
       </div>
 
@@ -70,11 +75,11 @@ export function PropertyGridCard({ propiedad, className }: Props) {
             className="text-xl font-bold tracking-tight"
             style={{ color: "#D6FF00" }}
           >
-            {formatoPrecio(propiedad.precio, propiedad.moneda)}
+            {fmt.currency(propiedad.precio)}
           </span>
           {ppm2 ? (
             <span className="text-[11px] text-muted-foreground">
-              {formatoPrecio(ppm2, propiedad.moneda)}/m²
+              {fmt.currency(ppm2)}/m²
             </span>
           ) : null}
         </div>

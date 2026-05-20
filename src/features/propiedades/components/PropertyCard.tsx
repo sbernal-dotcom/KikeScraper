@@ -14,16 +14,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-
 import {
-  formatoFecha,
-  formatoPrecio,
-  labelCategoria,
-  labelCondicion,
-  labelEstado,
-  labelTipoOperacion,
-  precioPorM2,
-} from "../format";
+  useDict,
+  useDomainLabels,
+  useFormatters,
+} from "@/i18n/LocaleProvider";
+
+import { precioPorM2 } from "../format";
 import type { Propiedad } from "../types";
 
 type PropertyCardProps = {
@@ -37,6 +34,10 @@ export function PropertyCard({
   onClose,
   className,
 }: PropertyCardProps) {
+  const dict = useDict();
+  const labels = useDomainLabels();
+  const fmt = useFormatters();
+
   const ppm2 = precioPorM2(propiedad);
   const localizacion =
     propiedad.ubicacion.corregimiento ??
@@ -63,13 +64,13 @@ export function PropertyCard({
                 background: "rgba(214,255,0,0.1)",
               }}
             >
-              {labelEstado(propiedad.estadoAnuncio)}
+              {labels.estado(propiedad.estadoAnuncio)}
             </span>
           </div>
           <h2 className="text-lg font-semibold leading-tight tracking-tight">
-            {labelCategoria(propiedad.categoria)}{" "}
+            {labels.categoria(propiedad.categoria)}{" "}
             <span className="font-normal text-muted-foreground">
-              {labelTipoOperacion(propiedad.tipoOperacion)}
+              {labels.tipoOperacion(propiedad.tipoOperacion)}
             </span>
           </h2>
         </div>
@@ -77,7 +78,7 @@ export function PropertyCard({
           type="button"
           variant="ghost"
           size="icon"
-          aria-label="Cerrar"
+          aria-label={dict.common.close}
           className="-mr-1 size-7 shrink-0"
           onClick={onClose}
         >
@@ -92,15 +93,17 @@ export function PropertyCard({
               className="text-3xl font-bold tracking-tight"
               style={{ color: "#D6FF00" }}
             >
-              {formatoPrecio(propiedad.precio, propiedad.moneda)}
+              {fmt.currency(propiedad.precio)}
             </span>
             {propiedad.tipoOperacion === "alquiler" ? (
-              <span className="text-xs text-muted-foreground">/ mes</span>
+              <span className="text-xs text-muted-foreground">
+                {dict.card.per_month}
+              </span>
             ) : null}
           </div>
           {ppm2 ? (
             <p className="text-xs text-muted-foreground">
-              {formatoPrecio(ppm2, propiedad.moneda)} por m²
+              {fmt.currency(ppm2)} {dict.card.per_m2}
             </p>
           ) : null}
         </div>
@@ -110,31 +113,34 @@ export function PropertyCard({
         <div className="grid grid-cols-2 gap-3 text-sm">
           <SpecChip
             icon={<Maximize2 className="size-3.5" />}
-            label="Área"
+            label={dict.card.area}
             value={propiedad.areaM2 ? `${propiedad.areaM2} m²` : "—"}
           />
           <SpecChip
             icon={<BedDouble className="size-3.5" />}
-            label="Recámaras"
+            label={dict.card.bedrooms}
             value={propiedad.habitaciones?.toString() ?? "—"}
           />
           <SpecChip
             icon={<Bath className="size-3.5" />}
-            label="Baños"
+            label={dict.card.bathrooms}
             value={propiedad.banos?.toString() ?? "—"}
           />
           <SpecChip
             icon={<Car className="size-3.5" />}
-            label="Estacionamientos"
+            label={dict.card.parking}
             value={propiedad.estacionamientos?.toString() ?? "—"}
           />
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-          <SpecChip label="Condición" value={labelCondicion(propiedad.condicion)} />
           <SpecChip
-            label="Estado anuncio"
-            value={labelEstado(propiedad.estadoAnuncio)}
+            label={dict.card.condition_label}
+            value={labels.condicion(propiedad.condicion)}
+          />
+          <SpecChip
+            label={dict.card.listing_status}
+            value={labels.estado(propiedad.estadoAnuncio)}
           />
         </div>
 
@@ -144,7 +150,7 @@ export function PropertyCard({
             <section>
               <div className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 <Sparkles className="size-3.5" style={{ color: "#D6FF00" }} />
-                <span>Resumen IA</span>
+                <span>{dict.card.ai_summary}</span>
               </div>
               <p className="text-sm leading-relaxed text-foreground/90">
                 {propiedad.resumenIA}
@@ -157,19 +163,19 @@ export function PropertyCard({
 
         <dl className="space-y-1.5 text-xs">
           <div className="flex items-center justify-between gap-3">
-            <dt className="text-muted-foreground">Fuente</dt>
+            <dt className="text-muted-foreground">{dict.card.source}</dt>
             <dd className="font-medium">{propiedad.fuenteNombre}</dd>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <dt className="text-muted-foreground">Detectada</dt>
+            <dt className="text-muted-foreground">{dict.card.detected}</dt>
             <dd className="font-medium">
-              {formatoFecha(propiedad.fechaDeteccion)}
+              {fmt.date(propiedad.fechaDeteccion)}
             </dd>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <dt className="text-muted-foreground">Publicada</dt>
+            <dt className="text-muted-foreground">{dict.card.published}</dt>
             <dd className="font-medium">
-              {formatoFecha(propiedad.fechaPublicacion)}
+              {fmt.date(propiedad.fechaPublicacion)}
             </dd>
           </div>
         </dl>
@@ -188,7 +194,7 @@ export function PropertyCard({
             />
           }
         >
-          Ver anuncio original
+          {dict.card.view_original}
           <ExternalLink className="ml-1 size-4" />
         </Button>
       </footer>

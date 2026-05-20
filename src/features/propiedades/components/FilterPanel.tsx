@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { useDict, useDomainLabels } from "@/i18n/LocaleProvider";
 
 import type {
   CategoriaPropiedad,
@@ -15,11 +16,6 @@ import {
   emptyFilters,
   type PropiedadFilters,
 } from "../filters";
-import {
-  labelCategoria,
-  labelCondicion,
-  labelTipoOperacion,
-} from "../format";
 
 type FilterPanelProps = {
   filters: PropiedadFilters;
@@ -45,6 +41,8 @@ export function FilterPanel({
   fuentesDisponibles,
   className,
 }: FilterPanelProps) {
+  const dict = useDict();
+  const labels = useDomainLabels();
   const activos = countActiveFilters(filters);
 
   const toggle = <K extends "operacion" | "categoria" | "condicion" | "fuentes">(
@@ -66,7 +64,9 @@ export function FilterPanel({
   return (
     <div className={cn("flex h-full w-full flex-col", className)}>
       <div className="flex items-center gap-2 border-b border-border/60 px-4 py-3 pr-14">
-        <h2 className="text-sm font-semibold tracking-tight">Filtros</h2>
+        <h2 className="text-sm font-semibold tracking-tight">
+          {dict.properties.filters}
+        </h2>
         {activos > 0 ? (
           <span
             className="rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none"
@@ -82,13 +82,13 @@ export function FilterPanel({
             className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
             <X className="size-3" />
-            Limpiar
+            {dict.common.clear}
           </button>
         ) : null}
       </div>
 
       <div className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
-        <Group label="Operación">
+        <Group label={dict.filters.operation}>
           <div className="flex flex-wrap gap-1.5">
             {OPERACIONES.map((op) => (
               <Pill
@@ -96,7 +96,7 @@ export function FilterPanel({
                 active={filters.operacion.includes(op)}
                 onClick={() => toggle("operacion", op)}
               >
-                {labelTipoOperacion(op).replace("en ", "")}
+                {labels.tipoOperacionCorto(op)}
               </Pill>
             ))}
           </div>
@@ -104,7 +104,7 @@ export function FilterPanel({
 
         <Separator />
 
-        <Group label="Categoría">
+        <Group label={dict.filters.category}>
           <div className="flex flex-wrap gap-1.5">
             {CATEGORIAS.map((c) => (
               <Pill
@@ -112,7 +112,7 @@ export function FilterPanel({
                 active={filters.categoria.includes(c)}
                 onClick={() => toggle("categoria", c)}
               >
-                {labelCategoria(c)}
+                {labels.categoria(c)}
               </Pill>
             ))}
           </div>
@@ -120,16 +120,16 @@ export function FilterPanel({
 
         <Separator />
 
-        <Group label="Precio (USD)">
+        <Group label={dict.filters.price_usd}>
           <div className="flex items-center gap-2">
             <NumberInput
-              placeholder="Mín"
+              placeholder={dict.common.min}
               value={filters.precioMin}
               onChange={(v) => onChange({ ...filters, precioMin: v })}
             />
             <span className="text-xs text-muted-foreground">–</span>
             <NumberInput
-              placeholder="Máx"
+              placeholder={dict.common.max}
               value={filters.precioMax}
               onChange={(v) => onChange({ ...filters, precioMax: v })}
             />
@@ -138,7 +138,7 @@ export function FilterPanel({
 
         <Separator />
 
-        <Group label="Recámaras (mín)">
+        <Group label={dict.filters.bedrooms_min}>
           <div className="flex flex-wrap gap-1.5">
             {[1, 2, 3, 4].map((n) => (
               <Pill
@@ -154,7 +154,7 @@ export function FilterPanel({
 
         <Separator />
 
-        <Group label="Baños (mín)">
+        <Group label={dict.filters.bathrooms_min}>
           <div className="flex flex-wrap gap-1.5">
             {[1, 2, 3].map((n) => (
               <Pill
@@ -170,7 +170,7 @@ export function FilterPanel({
 
         <Separator />
 
-        <Group label="Condición">
+        <Group label={dict.filters.condition}>
           <div className="flex flex-wrap gap-1.5">
             {CONDICIONES.map((c) => (
               <Pill
@@ -178,7 +178,7 @@ export function FilterPanel({
                 active={filters.condicion.includes(c)}
                 onClick={() => toggle("condicion", c)}
               >
-                {labelCondicion(c)}
+                {labels.condicion(c)}
               </Pill>
             ))}
           </div>
@@ -187,7 +187,7 @@ export function FilterPanel({
         {fuentesDisponibles.length > 0 ? (
           <>
             <Separator />
-            <Group label="Fuente">
+            <Group label={dict.filters.source}>
               <div className="flex flex-wrap gap-1.5">
                 {fuentesDisponibles.map((f) => (
                   <Pill
