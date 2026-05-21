@@ -169,20 +169,20 @@ export function PropertyCard({
 
         <Separator className="my-5" />
 
-        <dl className="space-y-1.5 text-xs">
+        <dl className="space-y-1 text-[11px]">
           <div className="flex items-center justify-between gap-3">
             <dt className="text-muted-foreground">{dict.card.source}</dt>
             <dd className="font-medium">{propiedad.fuenteNombre}</dd>
           </div>
           <div className="flex items-center justify-between gap-3">
             <dt className="text-muted-foreground">{dict.card.detected}</dt>
-            <dd className="font-medium">
+            <dd className="font-medium tabular-nums">
               {fmt.date(propiedad.fechaDeteccion)}
             </dd>
           </div>
           <div className="flex items-center justify-between gap-3">
             <dt className="text-muted-foreground">{dict.card.published}</dt>
-            <dd className="font-medium">
+            <dd className="font-medium tabular-nums">
               {fmt.date(propiedad.fechaPublicacion)}
             </dd>
           </div>

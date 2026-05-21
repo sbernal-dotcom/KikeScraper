@@ -113,7 +113,7 @@ export function PropertyGridCard({ propiedad, className }: Props) {
           </Spec>
         </div>
 
-        <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+        <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
           <KV
             label={dict.card.condition_label}
             value={labels.condicion(propiedad.condicion)}
