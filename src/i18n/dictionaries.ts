@@ -76,6 +76,28 @@ export type Dictionary = {
     status: Record<"activo" | "vendido" | "alquilado" | "retirado", string>;
   };
   geocoder: { placeholder: string };
+  analytics: {
+    title: string;
+    subtitle: string;
+    column_score: string;
+    column_property: string;
+    column_zone: string;
+    column_price: string;
+    column_area: string;
+    column_price_m2: string;
+    column_benchmark: string;
+    column_discount: string;
+    column_confidence: string;
+    column_source: string;
+    confidence_low: string;
+    confidence_medium: string;
+    confidence_high: string;
+    no_data: string;
+    score_tier_strong: string;
+    score_tier_good: string;
+    score_tier_normal: string;
+    score_tier_overpriced: string;
+  };
 };
 
 const es: Dictionary = {
@@ -158,6 +180,28 @@ const es: Dictionary = {
     },
   },
   geocoder: { placeholder: "Buscar dirección o lugar…" },
+  analytics: {
+    title: "Analytics",
+    subtitle: "Mejores oportunidades",
+    column_score: "Score",
+    column_property: "Propiedad",
+    column_zone: "Zona",
+    column_price: "Precio",
+    column_area: "Área",
+    column_price_m2: "$/m²",
+    column_benchmark: "Promedio zona",
+    column_discount: "Desc. %",
+    column_confidence: "Confianza",
+    column_source: "Fuente",
+    confidence_low: "Baja",
+    confidence_medium: "Media",
+    confidence_high: "Alta",
+    no_data: "Sin comparables suficientes en la zona.",
+    score_tier_strong: "Oportunidad fuerte",
+    score_tier_good: "Buena oportunidad",
+    score_tier_normal: "Normal",
+    score_tier_overpriced: "Sobrevalorado",
+  },
 };
 
 const en: Dictionary = {
@@ -240,6 +284,28 @@ const en: Dictionary = {
     },
   },
   geocoder: { placeholder: "Search address or place…" },
+  analytics: {
+    title: "Analytics",
+    subtitle: "Top opportunities",
+    column_score: "Score",
+    column_property: "Property",
+    column_zone: "Area",
+    column_price: "Price",
+    column_area: "Size",
+    column_price_m2: "$/m²",
+    column_benchmark: "Area avg",
+    column_discount: "Disc. %",
+    column_confidence: "Confidence",
+    column_source: "Source",
+    confidence_low: "Low",
+    confidence_medium: "Medium",
+    confidence_high: "High",
+    no_data: "Not enough comparables in this area.",
+    score_tier_strong: "Strong opportunity",
+    score_tier_good: "Good opportunity",
+    score_tier_normal: "Normal",
+    score_tier_overpriced: "Overpriced",
+  },
 };
 
 export const dictionaries: Record<Locale, Dictionary> = { es, en };

@@ -36,7 +36,7 @@ type NavItem = {
 const primaryNav: NavItem[] = [
   { key: "map", href: "/", icon: MapIcon },
   { key: "properties", href: "/propiedades", icon: Building2 },
-  { key: "analysis", href: "/analisis", icon: TrendingUp, comingSoon: true },
+  { key: "analysis", href: "/analisis", icon: TrendingUp },
 ];
 
 const secondaryNav: NavItem[] = [

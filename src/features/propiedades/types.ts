@@ -23,6 +23,35 @@ export interface Ubicacion {
   corregimiento?: string;
 }
 
+export type ConfianzaScore = "baja" | "media" | "alta";
+
+export interface Oportunidad {
+  id: string;
+  titulo: string;
+  precio: number;
+  moneda: Moneda;
+  areaM2: number;
+  precioM2: number;
+  tipoOperacion: TipoOperacion;
+  categoria: CategoriaPropiedad;
+  condicion?: Condicion;
+  estadoAnuncio: EstadoAnuncio;
+  corregimiento?: string;
+  distrito?: string;
+  provincia?: string;
+  fuenteId: string;
+  fuenteNombre: string;
+  urlOriginal: string;
+  fechaDeteccion: string;
+  nComparables: number | null;
+  avgPrecioM2: number | null;
+  medianPrecioM2: number | null;
+  benchmark: number | null;
+  descuentoPct: number | null;
+  opportunityScore: number | null;
+  confianza: ConfianzaScore;
+}
+
 export interface AnuncioAdicional {
   fuenteId: string;
   fuenteNombre: string;
