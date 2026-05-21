@@ -89,6 +89,11 @@ A futuro, podría incluir una sección de análisis de rentabilidad para compara
   - Verificado en dev: ambas páginas devuelven 200 y la query a Supabase trae las 10 propiedades + 5 anuncios.
 - **2026-05-20** — `mock.ts` queda en el repo como referencia/fallback offline, pero sin uso en producción.
 - **2026-05-20** — Pines diferenciados por tipo de operación. `MARKER_COLOR_ALQUILER = #FFEC00` añadido en `mapbox/config.ts`. El marker root recibe la clase `.mii-marker--alquiler` cuando `tipoOperacion === "alquiler"`. Usa CSS custom properties (`--mii-fill`, `--mii-glow`) para que el SVG y el glow del drop-shadow cambien sin duplicar reglas. Venta = lime `#D6FF00` (sin cambios); alquiler = amarillo `#FFEC00`.
+- **2026-05-20** — **Accent color por operación en TODA la UI de propiedad**, no solo pines. Helper en `features/propiedades/format.ts`:
+  - `operationAccent(op)` → `{ color, rgb }`.
+  - `accentVars(op)` → `React.CSSProperties` con `--accent`, `--accent-rgb`, `--accent-soft`, `--accent-medium`, `--accent-text-on`.
+
+  Aplicado en el root de `PropertyCard` (side panel del mapa) y `PropertyGridCard` (/propiedades). Reemplazado todo el `#D6FF00` hardcodeado por `var(--accent)` (y tintes). Resultado: precio, badge de estado, chip de operación, icono ✦ del resumen IA, precios de "otros anuncios" y el botón "Ver anuncio" se pintan lime (#D6FF00) si es venta y amarillo (#FFEC00) si es alquiler. UI global (sidebar, filtros, language toggle) sigue en lime.
 
 ### Pendientes
 

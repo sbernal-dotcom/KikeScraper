@@ -21,7 +21,7 @@ import {
   useFormatters,
 } from "@/i18n/LocaleProvider";
 
-import { precioPorM2 } from "../format";
+import { accentVars, precioPorM2 } from "../format";
 import type { Propiedad } from "../types";
 
 type PropertyCardProps = {
@@ -48,6 +48,7 @@ export function PropertyCard({
 
   return (
     <aside
+      style={accentVars(propiedad.tipoOperacion)}
       className={cn(
         "flex h-dvh w-[380px] max-w-[92vw] flex-col border-l border-border/60 bg-background/95 font-sans backdrop-blur-md",
         className,
@@ -61,8 +62,8 @@ export function PropertyCard({
             <span
               className="ml-1.5 inline-flex items-center rounded-sm px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide"
               style={{
-                color: "#D6FF00",
-                background: "rgba(214,255,0,0.1)",
+                color: "var(--accent)",
+                background: "var(--accent-soft)",
               }}
             >
               {labels.estado(propiedad.estadoAnuncio)}
@@ -92,7 +93,7 @@ export function PropertyCard({
           <div className="flex items-baseline gap-2">
             <span
               className="text-3xl font-bold tracking-tight"
-              style={{ color: "#D6FF00" }}
+              style={{ color: "var(--accent)" }}
             >
               {fmt.currency(propiedad.precio)}
             </span>
@@ -150,7 +151,7 @@ export function PropertyCard({
             <Separator className="my-5" />
             <section>
               <div className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                <Sparkles className="size-3.5" style={{ color: "#D6FF00" }} />
+                <Sparkles className="size-3.5" style={{ color: "var(--accent)" }} />
                 <span>{dict.card.ai_summary}</span>
               </div>
               <p className="text-sm leading-relaxed text-foreground/90">
@@ -199,7 +200,7 @@ export function PropertyCard({
                       href={a.urlOriginal}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-between gap-2 rounded-md border border-border/50 bg-card/30 px-3 py-2 text-xs transition-colors hover:border-[#D6FF00]/40 hover:bg-card/60"
+                      className="flex items-center justify-between gap-2 rounded-md border border-border/50 bg-card/30 px-3 py-2 text-xs transition-colors hover:bg-card/60"
                     >
                       <span className="flex min-w-0 items-center gap-2">
                         <ExternalLink className="size-3.5 shrink-0 text-muted-foreground" />
@@ -210,7 +211,7 @@ export function PropertyCard({
                       {a.precio !== undefined ? (
                         <span
                           className="shrink-0 tabular-nums"
-                          style={{ color: "#D6FF00" }}
+                          style={{ color: "var(--accent)" }}
                         >
                           {fmt.currency(a.precio)}
                         </span>
@@ -228,7 +229,7 @@ export function PropertyCard({
         <Button
           size="lg"
           className="w-full font-medium"
-          style={{ background: "#D6FF00", color: "#0a0a0a" }}
+          style={{ background: "var(--accent)", color: "var(--accent-text-on)" }}
           render={
             <a
               href={propiedad.urlOriginal}

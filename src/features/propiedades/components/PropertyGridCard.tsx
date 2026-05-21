@@ -20,7 +20,7 @@ import {
   useFormatters,
 } from "@/i18n/LocaleProvider";
 
-import { precioPorM2 } from "../format";
+import { accentVars, precioPorM2 } from "../format";
 import type { Propiedad } from "../types";
 
 type Props = {
@@ -43,8 +43,9 @@ export function PropertyGridCard({ propiedad, className }: Props) {
 
   return (
     <article
+      style={accentVars(propiedad.tipoOperacion)}
       className={cn(
-        "group flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card/40 transition-colors hover:border-[#D6FF00]/40 hover:bg-card/55",
+        "group flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card/40 transition-colors hover:bg-card/55",
         className,
       )}
     >
@@ -55,7 +56,7 @@ export function PropertyGridCard({ propiedad, className }: Props) {
           </span>
           <span
             className="rounded-sm px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider"
-            style={{ background: "rgba(214,255,0,0.14)", color: "#D6FF00" }}
+            style={{ background: "var(--accent-medium)", color: "var(--accent)" }}
           >
             {labels.tipoOperacion(propiedad.tipoOperacion)}
           </span>
@@ -85,7 +86,7 @@ export function PropertyGridCard({ propiedad, className }: Props) {
         <div className="flex items-baseline justify-between gap-2">
           <span
             className="text-2xl font-bold tracking-tight"
-            style={{ color: "#D6FF00" }}
+            style={{ color: "var(--accent)" }}
           >
             {fmt.currency(propiedad.precio)}
           </span>
@@ -133,7 +134,7 @@ export function PropertyGridCard({ propiedad, className }: Props) {
             <Separator />
             <div>
               <div className="mb-1 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                <Sparkles className="size-3" style={{ color: "#D6FF00" }} />
+                <Sparkles className="size-3" style={{ color: "var(--accent)" }} />
                 <span>{dict.card.ai_summary}</span>
               </div>
               <p className="line-clamp-3 text-xs leading-relaxed text-foreground/85">
@@ -161,7 +162,7 @@ export function PropertyGridCard({ propiedad, className }: Props) {
                       href={a.urlOriginal}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-between gap-2 rounded-md border border-border/50 bg-card/30 px-2 py-1.5 text-xs transition-colors hover:border-[#D6FF00]/40 hover:bg-card/60"
+                      className="flex items-center justify-between gap-2 rounded-md border border-border/50 bg-card/30 px-2 py-1.5 text-xs transition-colors hover:bg-card/60"
                     >
                       <span className="flex min-w-0 items-center gap-1.5">
                         <ExternalLink className="size-3 shrink-0 text-muted-foreground" />
@@ -172,7 +173,7 @@ export function PropertyGridCard({ propiedad, className }: Props) {
                       {a.precio !== undefined ? (
                         <span
                           className="shrink-0 tabular-nums"
-                          style={{ color: "#D6FF00" }}
+                          style={{ color: "var(--accent)" }}
                         >
                           {fmt.currency(a.precio)}
                         </span>
@@ -189,7 +190,7 @@ export function PropertyGridCard({ propiedad, className }: Props) {
           <Button
             size="sm"
             className="w-full font-medium"
-            style={{ background: "#D6FF00", color: "#0a0a0a" }}
+            style={{ background: "var(--accent)", color: "var(--accent-text-on)" }}
             render={
               <a
                 href={propiedad.urlOriginal}
