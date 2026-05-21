@@ -59,8 +59,11 @@ export function PropertyCard({
           <div className="flex flex-wrap items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
             <MapPin className="size-3" />
             <span className="truncate">{localizacion}</span>
+            <span className="ml-1.5 inline-flex items-center rounded-sm bg-background/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-foreground/85">
+              {labels.categoria(propiedad.categoria)}
+            </span>
             <span
-              className="ml-1.5 inline-flex items-center rounded-sm px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide"
+              className="inline-flex items-center rounded-sm px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide"
               style={{
                 color: "var(--accent)",
                 background: "var(--accent-soft)",
@@ -79,7 +82,7 @@ export function PropertyCard({
             </span>
           </div>
           <h2 className="text-lg font-semibold leading-tight tracking-tight">
-            {labels.categoria(propiedad.categoria)}
+            {propiedad.titulo}
           </h2>
         </div>
         <Button
@@ -244,7 +247,7 @@ export function PropertyCard({
             />
           }
         >
-          {dict.card.view_original}
+          {dict.card.view_original} — {propiedad.fuenteNombre}
           <ExternalLink className="ml-1 size-4" />
         </Button>
       </footer>
