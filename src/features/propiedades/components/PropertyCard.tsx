@@ -56,7 +56,7 @@ export function PropertyCard({
     >
       <header className="flex items-start justify-between gap-2 border-b border-border/60 px-5 py-4">
         <div className="min-w-0 space-y-1">
-          <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
             <MapPin className="size-3" />
             <span className="truncate">{localizacion}</span>
             <span
@@ -68,12 +68,18 @@ export function PropertyCard({
             >
               {labels.estado(propiedad.estadoAnuncio)}
             </span>
+            <span
+              className="inline-flex items-center rounded-sm px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide"
+              style={{
+                color: "var(--accent)",
+                background: "var(--accent-soft)",
+              }}
+            >
+              {labels.tipoOperacionCorto(propiedad.tipoOperacion)}
+            </span>
           </div>
           <h2 className="text-lg font-semibold leading-tight tracking-tight">
-            {labels.categoria(propiedad.categoria)}{" "}
-            <span className="font-normal text-muted-foreground">
-              {labels.tipoOperacion(propiedad.tipoOperacion)}
-            </span>
+            {labels.categoria(propiedad.categoria)}
           </h2>
         </div>
         <Button
