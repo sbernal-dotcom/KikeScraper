@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Building2,
-  Globe2,
   Info,
   Map as MapIcon,
   TrendingUp,
@@ -28,7 +27,7 @@ import { useDict } from "@/i18n/LocaleProvider";
 import { LanguageToggle } from "./LanguageToggle";
 
 type NavItem = {
-  key: "map" | "properties" | "sources" | "analysis" | "about";
+  key: "map" | "properties" | "analysis" | "about";
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   comingSoon?: boolean;
@@ -37,7 +36,6 @@ type NavItem = {
 const primaryNav: NavItem[] = [
   { key: "map", href: "/", icon: MapIcon },
   { key: "properties", href: "/propiedades", icon: Building2 },
-  { key: "sources", href: "/fuentes", icon: Globe2, comingSoon: true },
   { key: "analysis", href: "/analisis", icon: TrendingUp, comingSoon: true },
 ];
 
