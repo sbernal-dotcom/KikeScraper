@@ -15,22 +15,23 @@ import {
   emptyFilters,
   type PropiedadFilters,
 } from "@/features/propiedades/filters";
-import { mockPropiedades } from "@/features/propiedades/mock";
+import { usePropiedades } from "@/features/propiedades/usePropiedades";
 
 export default function PropiedadesPage() {
   const dict = useDict();
+  const { data: propiedades, loading, error } = usePropiedades();
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<PropiedadFilters>(emptyFilters);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const fuentesDisponibles = useMemo(
-    () => Array.from(new Set(mockPropiedades.map((p) => p.fuenteNombre))).sort(),
-    [],
+    () => Array.from(new Set(propiedades.map((p) => p.fuenteNombre))).sort(),
+    [propiedades],
   );
 
   const filtradas = useMemo(
-    () => applyFilters(mockPropiedades, query, filters),
-    [query, filters],
+    () => applyFilters(propiedades, query, filters),
+    [propiedades, query, filters],
   );
 
   const activos = countActiveFilters(filters);
@@ -61,7 +62,7 @@ export default function PropiedadesPage() {
 
         <div className="flex items-center justify-end gap-3">
           <span className="hidden text-xs text-muted-foreground sm:block">
-            {filtradas.length} {dict.common.of} {mockPropiedades.length}
+            {filtradas.length} {dict.common.of} {propiedades.length}
           </span>
           <Button
             type="button"
@@ -88,7 +89,15 @@ export default function PropiedadesPage() {
 
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          {filtradas.length === 0 ? (
+          {error ? (
+            <div className="flex h-64 items-center justify-center rounded-xl border border-destructive/40 text-sm text-destructive">
+              {error}
+            </div>
+          ) : loading ? (
+            <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
+              …
+            </div>
+          ) : filtradas.length === 0 ? (
             <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
               {dict.properties.empty_state}
             </div>
