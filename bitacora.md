@@ -66,13 +66,37 @@ A futuro, podría incluir una sección de análisis de rentabilidad para compara
 - **2026-05-20** — **i18n cliente** (es/en). `src/i18n/dictionaries.ts` con shape tipada. `LocaleProvider` (`src/i18n/LocaleProvider.tsx`) expone `useLocale`, `useDict`, `useFormatters` (Intl per locale: USD currency, fecha larga) y `useDomainLabels` (categoría/operación/condición/estado). Persistencia en `localStorage` con clave `mii.locale` + detección de `navigator.language`. **Toggle ES/EN** como segmented control en el footer del `AppSidebar`. Componentes traducidos: `AppSidebar`, `/propiedades`, `FilterPanel`, `PropertyCard`, `PropertyGridCard`, `MapView` (geocoder.setLanguage + setPlaceholder al cambiar locale, sin recrear el mapa). Para nuevas strings: agregar al dict y consumir con `useDict()`.
 - **2026-05-20** — **Multi-fuente por propiedad**. `Propiedad.otrosAnuncios?: AnuncioAdicional[]` (fuente, url, precio, fechaDeteccion). Permite mostrar la misma propiedad listada en varios portales (ej. Encuentra24, Compre o Alquile, Inmuebles 24) con sus precios respectivos. UI: sección "También publicado en" tanto en `PropertyCard` como en `PropertyGridCard`. Mock con 3 propiedades multi-fuente: Casco Viejo, San Francisco, Costa del Este.
 - **2026-05-20** — `PropertyGridCard` rediseñado: **sin imagen** (placeholder eliminado). Header con chips de categoría/operación + estado. Contiene toda la info (paridad con la side panel del mapa): título, precio, precio/m², specs, KV condición/fuente/fecha detectada/fecha publicada, resumen IA (line-clamp 3), lista de otros anuncios y CTA lime al anuncio principal.
+- **2026-05-20** — Fix de performance en marcadores: la transición de `transform` estaba en el root del marker (donde Mapbox aplica el translate de posición) → cada pan animaba 140ms y "se quedaban atrás". Ahora la transición vive en el SVG interno (hover/active scale) y el root se mueve al instante con el mapa.
+- **2026-05-20** — **Supabase conectado** (proyecto `lbvboqoyvuxuanwvtypf`). `@supabase/ssr` + `@supabase/supabase-js` instalados. Clientes en `src/lib/supabase/`:
+  - `client.ts` (browser, `createBrowserClient`),
+  - `server.ts` (RSC/Actions, `createServerClient` con cookies),
+  - `admin.ts` (`createClient` con `service_role` para tareas server-only — bypasea RLS),
+  - `types.ts` (stub `Database` — regenerar con `supabase gen types`).
+
+  Env vars añadidas a `.env.local` y `.env.example`: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`. **Pendiente:** agregar estas tres en Vercel.
+- **2026-05-20** — Schema inicial aplicado (`supabase/migrations/0001_init.sql`):
+  - Tablas `fuentes`, `propiedades`, `anuncios`.
+  - Enums Postgres: `tipo_operacion`, `categoria_propiedad`, `condicion_propiedad`, `estado_anuncio`, `moneda`.
+  - Índices sobre lat/lng, corregimiento, tipo_operacion, categoria, precio, estado.
+  - Trigger `touch_fecha_actualizacion` en `propiedades`.
+  - RLS habilitado en las 3 tablas con políticas de **lectura pública anónima**; escritura solo `service_role` (sin policies de insert/update/delete para anon/authenticated).
+  - Seed inicial de 3 fuentes: `encuentra24`, `compreoalquile`, `inmuebles24`.
+- **2026-05-20** — Seed de datos (`supabase/seed/0001_mock_propiedades.sql`): 10 propiedades del mock cargadas, con 3 de ellas (Casco Viejo, San Francisco, Costa del Este) con anuncios adicionales en otros portales. Total: 10 propiedades + 5 anuncios.
+- **2026-05-20** — **Páginas leyendo de Supabase**:
+  - `features/propiedades/api.ts` → `fetchPropiedades()` consulta con join (`propiedades + anuncios + fuentes`) y mapea snake_case ⇄ camelCase a la forma `Propiedad`.
+  - `features/propiedades/usePropiedades.ts` → hook `{ data, loading, error }` con load on mount.
+  - Home (mapa) y `/propiedades` migrados: ya no importan `mockPropiedades`. Manejo básico de loading/error.
+  - Verificado en dev: ambas páginas devuelven 200 y la query a Supabase trae las 10 propiedades + 5 anuncios.
+- **2026-05-20** — `mock.ts` queda en el repo como referencia/fallback offline, pero sin uso en producción.
 
 ### Pendientes
 
-- **Token restrictions en Mapbox** — agregar `http://localhost:3000/*` a la URL allowlist del token. Cuando exista dominio de Vercel, agregarlo también. Sin restricciones cualquiera puede usar el token desde otro sitio.
-- **Supabase** — pospuesto por decisión del usuario.
+- **Env vars en Vercel** — agregar `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` (Production, Preview, Development) y redeploy. Sin esto el deploy de prod no puede leer la DB.
+- **Token restrictions en Mapbox** — agregar `http://localhost:3000/*` a la URL allowlist del token. Cuando exista dominio de Vercel, agregarlo también.
+- **Tipos de Supabase** — regenerar `src/lib/supabase/types.ts` con `supabase gen types typescript --project-id lbvboqoyvuxuanwvtypf > src/lib/supabase/types.ts` (requiere `supabase` CLI o usar el dashboard).
+- **Rotar claves Supabase** — `anon` y `service_role` quedaron expuestas en el chat de desarrollo. Para producción real, rotar en Project → Settings → API → Reset keys.
 - **Scraper (Node.js + Playwright)** — pospuesto para fase muy posterior.
-- **Resumen IA y títulos en mock** — actualmente solo en español. Cuando integremos OpenAI habrá que generar/almacenar en ambos idiomas o traducir dinámicamente.
+- **Resumen IA y títulos** — actualmente solo en español. Cuando integremos OpenAI habrá que generar/almacenar en ambos idiomas o traducir dinámicamente.
 
 ## Notas Pendientes
 
