@@ -88,6 +88,7 @@ A futuro, podría incluir una sección de análisis de rentabilidad para compara
   - Home (mapa) y `/propiedades` migrados: ya no importan `mockPropiedades`. Manejo básico de loading/error.
   - Verificado en dev: ambas páginas devuelven 200 y la query a Supabase trae las 10 propiedades + 5 anuncios.
 - **2026-05-20** — `mock.ts` queda en el repo como referencia/fallback offline, pero sin uso en producción.
+- **2026-05-20** — Pines diferenciados por tipo de operación. `MARKER_COLOR_ALQUILER = #FFEC00` añadido en `mapbox/config.ts`. El marker root recibe la clase `.mii-marker--alquiler` cuando `tipoOperacion === "alquiler"`. Usa CSS custom properties (`--mii-fill`, `--mii-glow`) para que el SVG y el glow del drop-shadow cambien sin duplicar reglas. Venta = lime `#D6FF00` (sin cambios); alquiler = amarillo `#FFEC00`.
 
 ### Pendientes
 

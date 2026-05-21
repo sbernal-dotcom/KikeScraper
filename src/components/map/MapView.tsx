@@ -13,6 +13,7 @@ import {
   MAPBOX_STYLE,
   MAPBOX_TOKEN,
   MARKER_COLOR,
+  MARKER_COLOR_ALQUILER,
   PANAMA_CITY_CENTER,
 } from "@/lib/mapbox/config";
 import { cn } from "@/lib/utils";
@@ -162,6 +163,7 @@ export function MapView({
     propiedades.forEach((p) => {
       const el = document.createElement("div");
       el.className = "mii-marker";
+      if (p.tipoOperacion === "alquiler") el.classList.add("mii-marker--alquiler");
       if (selectedId === p.id) el.classList.add("mii-marker--active");
       el.innerHTML = `
         <svg viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -202,6 +204,12 @@ export function MapView({
           height: 24px;
           cursor: pointer;
           will-change: transform;
+          --mii-fill: ${MARKER_COLOR};
+          --mii-glow: 214, 255, 0;
+        }
+        .mii-marker--alquiler {
+          --mii-fill: ${MARKER_COLOR_ALQUILER};
+          --mii-glow: 255, 236, 0;
         }
         /* Hover/active effects live on the inner SVG so they don't fight
            the positional transform set by mapbox on the root. */
@@ -209,11 +217,11 @@ export function MapView({
           width: 100%;
           height: 100%;
           display: block;
-          fill: ${MARKER_COLOR};
+          fill: var(--mii-fill);
           transform-origin: 50% 100%;
           filter:
             drop-shadow(0 1.5px 3px rgba(0, 0, 0, 0.55))
-            drop-shadow(0 0 4px rgba(214, 255, 0, 0.3));
+            drop-shadow(0 0 4px rgba(var(--mii-glow), 0.3));
           transition: transform 140ms ease, filter 140ms ease;
         }
         .mii-marker:hover svg,
@@ -221,7 +229,7 @@ export function MapView({
           transform: scale(1.25);
           filter:
             drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6))
-            drop-shadow(0 0 12px rgba(214, 255, 0, 0.7));
+            drop-shadow(0 0 12px rgba(var(--mii-glow), 0.7));
         }
 
         /* Geocoder dark theme override */

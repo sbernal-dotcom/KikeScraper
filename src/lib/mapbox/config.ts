@@ -12,3 +12,4 @@ export const PANAMA_BOUNDS: [[number, number], [number, number]] = [
 export const DEFAULT_ZOOM = 11;
 
 export const MARKER_COLOR = "#D6FF00";
+export const MARKER_COLOR_ALQUILER = "#FFEC00";
