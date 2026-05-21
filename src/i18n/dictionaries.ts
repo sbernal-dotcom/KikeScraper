@@ -97,6 +97,14 @@ export type Dictionary = {
     score_tier_good: string;
     score_tier_normal: string;
     score_tier_overpriced: string;
+    kpi_strong_ops: string;
+    kpi_strong_ops_caption: string;
+    kpi_total_active: string;
+    kpi_total_active_caption: string;
+    kpi_avg_price_m2: string;
+    kpi_avg_price_m2_caption: string;
+    kpi_top_zone: string;
+    kpi_top_zone_caption: string;
   };
 };
 
@@ -201,6 +209,14 @@ const es: Dictionary = {
     score_tier_good: "Buena oportunidad",
     score_tier_normal: "Normal",
     score_tier_overpriced: "Sobrevalorado",
+    kpi_strong_ops: "Oportunidades fuertes",
+    kpi_strong_ops_caption: "score ≥ 70",
+    kpi_total_active: "Propiedades activas",
+    kpi_total_active_caption: "en análisis",
+    kpi_avg_price_m2: "Precio/m² promedio",
+    kpi_avg_price_m2_caption: "global",
+    kpi_top_zone: "Zona más activa",
+    kpi_top_zone_caption: "propiedades",
   },
 };
 
@@ -305,6 +321,14 @@ const en: Dictionary = {
     score_tier_good: "Good opportunity",
     score_tier_normal: "Normal",
     score_tier_overpriced: "Overpriced",
+    kpi_strong_ops: "Strong opportunities",
+    kpi_strong_ops_caption: "score ≥ 70",
+    kpi_total_active: "Active properties",
+    kpi_total_active_caption: "in analysis",
+    kpi_avg_price_m2: "Avg price/m²",
+    kpi_avg_price_m2_caption: "global",
+    kpi_top_zone: "Most active area",
+    kpi_top_zone_caption: "properties",
   },
 };
 
