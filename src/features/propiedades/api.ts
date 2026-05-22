@@ -198,9 +198,13 @@ export async function fetchOportunidades(): Promise<Oportunidad[]> {
 
 export async function fetchPropiedades(): Promise<Propiedad[]> {
   const supabase = createClient();
+  // Mismo filtro que vw_oportunidades para mantener paridad mapa ↔ análisis.
   const { data, error } = await supabase
     .from("propiedades")
     .select(SELECT)
+    .not("precio", "is", null)
+    .not("area_m2", "is", null)
+    .gt("area_m2", 0)
     .order("fecha_deteccion", { ascending: false });
 
   if (error) throw error;
