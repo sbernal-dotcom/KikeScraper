@@ -135,19 +135,14 @@ function Row({
             href={o.urlOriginal}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-between gap-2 rounded-md px-1.5 py-1 text-xs hover:bg-card/60"
+            className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-xs hover:bg-card/60"
             title={o.fuenteNombre}
           >
-            <span className="inline-flex min-w-0 items-center gap-1.5">
-              <ExternalLink className="size-3 shrink-0" style={{ color: "var(--accent)" }} />
-              <span className="truncate font-medium">{o.fuenteNombre}</span>
-            </span>
-            <span
-              className="shrink-0 tabular-nums"
+            <ExternalLink
+              className="size-3 shrink-0"
               style={{ color: "var(--accent)" }}
-            >
-              {fmt.currency(o.precio)}
-            </span>
+            />
+            <span className="truncate font-medium">{o.fuenteNombre}</span>
           </a>
           {o.otrosAnuncios.map((a) => (
             <a
@@ -155,21 +150,11 @@ function Row({
               href={a.urlOriginal}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-between gap-2 rounded-md border border-border/40 bg-card/30 px-1.5 py-1 text-[11px] text-muted-foreground hover:border-border hover:text-foreground"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border/40 bg-card/30 px-1.5 py-1 text-[11px] text-muted-foreground hover:border-border hover:text-foreground"
               title={a.fuenteNombre}
             >
-              <span className="inline-flex min-w-0 items-center gap-1.5">
-                <ExternalLink className="size-3 shrink-0" />
-                <span className="truncate">{a.fuenteNombre}</span>
-              </span>
-              {a.precio !== undefined ? (
-                <span
-                  className="shrink-0 tabular-nums"
-                  style={{ color: "var(--accent)" }}
-                >
-                  {fmt.currency(a.precio)}
-                </span>
-              ) : null}
+              <ExternalLink className="size-3 shrink-0" />
+              <span className="truncate">{a.fuenteNombre}</span>
             </a>
           ))}
         </div>

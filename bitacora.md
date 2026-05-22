@@ -89,6 +89,29 @@ A futuro, podría incluir una sección de análisis de rentabilidad para compara
   - Verificado en dev: ambas páginas devuelven 200 y la query a Supabase trae las 10 propiedades + 5 anuncios.
 - **2026-05-20** — `mock.ts` queda en el repo como referencia/fallback offline, pero sin uso en producción.
 - **2026-05-20** — Pines diferenciados por tipo de operación. `MARKER_COLOR_ALQUILER = #FFEC00` añadido en `mapbox/config.ts`. El marker root recibe la clase `.mii-marker--alquiler` cuando `tipoOperacion === "alquiler"`. Usa CSS custom properties (`--mii-fill`, `--mii-glow`) para que el SVG y el glow del drop-shadow cambien sin duplicar reglas. Venta = lime `#D6FF00` (sin cambios); alquiler = amarillo `#FFEC00`.
+- **2026-05-20** — Accent color por operación se propaga a las cards. Helper `operationAccent()` + `accentVars()` en `format.ts` que devuelve `--accent`, `--accent-soft`, `--accent-medium`, `--accent-text-on` como CSS vars inline. `PropertyCard` y `PropertyGridCard` aplican `accentVars(propiedad.tipoOperacion)` en el root y todos los acentos (precio, badges, sparkles del resumen IA, CTAs, precios de otros anuncios) consumen `var(--accent)`. Resultado: cards de alquiler en amarillo, venta en lime, sin código duplicado.
+- **2026-05-20** — Paridad de info pin ↔ /propiedades. `PropertyCard` (side panel) ahora muestra: badge de categoría neutral + badges de estado y operación en accent, título real (`propiedad.titulo`), CTA con nombre de la fuente principal. Side panel y grid card muestran exactamente la misma información, solo cambia el layout.
+- **2026-05-21** — Sidebar limpia: se quita "Sources / Fuentes" de la navegación (se queda solo Mapa, Propiedades, Análisis + Acerca de).
+- **2026-05-21** — Mock data ampliada: Casco Viejo gana 2 anuncios adicionales (Mercado Libre $392k, Metro Cuadrado $379.5k) para tener una propiedad con 4 portales. Se agregan 2 fuentes a la DB: `mercadolibre`, `metrocuadrado`.
+
+### Analytics V1 (2026-05-21)
+
+- **Migración `supabase/migrations/0002_analytics.sql`**:
+  - Generated column `precio_m2 = precio / nullif(area_m2, 0)` en `propiedades` (stored).
+  - Índices nuevos: `precio_m2` y `(corregimiento, tipo_operacion, categoria)`.
+  - Vista `vw_zona_benchmark` (security_invoker): por corregimiento + tipo_operacion + categoria → `n_comparables`, `avg_precio_m2`, `median_precio_m2`. Excluye terrenos del cálculo.
+  - Vista `vw_oportunidades` (security_invoker): join propiedad ↔ benchmark + fuente, expone `benchmark`, `descuento_pct`, `opportunity_score`, `confianza`. Incluye **todas** las propiedades activas (terrenos también, su score queda null por no tener comparable). Expone `otros_anuncios` como `jsonb_agg(...)` con cada anuncio adicional ({ fuente_id, fuente_nombre, url, precio, moneda, fecha_deteccion }).
+  - `GRANT SELECT` a `anon, authenticated`.
+- **Fórmula**: `benchmark = coalesce(median, avg)`. `descuento_pct = (benchmark - precio_m2) / benchmark * 100`. `opportunity_score = clamp(0, 100, 50 + descuento_pct * 2)`. Confianza: `<3 baja`, `3-7 media`, `≥8 alta`.
+- **Tipo `Oportunidad`** y `fetchOportunidades()` que consume la vista; mapeo snake_case ⇄ camelCase incluyendo `otrosAnuncios`. Hook `useOportunidades()`.
+- **Página `/analisis`**:
+  - Fila de **4 KPI cards**: oportunidades fuertes (score ≥ 70, en lime), total activas, precio/m² promedio, zona más activa. KPIs se recalculan sobre la data **filtrada**.
+  - **OpportunitiesTable**: columnas Score (badge tonalizado por tier: ≥90 verde fuerte, ≥70 lime, ≥50 amarillo, <50 rojo), Propiedad (título + categoría/operación), Zona, Precio (en accent), Área, $/m², Promedio zona, Desc.% (verde/rojo según signo), Confianza (badge con n), Fuente.
+  - Columna Fuente: anuncio principal en estilo destacado + cada anuncio adicional como link click-through al portal externo (sin precios — los precios viven en la columna $/m² y otras métricas de la tabla).
+  - Botón **Filtros** abre Sheet lateral con: Score mínimo (pills ≥50/≥70/≥90), Operación, Categoría, Confianza, Zona. Badge lime con contador de filtros activos.
+- **Sincronización con el mapa**: `AnalyticsFiltersProvider` en `AppShell` → estado de filtros compartido. La home aplica el subconjunto universal (operación / categoría / zona) a los pines vía `applyMapFilters()`; score y confianza no aplican al mapa porque vienen del view, no de propiedades. Indicador flotante en el mapa cuando hay filtros activos: chip con `visibles/total`, link a /analisis y X para limpiar.
+- **i18n**: agregados strings para columnas de tabla, KPIs, tiers de score, niveles de confianza, filtros de analytics.
+- **Pendiente**: cuando entren más propiedades reales, el opportunity_score empezará a diferenciarse (hoy todas las zonas tienen n=1 → score≈50). Considerar materialized view + refresh job cuando el dataset crezca.
 - **2026-05-20** — **Accent color por operación en TODA la UI de propiedad**, no solo pines. Helper en `features/propiedades/format.ts`:
   - `operationAccent(op)` → `{ color, rgb }`.
   - `accentVars(op)` → `React.CSSProperties` con `--accent`, `--accent-rgb`, `--accent-soft`, `--accent-medium`, `--accent-text-on`.
