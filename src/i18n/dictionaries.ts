@@ -105,6 +105,8 @@ export type Dictionary = {
     kpi_avg_price_m2_caption: string;
     kpi_top_zone: string;
     kpi_top_zone_caption: string;
+    filter_score_min: string;
+    filter_zone: string;
   };
 };
 
@@ -217,6 +219,8 @@ const es: Dictionary = {
     kpi_avg_price_m2_caption: "global",
     kpi_top_zone: "Zona más activa",
     kpi_top_zone_caption: "propiedades",
+    filter_score_min: "Score mínimo",
+    filter_zone: "Zona",
   },
 };
 
@@ -329,6 +333,8 @@ const en: Dictionary = {
     kpi_avg_price_m2_caption: "global",
     kpi_top_zone: "Most active area",
     kpi_top_zone_caption: "properties",
+    filter_score_min: "Min score",
+    filter_zone: "Area",
   },
 };
 

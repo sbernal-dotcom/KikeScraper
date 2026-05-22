@@ -1,11 +1,26 @@
 "use client";
 
-import { useMemo } from "react";
-import { Building2, MapPin, Sparkles, TrendingUp } from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  Building2,
+  MapPin,
+  Sparkles,
+  SlidersHorizontal,
+  TrendingUp,
+} from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useDict, useFormatters } from "@/i18n/LocaleProvider";
+import { AnalyticsFilterPanel } from "@/features/propiedades/components/AnalyticsFilterPanel";
 import { OpportunitiesTable } from "@/features/propiedades/components/OpportunitiesTable";
+import {
+  applyAnalyticsFilters,
+  countActiveAnalyticsFilters,
+  emptyAnalyticsFilters,
+  type AnalyticsFilters,
+} from "@/features/propiedades/analyticsFilters";
 import { useOportunidades } from "@/features/propiedades/useOportunidades";
 import type { Oportunidad } from "@/features/propiedades/types";
 
@@ -13,8 +28,24 @@ export default function AnalisisPage() {
   const dict = useDict();
   const fmt = useFormatters();
   const { data, loading, error } = useOportunidades();
+  const [filters, setFilters] = useState<AnalyticsFilters>(emptyAnalyticsFilters);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const kpis = useMemo(() => computeKpis(data), [data]);
+  const zonasDisponibles = useMemo(
+    () =>
+      Array.from(
+        new Set(data.map((o) => o.corregimiento).filter(Boolean) as string[]),
+      ).sort(),
+    [data],
+  );
+
+  const filtradas = useMemo(
+    () => applyAnalyticsFilters(data, filters),
+    [data, filters],
+  );
+
+  const kpis = useMemo(() => computeKpis(filtradas), [filtradas]);
+  const activos = countActiveAnalyticsFilters(filters);
 
   return (
     <div className="flex h-dvh flex-col">
@@ -31,6 +62,27 @@ export default function AnalisisPage() {
             {dict.analytics.subtitle}
           </p>
         </div>
+        <span className="hidden text-xs text-muted-foreground sm:block">
+          {filtradas.length} {dict.common.of} {data.length}
+        </span>
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          className="relative h-10 shrink-0 gap-2"
+          onClick={() => setFiltersOpen(true)}
+        >
+          <SlidersHorizontal className="size-4" />
+          <span className="hidden sm:inline">{dict.properties.filters}</span>
+          {activos > 0 ? (
+            <span
+              className="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-semibold leading-none"
+              style={{ background: "#D6FF00", color: "#0a0a0a" }}
+            >
+              {activos}
+            </span>
+          ) : null}
+        </Button>
       </header>
 
       <main className="flex-1 overflow-y-auto">
@@ -79,15 +131,25 @@ export default function AnalisisPage() {
             <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
               …
             </div>
-          ) : data.length === 0 ? (
+          ) : filtradas.length === 0 ? (
             <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
               {dict.analytics.no_data}
             </div>
           ) : (
-            <OpportunitiesTable items={data} />
+            <OpportunitiesTable items={filtradas} />
           )}
         </div>
       </main>
+
+      <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <SheetContent side="left" className="w-[320px] p-0 sm:max-w-[320px]">
+          <AnalyticsFilterPanel
+            filters={filters}
+            onChange={setFilters}
+            zonasDisponibles={zonasDisponibles}
+          />
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
