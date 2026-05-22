@@ -1,10 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { SlidersHorizontal, X } from "lucide-react";
 
 import { MapView } from "@/components/map/MapView";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useDict } from "@/i18n/LocaleProvider";
+import {
+  applyMapFilters,
+  useAnalyticsFiltersCtx,
+} from "@/features/propiedades/AnalyticsFiltersContext";
 import { PropertyCard } from "@/features/propiedades/components/PropertyCard";
 import { usePropiedades } from "@/features/propiedades/usePropiedades";
 import type { Propiedad } from "@/features/propiedades/types";
@@ -12,7 +18,13 @@ import type { Propiedad } from "@/features/propiedades/types";
 export default function Home() {
   const dict = useDict();
   const { data: propiedades, error } = usePropiedades();
+  const { filters, reset, activeCount } = useAnalyticsFiltersCtx();
   const [seleccionada, setSeleccionada] = useState<Propiedad | null>(null);
+
+  const visibles = useMemo(
+    () => applyMapFilters(propiedades, filters),
+    [propiedades, filters],
+  );
 
   return (
     <>
@@ -20,9 +32,39 @@ export default function Home() {
         aria-label={dict.nav.open_nav}
         className="absolute left-3 top-3 z-20 size-9 rounded-md border bg-background/80 shadow-sm backdrop-blur hover:bg-background"
       />
+
+      {activeCount > 0 ? (
+        <div className="absolute left-16 top-3 z-20 flex items-center gap-1 rounded-md border border-border/60 bg-background/85 px-2 py-1.5 text-xs shadow-sm backdrop-blur">
+          <Link
+            href="/analisis"
+            className="inline-flex items-center gap-1.5 font-medium hover:text-foreground"
+            title={dict.properties.filters}
+          >
+            <SlidersHorizontal className="size-3.5" />
+            <span>
+              {visibles.length} / {propiedades.length}
+            </span>
+            <span
+              className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold leading-none"
+              style={{ background: "#D6FF00", color: "#0a0a0a" }}
+            >
+              {activeCount}
+            </span>
+          </Link>
+          <button
+            type="button"
+            onClick={reset}
+            aria-label={dict.common.clear}
+            className="ml-0.5 inline-flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
+      ) : null}
+
       <MapView
         className="h-full w-full"
-        propiedades={propiedades}
+        propiedades={visibles}
         selectedId={seleccionada?.id ?? null}
         onSelect={setSeleccionada}
         rightInsetPx={seleccionada ? 380 : 0}

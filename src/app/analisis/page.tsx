@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useAnalyticsFiltersCtx } from "@/features/propiedades/AnalyticsFiltersContext";
 import {
   Building2,
   MapPin,
@@ -15,12 +16,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useDict, useFormatters } from "@/i18n/LocaleProvider";
 import { AnalyticsFilterPanel } from "@/features/propiedades/components/AnalyticsFilterPanel";
 import { OpportunitiesTable } from "@/features/propiedades/components/OpportunitiesTable";
-import {
-  applyAnalyticsFilters,
-  countActiveAnalyticsFilters,
-  emptyAnalyticsFilters,
-  type AnalyticsFilters,
-} from "@/features/propiedades/analyticsFilters";
+import { applyAnalyticsFilters } from "@/features/propiedades/analyticsFilters";
 import { useOportunidades } from "@/features/propiedades/useOportunidades";
 import type { Oportunidad } from "@/features/propiedades/types";
 
@@ -28,7 +24,7 @@ export default function AnalisisPage() {
   const dict = useDict();
   const fmt = useFormatters();
   const { data, loading, error } = useOportunidades();
-  const [filters, setFilters] = useState<AnalyticsFilters>(emptyAnalyticsFilters);
+  const { filters, setFilters, activeCount: activos } = useAnalyticsFiltersCtx();
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const zonasDisponibles = useMemo(
@@ -45,7 +41,6 @@ export default function AnalisisPage() {
   );
 
   const kpis = useMemo(() => computeKpis(filtradas), [filtradas]);
-  const activos = countActiveAnalyticsFilters(filters);
 
   return (
     <div className="flex h-dvh flex-col">
