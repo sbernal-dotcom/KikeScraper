@@ -50,6 +50,7 @@ export interface Oportunidad {
   descuentoPct: number | null;
   opportunityScore: number | null;
   confianza: ConfianzaScore;
+  otrosAnuncios: AnuncioAdicional[];
 }
 
 export interface AnuncioAdicional {

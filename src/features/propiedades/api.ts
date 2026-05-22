@@ -138,6 +138,14 @@ type DbOportunidad = {
   descuento_pct: number | string | null;
   opportunity_score: number | string | null;
   confianza: ConfianzaScore;
+  otros_anuncios: Array<{
+    fuente_id: string;
+    fuente_nombre: string | null;
+    url_original: string;
+    precio: number | string | null;
+    moneda: Moneda | null;
+    fecha_deteccion: string | null;
+  }> | null;
 };
 
 function mapOportunidad(r: DbOportunidad): Oportunidad {
@@ -166,6 +174,14 @@ function mapOportunidad(r: DbOportunidad): Oportunidad {
     descuentoPct: toNumber(r.descuento_pct) ?? null,
     opportunityScore: toNumber(r.opportunity_score) ?? null,
     confianza: r.confianza,
+    otrosAnuncios: (r.otros_anuncios ?? []).map((a) => ({
+      fuenteId: a.fuente_id,
+      fuenteNombre: a.fuente_nombre ?? a.fuente_id,
+      urlOriginal: a.url_original,
+      precio: toNumber(a.precio),
+      moneda: a.moneda ?? undefined,
+      fechaDeteccion: a.fecha_deteccion ?? undefined,
+    })),
   };
 }
 
