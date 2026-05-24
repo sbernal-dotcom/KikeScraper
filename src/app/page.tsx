@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
@@ -18,6 +18,15 @@ import { usePropiedades } from "@/features/propiedades/usePropiedades";
 import type { Propiedad } from "@/features/propiedades/types";
 
 export default function Home() {
+  // useSearchParams obliga a wrap en Suspense para el build de producción.
+  return (
+    <Suspense fallback={null}>
+      <HomeContent />
+    </Suspense>
+  );
+}
+
+function HomeContent() {
   const dict = useDict();
   const { data: propiedades, error } = usePropiedades();
   const { filters, reset, activeCount } = useAnalyticsFiltersCtx();
