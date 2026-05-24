@@ -216,11 +216,13 @@ export function MapView({
           --mii-fill: ${MARKER_COLOR_ALQUILER};
           --mii-glow: 255, 236, 0;
         }
-        /* Pines scrapeados ("Nuevo"): chip arriba del pin con el color de su operación. */
+        /* Pines scrapeados ("Nuevo"): chip arriba del pin con el color de su operación.
+           Anclado al CENTRO-TOP del marker (que mide 18x24 con anchor:bottom),
+           usando translate puro para evitar conflicto con position:absolute de Mapbox. */
         .mii-marker__badge {
           position: absolute;
-          bottom: calc(100% + 2px);
-          left: 50%;
+          top: -10px;
+          left: 9px;
           transform: translateX(-50%);
           padding: 1px 5px;
           font-family: var(--font-geist-sans), system-ui, sans-serif;

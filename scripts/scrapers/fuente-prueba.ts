@@ -308,7 +308,7 @@ async function scrape(page: Page): Promise<AnuncioRaw[]> {
   // porque son rangos promocionales ("desde X, 1-3 recámaras") no comparables
   // y romperían los cálculos de opportunity_score.
   const found = await page
-    .locator('a[href*="/panama-es/bienes-raices"][href*="-a"]')
+    .locator('a[href*="/panama-es/bienes-raices"]')
     .evaluateAll((nodes, max) => {
       const seen = new Set<string>();
       const out: Array<{ url: string; titulo: string | null }> = [];
