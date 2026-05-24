@@ -29,6 +29,11 @@ export default function PropiedadesPage() {
     [propiedades],
   );
 
+  const previewCount = useMemo(
+    () => propiedades.filter((p) => p.id.startsWith("preview:")).length,
+    [propiedades],
+  );
+
   const filtradas = useMemo(
     () => applyFilters(propiedades, query, filters),
     [propiedades, query, filters],
@@ -61,6 +66,18 @@ export default function PropiedadesPage() {
         </div>
 
         <div className="flex items-center justify-end gap-3">
+          {previewCount > 0 ? (
+            <span
+              className="hidden rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider sm:inline-flex"
+              style={{
+                background: "rgba(214,255,0,0.18)",
+                color: "#D6FF00",
+                borderColor: "rgba(214,255,0,0.5)",
+              }}
+            >
+              Preview · {previewCount}
+            </span>
+          ) : null}
           <span className="hidden text-xs text-muted-foreground sm:block">
             {filtradas.length} {dict.common.of} {propiedades.length}
           </span>

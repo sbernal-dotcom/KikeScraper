@@ -1,6 +1,16 @@
 "use client";
 
-import type { CategoriaPropiedad, Propiedad, TipoOperacion } from "./types";
+import type {
+  CategoriaPropiedad,
+  Oportunidad,
+  Propiedad,
+  TipoOperacion,
+} from "./types";
+
+export function isPreviewEnabled(): boolean {
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).get("preview") === "1";
+}
 
 type ScrapedRow = {
   titulo: string | null;
@@ -80,15 +90,58 @@ function toPropiedad(row: ScrapedRow): Propiedad | null {
   };
 }
 
-export async function fetchPreviewPropiedades(): Promise<Propiedad[]> {
+async function fetchPreviewFile(): Promise<ScrapePreviewFile | null> {
   try {
     const res = await fetch("/scrape-preview.json", { cache: "no-store" });
-    if (!res.ok) return [];
-    const file = (await res.json()) as ScrapePreviewFile;
-    return file.results
-      .map(toPropiedad)
-      .filter((p): p is Propiedad => p !== null);
+    if (!res.ok) return null;
+    return (await res.json()) as ScrapePreviewFile;
   } catch {
-    return [];
+    return null;
   }
+}
+
+export async function fetchPreviewPropiedades(): Promise<Propiedad[]> {
+  const file = await fetchPreviewFile();
+  if (!file) return [];
+  return file.results
+    .map(toPropiedad)
+    .filter((p): p is Propiedad => p !== null);
+}
+
+function toOportunidad(row: ScrapedRow): Oportunidad | null {
+  if (row.precio === null || row.area_m2 === null || row.area_m2 <= 0)
+    return null;
+  const fuenteNombre = FUENTE_NOMBRES[row.fuente] ?? row.fuente;
+  return {
+    id: `preview:${row.url_original}`,
+    titulo: row.titulo ?? "(sin título)",
+    precio: row.precio,
+    moneda: "USD",
+    areaM2: row.area_m2,
+    precioM2: row.precio / row.area_m2,
+    tipoOperacion: tipoOperacionFromUrl(row.url_original),
+    categoria: categoriaFromUrl(row.url_original),
+    estadoAnuncio: "activo",
+    corregimiento: row.zona ?? undefined,
+    fuenteId: row.fuente,
+    fuenteNombre,
+    urlOriginal: row.url_original,
+    fechaDeteccion: row.fecha_deteccion,
+    nComparables: null,
+    avgPrecioM2: null,
+    medianPrecioM2: null,
+    benchmark: null,
+    descuentoPct: null,
+    opportunityScore: null,
+    confianza: "baja",
+    otrosAnuncios: [],
+  };
+}
+
+export async function fetchPreviewOportunidades(): Promise<Oportunidad[]> {
+  const file = await fetchPreviewFile();
+  if (!file) return [];
+  return file.results
+    .map(toOportunidad)
+    .filter((o): o is Oportunidad => o !== null);
 }

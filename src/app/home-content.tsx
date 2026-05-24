@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
@@ -13,7 +13,6 @@ import {
   useAnalyticsFiltersCtx,
 } from "@/features/propiedades/AnalyticsFiltersContext";
 import { PropertyCard } from "@/features/propiedades/components/PropertyCard";
-import { fetchPreviewPropiedades } from "@/features/propiedades/preview";
 import { usePropiedades } from "@/features/propiedades/usePropiedades";
 import type { Propiedad } from "@/features/propiedades/types";
 
@@ -25,30 +24,15 @@ export function HomeContent() {
 
   const searchParams = useSearchParams();
   const previewEnabled = searchParams.get("preview") === "1";
-  const [previewData, setPreviewData] = useState<Propiedad[]>([]);
-
-  useEffect(() => {
-    if (!previewEnabled) {
-      setPreviewData([]);
-      return;
-    }
-    let cancelled = false;
-    fetchPreviewPropiedades().then((data) => {
-      if (!cancelled) setPreviewData(data);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [previewEnabled]);
-
-  const merged = useMemo(
-    () => (previewEnabled ? [...propiedades, ...previewData] : propiedades),
-    [propiedades, previewData, previewEnabled],
-  );
 
   const visibles = useMemo(
-    () => applyMapFilters(merged, filters),
-    [merged, filters],
+    () => applyMapFilters(propiedades, filters),
+    [propiedades, filters],
+  );
+
+  const previewCount = useMemo(
+    () => propiedades.filter((p) => p.id.startsWith("preview:")).length,
+    [propiedades],
   );
 
   return (
@@ -68,7 +52,7 @@ export function HomeContent() {
           }}
           title="Mostrando anuncios scrapeados desde public/scrape-preview.json (no guardados en DB)"
         >
-          Preview · {previewData.length} scrapeados
+          Preview · {previewCount} scrapeados
         </div>
       ) : null}
 

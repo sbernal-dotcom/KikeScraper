@@ -40,6 +40,11 @@ export default function AnalisisPage() {
     [data, filters],
   );
 
+  const previewCount = useMemo(
+    () => data.filter((o) => o.id.startsWith("preview:")).length,
+    [data],
+  );
+
   const kpis = useMemo(() => computeKpis(filtradas), [filtradas]);
 
   return (
@@ -57,6 +62,18 @@ export default function AnalisisPage() {
             {dict.analytics.subtitle}
           </p>
         </div>
+        {previewCount > 0 ? (
+          <span
+            className="hidden rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider sm:inline-flex"
+            style={{
+              background: "rgba(214,255,0,0.18)",
+              color: "#D6FF00",
+              borderColor: "rgba(214,255,0,0.5)",
+            }}
+          >
+            Preview · {previewCount}
+          </span>
+        ) : null}
         <span className="hidden text-xs text-muted-foreground sm:block">
           {filtradas.length} {dict.common.of} {data.length}
         </span>

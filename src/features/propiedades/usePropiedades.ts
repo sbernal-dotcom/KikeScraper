@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { fetchPropiedades } from "./api";
+import { fetchPreviewPropiedades, isPreviewEnabled } from "./preview";
 import type { Propiedad } from "./types";
 
 type State = {
@@ -20,9 +21,15 @@ export function usePropiedades(): State {
 
   useEffect(() => {
     let cancelled = false;
-    fetchPropiedades()
-      .then((data) => {
-        if (!cancelled) setState({ data, loading: false, error: null });
+    const preview = isPreviewEnabled();
+    const tasks: [Promise<Propiedad[]>, Promise<Propiedad[]>] = [
+      fetchPropiedades(),
+      preview ? fetchPreviewPropiedades() : Promise.resolve([]),
+    ];
+    Promise.all(tasks)
+      .then(([base, extra]) => {
+        if (!cancelled)
+          setState({ data: [...base, ...extra], loading: false, error: null });
       })
       .catch((err: Error) => {
         if (!cancelled)

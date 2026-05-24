@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { fetchOportunidades } from "./api";
+import { fetchPreviewOportunidades, isPreviewEnabled } from "./preview";
 import type { Oportunidad } from "./types";
 
 export function useOportunidades() {
@@ -14,9 +15,15 @@ export function useOportunidades() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchOportunidades()
-      .then((data) => {
-        if (!cancelled) setState({ data, loading: false, error: null });
+    const preview = isPreviewEnabled();
+    const tasks: [Promise<Oportunidad[]>, Promise<Oportunidad[]>] = [
+      fetchOportunidades(),
+      preview ? fetchPreviewOportunidades() : Promise.resolve([]),
+    ];
+    Promise.all(tasks)
+      .then(([base, extra]) => {
+        if (!cancelled)
+          setState({ data: [...base, ...extra], loading: false, error: null });
       })
       .catch((err: Error) => {
         if (!cancelled)
