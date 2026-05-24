@@ -160,16 +160,20 @@ export function MapView({
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
+    const newLabel = dict.common.new_badge.toUpperCase();
     propiedades.forEach((p) => {
       const el = document.createElement("div");
       el.className = "mii-marker";
       if (p.tipoOperacion === "alquiler") el.classList.add("mii-marker--alquiler");
       if (selectedId === p.id) el.classList.add("mii-marker--active");
+      const isPreview = p.id.startsWith("preview:");
+      if (isPreview) el.classList.add("mii-marker--nuevo");
       el.innerHTML = `
         <svg viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <path fill-rule="evenodd" clip-rule="evenodd"
                 d="M12 0C5.373 0 0 5.373 0 12c0 8.4 12 20 12 20s12-11.6 12-20c0-6.627-5.373-12-12-12zm0 7a5 5 0 100 10 5 5 0 000-10z" />
         </svg>
+        ${isPreview ? `<span class="mii-marker__badge">${newLabel}</span>` : ""}
       `;
       el.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -180,7 +184,7 @@ export function MapView({
         .addTo(map);
       markersRef.current.push(marker);
     });
-  }, [propiedades, onSelect, selectedId]);
+  }, [propiedades, onSelect, selectedId, dict.common.new_badge]);
 
   if (!MAPBOX_TOKEN) {
     return (
@@ -200,6 +204,7 @@ export function MapView({
       <style>{`
         /* Marker root: positioned by mapbox via transform — NEVER transition this */
         .mii-marker {
+          position: relative;
           width: 18px;
           height: 24px;
           cursor: pointer;
@@ -210,6 +215,26 @@ export function MapView({
         .mii-marker--alquiler {
           --mii-fill: ${MARKER_COLOR_ALQUILER};
           --mii-glow: 255, 236, 0;
+        }
+        /* Pines scrapeados ("Nuevo"): chip arriba del pin con el color de su operación. */
+        .mii-marker__badge {
+          position: absolute;
+          bottom: calc(100% + 2px);
+          left: 50%;
+          transform: translateX(-50%);
+          padding: 1px 5px;
+          font-family: var(--font-geist-sans), system-ui, sans-serif;
+          font-size: 8px;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          line-height: 1;
+          color: #0a0a0a;
+          background: var(--mii-fill);
+          border-radius: 3px;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+          pointer-events: none;
+          white-space: nowrap;
+          z-index: 1;
         }
         /* Hover/active effects live on the inner SVG so they don't fight
            the positional transform set by mapbox on the root. */
