@@ -215,6 +215,67 @@ function extractImage(img: LdProduct["image"]): string | null {
   return img.contentUrl ?? null;
 }
 
+type Caracteristicas = {
+  area_m2: number | null;
+  habitaciones: number | null;
+  banos: number | null;
+  estacionamientos: number | null;
+};
+
+/**
+ * Lee el bloque "Características" del HTML de encuentra24, donde cada
+ * par está estructurado como [valor][etiqueta] dentro de un mismo div.
+ * Es más confiable que la descripción libre del agente.
+ *
+ * Devuelve pares {label, value} crudos; el parseo numérico se hace
+ * fuera del browser (page.evaluate no tolera arrow functions anidadas
+ * compiladas por tsx — inyectan helpers que no existen en el browser).
+ */
+async function parseFromHtml(page: Page): Promise<Caracteristicas> {
+  const pairs = (await page.$$eval(
+    'span.text-muted-foreground, span[class*="text-muted"]',
+    (nodes) =>
+      nodes
+        .map((label) => {
+          const text = (label.textContent || "").trim();
+          if (!text || text.length > 40) return null;
+          // En encuentra24 la etiqueta va primero y el valor es el sibling siguiente.
+          const valueEl = label.nextElementSibling;
+          if (!valueEl) return null;
+          const value = (valueEl.textContent || "").trim();
+          if (!value) return null;
+          return { label: text, value };
+        })
+        .filter(Boolean),
+  )) as Array<{ label: string; value: string }>;
+
+  const out: Caracteristicas = {
+    area_m2: null,
+    habitaciones: null,
+    banos: null,
+    estacionamientos: null,
+  };
+
+  const reArea = /(?:^|\b)(?:área|area|m[²2]|metros?\s*cuadrados?)/i;
+  const reHab = /recámaras?|recamaras?|habitaciones?|dormitorios?/i;
+  const reBan = /ba(?:ñ|n)os?/i;
+  const reEst = /estacionamientos?|parqueos?|puestos?|parking/i;
+
+  for (const { label, value } of pairs) {
+    if ((reArea.test(label) || reArea.test(value)) && out.area_m2 === null) {
+      out.area_m2 = toNumber(value);
+    } else if (reHab.test(label) && out.habitaciones === null) {
+      out.habitaciones = toNumber(value);
+    } else if (reBan.test(label) && out.banos === null) {
+      out.banos = toNumber(value);
+    } else if (reEst.test(label) && out.estacionamientos === null) {
+      out.estacionamientos = toNumber(value);
+    }
+  }
+
+  return out;
+}
+
 function parseFromDescription(desc: string): {
   area_m2: number | null;
   habitaciones: number | null;
@@ -280,6 +341,11 @@ async function scrape(page: Page): Promise<AnuncioRaw[]> {
         console.warn(`  HTTP ${res?.status() ?? "??"} — saltando`);
         continue;
       }
+      // Espera a que React hidrate el bloque de características.
+      // SPA con hidratación lenta — networkidle es más confiable que DOM ready.
+      await page
+        .waitForLoadState("networkidle", { timeout: 8000 })
+        .catch(() => null);
       if (
         await page.locator('text=/captcha|verify|robot/i').first().isVisible().catch(() => false)
       ) {
@@ -312,8 +378,14 @@ async function scrape(page: Page): Promise<AnuncioRaw[]> {
       const precio = toNumber(String(product.offers?.price ?? ""));
       const addr = product.offers?.availableAtOrFrom?.address;
       const zona = addr?.addressLocality ?? addr?.streetAddress ?? null;
-      const { area_m2, habitaciones, banos, estacionamientos } =
-        parseFromDescription(product.description ?? "");
+      // Fuente primaria: HTML estructurado. Fallback: parseo de la descripción.
+      const fromHtml = await parseFromHtml(page);
+      const fromDesc = parseFromDescription(product.description ?? "");
+      const area_m2 = fromHtml.area_m2 ?? fromDesc.area_m2;
+      const habitaciones = fromHtml.habitaciones ?? fromDesc.habitaciones;
+      const banos = fromHtml.banos ?? fromDesc.banos;
+      const estacionamientos =
+        fromHtml.estacionamientos ?? fromDesc.estacionamientos;
 
       const coords = await geocodeZona(zona);
       if (coords) {

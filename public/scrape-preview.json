@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-05-24T13:03:20.926Z",
+  "generated_at": "2026-05-24T13:19:55.687Z",
   "fuente": "encuentra24",
   "results": [
     {
       "titulo": "Apartamento a Estrenar | Costa del Este",
       "precio": 482000,
       "moneda": "PAB",
-      "area_m2": null,
-      "habitaciones": null,
-      "banos": null,
-      "estacionamientos": null,
+      "area_m2": 100,
+      "habitaciones": 2,
+      "banos": 2,
+      "estacionamientos": 1,
       "zona": "Costa del Este",
       "lat": 9.01318,
       "lng": -79.4680717,
@@ -18,16 +18,16 @@
       "vendedor": "PRIVE REAL ESTATE",
       "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-apartamentos/apartamento-a-estrenar-costa-del-este/32405206",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-24T13:03:01.173Z"
+      "fecha_deteccion": "2026-05-24T13:19:25.674Z"
     },
     {
       "titulo": "Apartamento a Estrenar | Coco Del Mar",
       "precio": 375000,
       "moneda": "PAB",
-      "area_m2": null,
-      "habitaciones": null,
-      "banos": null,
-      "estacionamientos": null,
+      "area_m2": 107,
+      "habitaciones": 2,
+      "banos": 2,
+      "estacionamientos": 1,
       "zona": "Coco del Mar",
       "lat": 8.9958601,
       "lng": -79.4966415,
@@ -36,16 +36,16 @@
       "vendedor": "PRIVE REAL ESTATE",
       "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-apartamentos/apartamento-a-estrenar-coco-del-mar/32409708",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-24T13:03:05.798Z"
+      "fecha_deteccion": "2026-05-24T13:19:32.127Z"
     },
     {
       "titulo": "Apartamento a Estrenar | Santa Maria",
       "precio": 665000,
       "moneda": "PAB",
-      "area_m2": null,
-      "habitaciones": 4,
-      "banos": null,
-      "estacionamientos": null,
+      "area_m2": 160,
+      "habitaciones": 3,
+      "banos": 3.5,
+      "estacionamientos": 2,
       "zona": "Santa María",
       "lat": 9.0407684,
       "lng": -79.5215332,
@@ -54,16 +54,16 @@
       "vendedor": "PRIVE REAL ESTATE",
       "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-apartamentos/apartamento-a-estrenar-santa-maria/32309310",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-24T13:03:10.705Z"
+      "fecha_deteccion": "2026-05-24T13:19:40.779Z"
     },
     {
       "titulo": "Apartamento a Estrenar | Santa María",
       "precio": 950000,
       "moneda": "PAB",
-      "area_m2": null,
-      "habitaciones": 4,
-      "banos": null,
-      "estacionamientos": null,
+      "area_m2": 256,
+      "habitaciones": 3,
+      "banos": 3.5,
+      "estacionamientos": 3,
       "zona": "Santa María",
       "lat": 9.0407684,
       "lng": -79.5215332,
@@ -72,7 +72,7 @@
       "vendedor": "PRIVE REAL ESTATE",
       "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-apartamentos/apartamento-a-estrenar-santa-maria/32371556",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-24T13:03:16.542Z"
+      "fecha_deteccion": "2026-05-24T13:19:48.875Z"
     },
     {
       "titulo": "TERRENO COMERCIAL 02 HAS PEGADO A VÍA GUARARÉ-LAS TABLAS!!",
@@ -90,7 +90,7 @@
       "vendedor": "JAVIER AROSEMENA",
       "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-lotes-y-terrenos/terreno-comercial-02-has-pegado-a-via-guarare-las-tablas/24654182",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-24T13:03:20.926Z"
+      "fecha_deteccion": "2026-05-24T13:19:55.687Z"
     }
   ]
 }
