@@ -33,6 +33,7 @@ const USER_AGENT =
 type AnuncioRaw = {
   titulo: string | null;
   precio: number | null;
+  moneda: "USD" | "PAB" | null;
   area_m2: number | null;
   habitaciones: number | null;
   banos: number | null;
@@ -40,6 +41,9 @@ type AnuncioRaw = {
   zona: string | null;
   lat: number | null;
   lng: number | null;
+  descripcion: string | null;
+  imagen: string | null;
+  vendedor: string | null;
   url_original: string;
   fuente: string;
   fecha_deteccion: string;
@@ -52,20 +56,16 @@ const jitter = (min = 800, max = 2000) =>
 // Nominatim (OpenStreetMap) — geocoding gratis.
 // Reglas: máx 1 req/seg, User-Agent identificable, atribución a OSM en la UI.
 let lastNominatimAt = 0;
-async function geocodeZona(
-  zona: string | null,
-): Promise<{ lat: number; lng: number } | null> {
-  if (!zona || zona.trim().length < 3) return null;
 
-  // Rate limit: 1 request por segundo (margen 1100 ms).
+async function nominatimQuery(
+  q: string,
+): Promise<{ lat: number; lng: number } | null> {
   const elapsed = Date.now() - lastNominatimAt;
   if (elapsed < 1100) await sleep(1100 - elapsed);
   lastNominatimAt = Date.now();
 
-  // Consulta nivel zona/distrito — NO direcciones exactas.
-  const q = encodeURIComponent(`${zona}, Panamá`);
   const url =
-    `https://nominatim.openstreetmap.org/search?q=${q}` +
+    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}` +
     `&format=jsonv2&limit=1&countrycodes=pa&addressdetails=1`;
 
   try {
@@ -84,7 +84,6 @@ async function geocodeZona(
     if (!data.length) return null;
     const top = data[0];
     const addr = top.address ?? {};
-    // Solo aceptar si Nominatim resolvió al menos a nivel de barrio/distrito/ciudad.
     const ok =
       addr.suburb ||
       addr.neighbourhood ||
@@ -103,11 +102,43 @@ async function geocodeZona(
   }
 }
 
+async function geocodeZona(
+  zona: string | null,
+): Promise<{ lat: number; lng: number } | null> {
+  if (!zona || zona.trim().length < 3) return null;
+  // Intento 1: "Zona, Panamá"
+  const first = await nominatimQuery(`${zona}, Panamá`);
+  if (first) return first;
+  // Intento 2: "Zona, Ciudad de Panamá, Panamá" para corregimientos
+  // poco identificables a nivel país (ej. "Santa María").
+  return nominatimQuery(`${zona}, Ciudad de Panamá, Panamá`);
+}
+
+/**
+ * Parsea números asumiendo locale US (coma=miles, punto=decimal),
+ * que es la convención dominante en inmuebles en Panamá.
+ * Ejemplos:
+ *   "20,536"     → 20536  (miles)
+ *   "146 m²"     → 146
+ *   "1,425.50"   → 1425.5 (miles + decimal)
+ *   "1.42"       → 1.42   (decimal)
+ */
 function toNumber(text: string | null | undefined): number | null {
-  if (!text) return null;
-  const cleaned = text.replace(/[^\d.,]/g, "").replace(/\.(?=\d{3}\b)/g, "");
-  const normalized = cleaned.replace(",", ".");
-  const n = Number(normalized);
+  if (text == null) return null;
+  let s = String(text).replace(/[^\d.,]/g, "");
+  if (!s) return null;
+  const hasComma = s.includes(",");
+  const hasDot = s.includes(".");
+  if (hasComma && hasDot) {
+    s = s.replace(/,/g, "");
+  } else if (hasComma) {
+    if (/^\d{1,3}(,\d{3})+$/.test(s)) {
+      s = s.replace(/,/g, "");
+    } else {
+      s = s.replace(",", ".");
+    }
+  }
+  const n = Number(s);
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
@@ -152,8 +183,37 @@ type LdProduct = {
         addressRegion?: string;
       };
     };
+    seller?: {
+      name?: string;
+    };
   };
+  image?: { contentUrl?: string } | string;
 };
+
+const DESCRIPCION_MAX = 280;
+function trimDescripcion(desc: string | undefined): string | null {
+  if (!desc) return null;
+  const clean = desc
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!clean) return null;
+  if (clean.length <= DESCRIPCION_MAX) return clean;
+  return clean.slice(0, DESCRIPCION_MAX).trimEnd() + "…";
+}
+
+function normalizeMoneda(c: string | undefined): "USD" | "PAB" | null {
+  if (!c) return null;
+  const v = c.toUpperCase();
+  if (v === "USD" || v === "PAB") return v;
+  return null;
+}
+
+function extractImage(img: LdProduct["image"]): string | null {
+  if (!img) return null;
+  if (typeof img === "string") return img;
+  return img.contentUrl ?? null;
+}
 
 function parseFromDescription(desc: string): {
   area_m2: number | null;
@@ -162,9 +222,12 @@ function parseFromDescription(desc: string): {
   estacionamientos: number | null;
 } {
   const clean = desc.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
-  const area_m2 = toNumber(
-    clean.match(/(\d+(?:[.,]\d+)?)\s*m[t]?[²2]/i)?.[1] ?? null,
+  // Acepta: 146 m², 146 m2, 146 mt2, 146 mts2, 146 mtrs2, 20,536 Mts2,
+  // 146 metros cuadrados, 146mts²
+  const areaMatch = clean.match(
+    /(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d+)?)\s*(?:m(?:t|ts|trs)?[²2]|metros?\s*cuadrados?)/i,
   );
+  const area_m2 = toNumber(areaMatch?.[1] ?? null);
   const habitaciones = toNumber(
     clean.match(/(\d+)\s*(?:recámaras?|recamaras?|habitaciones?|dormitorios?)/i)?.[1] ??
       null,
@@ -262,6 +325,7 @@ async function scrape(page: Page): Promise<AnuncioRaw[]> {
       results.push({
         titulo,
         precio,
+        moneda: normalizeMoneda(product.offers?.priceCurrency),
         area_m2,
         habitaciones,
         banos,
@@ -269,6 +333,9 @@ async function scrape(page: Page): Promise<AnuncioRaw[]> {
         zona,
         lat: coords?.lat ?? null,
         lng: coords?.lng ?? null,
+        descripcion: trimDescripcion(product.description),
+        imagen: extractImage(product.image),
+        vendedor: product.offers?.seller?.name?.trim() || null,
         url_original: item.url,
         fuente: FUENTE_ID,
         fecha_deteccion: new Date().toISOString(),

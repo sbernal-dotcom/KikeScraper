@@ -15,6 +15,7 @@ export function isPreviewEnabled(): boolean {
 type ScrapedRow = {
   titulo: string | null;
   precio: number | null;
+  moneda?: "USD" | "PAB" | null;
   area_m2: number | null;
   habitaciones: number | null;
   banos: number | null;
@@ -22,10 +23,20 @@ type ScrapedRow = {
   zona: string | null;
   lat: number | null;
   lng: number | null;
+  descripcion?: string | null;
+  imagen?: string | null;
+  vendedor?: string | null;
   url_original: string;
   fuente: string;
   fecha_deteccion: string;
 };
+
+function buildDescripcion(row: ScrapedRow): string | undefined {
+  const parts: string[] = [];
+  if (row.vendedor) parts.push(`Vendedor: ${row.vendedor}`);
+  if (row.descripcion) parts.push(row.descripcion);
+  return parts.length ? parts.join(" · ") : undefined;
+}
 
 type ScrapePreviewFile = {
   generated_at: string;
@@ -65,8 +76,9 @@ function toPropiedad(row: ScrapedRow): Propiedad | null {
   return {
     id: `preview:${row.url_original}`,
     titulo: row.titulo ?? "(sin título)",
+    descripcion: buildDescripcion(row),
     precio: row.precio,
-    moneda: "USD",
+    moneda: row.moneda ?? "USD",
     tipoOperacion: tipoOperacionFromUrl(row.url_original),
     categoria: categoriaFromUrl(row.url_original),
     ubicacion: {
@@ -83,7 +95,7 @@ function toPropiedad(row: ScrapedRow): Propiedad | null {
     fuenteNombre,
     urlOriginal: row.url_original,
     otrosAnuncios: [],
-    imagenes: [],
+    imagenes: row.imagen ? [row.imagen] : [],
     fechaPublicacion: row.fecha_deteccion,
     fechaDeteccion: row.fecha_deteccion,
     fechaActualizacion: row.fecha_deteccion,
@@ -116,7 +128,7 @@ function toOportunidad(row: ScrapedRow): Oportunidad | null {
     id: `preview:${row.url_original}`,
     titulo: row.titulo ?? "(sin título)",
     precio: row.precio,
-    moneda: "USD",
+    moneda: row.moneda ?? "USD",
     areaM2: row.area_m2,
     precioM2: row.precio / row.area_m2,
     tipoOperacion: tipoOperacionFromUrl(row.url_original),
