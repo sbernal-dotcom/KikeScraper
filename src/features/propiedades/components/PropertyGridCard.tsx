@@ -60,6 +60,18 @@ export function PropertyGridCard({ propiedad, className }: Props) {
           >
             {labels.tipoOperacion(propiedad.tipoOperacion)}
           </span>
+          {propiedad.id.startsWith("preview:") ? (
+            <span
+              className="rounded-sm px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+              style={{
+                color: "#D6FF00",
+                background: "rgba(214,255,0,0.18)",
+                border: "1px solid rgba(214,255,0,0.5)",
+              }}
+            >
+              {dict.common.new_badge}
+            </span>
+          ) : null}
         </div>
         <span
           className="shrink-0 rounded-sm px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider"

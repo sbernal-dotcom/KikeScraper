@@ -80,6 +80,18 @@ export function PropertyCard({
             >
               {labels.tipoOperacionCorto(propiedad.tipoOperacion)}
             </span>
+            {propiedad.id.startsWith("preview:") ? (
+              <span
+                className="inline-flex items-center rounded-sm px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                style={{
+                  color: "#D6FF00",
+                  background: "rgba(214,255,0,0.18)",
+                  border: "1px solid rgba(214,255,0,0.5)",
+                }}
+              >
+                {dict.common.new_badge}
+              </span>
+            ) : null}
           </div>
           <h2 className="text-lg font-semibold leading-tight tracking-tight">
             {propiedad.titulo}
