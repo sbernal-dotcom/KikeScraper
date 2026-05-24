@@ -92,8 +92,18 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t">
         <LanguageToggle />
-        <div className="px-2 pb-2 text-[10px] text-muted-foreground">
-          {dict.brand.version}
+        <div className="space-y-0.5 px-2 pb-2 text-[10px] text-muted-foreground">
+          <div>{dict.brand.version}</div>
+          <div>
+            <a
+              href="https://www.openstreetmap.org/copyright"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground"
+            >
+              {dict.brand.attribution}
+            </a>
+          </div>
         </div>
       </SidebarFooter>
     </Sidebar>

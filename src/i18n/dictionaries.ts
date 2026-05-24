@@ -6,7 +6,12 @@ export const LOCALES: { code: Locale; label: string; short: string }[] = [
 ];
 
 export type Dictionary = {
-  brand: { name: string; tagline: string; version: string };
+  brand: {
+    name: string;
+    tagline: string;
+    version: string;
+    attribution: string;
+  };
   nav: {
     section: string;
     section_project: string;
@@ -115,6 +120,7 @@ const es: Dictionary = {
     name: "Mapa Interactivo",
     tagline: "Inmobiliario Panamá",
     version: "v0.1.0 · alpha",
+    attribution: "Geocoding © OpenStreetMap contributors",
   },
   nav: {
     section: "Navegación",
@@ -229,6 +235,7 @@ const en: Dictionary = {
     name: "Interactive Map",
     tagline: "Panama Real Estate",
     version: "v0.1.0 · alpha",
+    attribution: "Geocoding © OpenStreetMap contributors",
   },
   nav: {
     section: "Navigation",

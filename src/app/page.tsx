@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
 
 import { MapView } from "@/components/map/MapView";
@@ -12,6 +13,7 @@ import {
   useAnalyticsFiltersCtx,
 } from "@/features/propiedades/AnalyticsFiltersContext";
 import { PropertyCard } from "@/features/propiedades/components/PropertyCard";
+import { fetchPreviewPropiedades } from "@/features/propiedades/preview";
 import { usePropiedades } from "@/features/propiedades/usePropiedades";
 import type { Propiedad } from "@/features/propiedades/types";
 
@@ -21,9 +23,32 @@ export default function Home() {
   const { filters, reset, activeCount } = useAnalyticsFiltersCtx();
   const [seleccionada, setSeleccionada] = useState<Propiedad | null>(null);
 
+  const searchParams = useSearchParams();
+  const previewEnabled = searchParams.get("preview") === "1";
+  const [previewData, setPreviewData] = useState<Propiedad[]>([]);
+
+  useEffect(() => {
+    if (!previewEnabled) {
+      setPreviewData([]);
+      return;
+    }
+    let cancelled = false;
+    fetchPreviewPropiedades().then((data) => {
+      if (!cancelled) setPreviewData(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [previewEnabled]);
+
+  const merged = useMemo(
+    () => (previewEnabled ? [...propiedades, ...previewData] : propiedades),
+    [propiedades, previewData, previewEnabled],
+  );
+
   const visibles = useMemo(
-    () => applyMapFilters(propiedades, filters),
-    [propiedades, filters],
+    () => applyMapFilters(merged, filters),
+    [merged, filters],
   );
 
   return (
@@ -32,6 +57,16 @@ export default function Home() {
         aria-label={dict.nav.open_nav}
         className="absolute left-3 top-3 z-20 size-9 rounded-md border bg-background/80 shadow-sm backdrop-blur hover:bg-background"
       />
+
+      {previewEnabled ? (
+        <div
+          className="absolute right-3 top-3 z-20 rounded-md border px-2 py-1 text-[11px] font-semibold uppercase tracking-wider shadow-sm backdrop-blur"
+          style={{ background: "rgba(214,255,0,0.18)", color: "#D6FF00", borderColor: "rgba(214,255,0,0.5)" }}
+          title="Mostrando anuncios scrapeados desde public/scrape-preview.json (no guardados en DB)"
+        >
+          Preview · {previewData.length} scrapeados
+        </div>
+      ) : null}
 
       {activeCount > 0 ? (
         <div className="absolute left-16 top-3 z-20 flex items-center gap-1 rounded-md border border-border/60 bg-background/85 px-2 py-1.5 text-xs shadow-sm backdrop-blur">

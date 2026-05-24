@@ -1,0 +1,76 @@
+{
+  "generated_at": "2026-05-23T23:31:46.280Z",
+  "fuente": "encuentra24",
+  "results": [
+    {
+      "titulo": "Terreno con Proyecto Aprobado – Gran Oportunidad de Inversión",
+      "precio": 985000,
+      "area_m2": null,
+      "habitaciones": null,
+      "banos": null,
+      "estacionamientos": null,
+      "zona": "Río Abajo",
+      "lat": 9.0234434,
+      "lng": -79.4965205,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-lotes-y-terrenos/terreno-con-proyecto-aprobado-gran-oportunidad-de-inversion/31373795",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-23T23:31:27.012Z"
+    },
+    {
+      "titulo": "SE VENDE APARTAMENTO EN P.H. BAHIA DEL GOLF -  COCO DEL MAR – Panamá",
+      "precio": 350000,
+      "area_m2": 185,
+      "habitaciones": null,
+      "banos": 5,
+      "estacionamientos": null,
+      "zona": "Coco del Mar",
+      "lat": 8.9958601,
+      "lng": -79.4966415,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-apartamentos/se-vende-apartamento-en-p-h-bahia-del-golf-coco-del-mar-panama/30430117",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-23T23:31:33.392Z"
+    },
+    {
+      "titulo": "APARTAMENTO EN VENTA EN MARBELLA PH WANDERS AND YOO",
+      "precio": 599900,
+      "area_m2": 146,
+      "habitaciones": 2,
+      "banos": 2,
+      "estacionamientos": 1,
+      "zona": "Marbella",
+      "lat": 8.9781977,
+      "lng": -79.5222824,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-apartamentos/apartamento-en-venta-en-marbella-ph-wanders-and-yoo/28941052",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-23T23:31:38.031Z"
+    },
+    {
+      "titulo": "Venta de apartamento en Avenida Balboa - PH Sky Residences (AA)",
+      "precio": 375000,
+      "area_m2": null,
+      "habitaciones": 2,
+      "banos": null,
+      "estacionamientos": 1,
+      "zona": "Avenida Balboa",
+      "lat": 8.9605513,
+      "lng": -79.5370129,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-apartamentos/venta-de-apartamento-en-avenida-balboa-ph-sky-residences-aa/31990777",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-23T23:31:42.012Z"
+    },
+    {
+      "titulo": "CASA LOMA ALEGRE NEGOCIABLE- UNIFAMILIAR 1045mt2 amplio terreno con piscina",
+      "precio": 789500,
+      "area_m2": 1045,
+      "habitaciones": null,
+      "banos": null,
+      "estacionamientos": 2,
+      "zona": "Coco del Mar",
+      "lat": 8.9958601,
+      "lng": -79.4966415,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-casas/casa-loma-alegre-negociable-unifamiliar-1045mt2-amplio-terreno-con-piscina/31011418",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-23T23:31:46.279Z"
+    }
+  ]
+}
