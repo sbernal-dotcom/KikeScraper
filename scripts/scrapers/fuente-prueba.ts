@@ -24,6 +24,8 @@ import { GoogleGenAI } from "@google/genai";
 import { config as loadEnv } from "dotenv";
 import { chromium, type Page } from "playwright";
 
+import { centroFromTable, jitterCoords } from "./zonas-panama";
+
 // Next.js usa .env.local — cargarlo explícitamente.
 loadEnv({ path: ".env.local" });
 loadEnv();
@@ -111,14 +113,18 @@ async function nominatimQuery(
 
 async function geocodeZona(
   zona: string | null,
-): Promise<{ lat: number; lng: number } | null> {
+): Promise<{ lat: number; lng: number; source: "table" | "nominatim" } | null> {
   if (!zona || zona.trim().length < 3) return null;
-  // Intento 1: "Zona, Panamá"
+  // Fuente PRIMARIA: tabla de centroides verificados.
+  // Más confiable que Nominatim para corregimientos de Panamá.
+  const fromTable = centroFromTable(zona);
+  if (fromTable) return { ...fromTable, source: "table" };
+  // Fallback: Nominatim (OSM). Si una zona cae aquí seguido,
+  // agregarla a zonas-panama.ts con coords verificadas.
   const first = await nominatimQuery(`${zona}, Panamá`);
-  if (first) return first;
-  // Intento 2: "Zona, Ciudad de Panamá, Panamá" para corregimientos
-  // poco identificables a nivel país (ej. "Santa María").
-  return nominatimQuery(`${zona}, Ciudad de Panamá, Panamá`);
+  if (first) return { ...first, source: "nominatim" };
+  const second = await nominatimQuery(`${zona}, Ciudad de Panamá, Panamá`);
+  return second ? { ...second, source: "nominatim" } : null;
 }
 
 // ============================================================================
@@ -442,8 +448,22 @@ async function scrape(page: Page): Promise<AnuncioRaw[]> {
         fromHtml.estacionamientos ?? fromDesc.estacionamientos;
 
       const coords = await geocodeZona(zona);
-      if (coords) {
-        console.log(`  geocode → ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`);
+      // Jitter determinístico para que múltiples anuncios en la misma zona
+      // no caigan exactamente sobre el mismo pin. La posición del mismo
+      // anuncio (mismo URL) NO cambia entre corridas.
+      const finalCoords = coords
+        ? jitterCoords(coords, item.url)
+        : null;
+      if (finalCoords && coords) {
+        const tag = coords.source === "nominatim" ? " (Nominatim fallback)" : "";
+        console.log(
+          `  geocode → ${finalCoords.lat.toFixed(4)}, ${finalCoords.lng.toFixed(4)}${tag}`,
+        );
+        if (coords.source === "nominatim") {
+          console.log(
+            `    ⚠ Considerar agregar "${zona}" a scripts/scrapers/zonas-panama.ts`,
+          );
+        }
       } else if (zona) {
         console.log(`  geocode → sin resultado confiable para "${zona}"`);
       }
@@ -457,8 +477,8 @@ async function scrape(page: Page): Promise<AnuncioRaw[]> {
         banos,
         estacionamientos,
         zona,
-        lat: coords?.lat ?? null,
-        lng: coords?.lng ?? null,
+        lat: finalCoords?.lat ?? null,
+        lng: finalCoords?.lng ?? null,
         descripcion: trimDescripcion(product.description),
         imagen: extractImage(product.image),
         vendedor: product.offers?.seller?.name?.trim() || null,
