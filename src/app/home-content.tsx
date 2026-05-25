@@ -123,7 +123,7 @@ export function HomeContent() {
         </div>
       ) : null}
 
-      <div className="absolute left-16 top-3 z-20 flex items-center gap-2">
+      <div className="absolute left-16 top-3 z-30 flex items-center gap-2">
         <Button
           type="button"
           variant="outline"
