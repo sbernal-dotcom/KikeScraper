@@ -31,8 +31,11 @@ export const ZONAS_PANAMA: Record<string, ZonaCentro> = {
   "punta paitilla": { lat: 8.9809, lng: -79.5189 },
   "punta pacífica": { lat: 8.975, lng: -79.5078 },
   "punta pacifica": { lat: 8.975, lng: -79.5078 },
-  "coco del mar": { lat: 8.9831, lng: -79.49 },
-  "costa del este": { lat: 9.0017, lng: -79.4778 },
+  "coco del mar": { lat: 8.9777, lng: -79.4900 },
+  // Costa del Este: el barrio residencial real está al NORTE del Corredor Sur.
+  // El centroide 9.0017,-79.4778 caía cerca de la bahía. Verificado contra
+  // landmarks (Town Center Costa del Este).
+  "costa del este": { lat: 9.0140, lng: -79.4720 },
   "parque lefevre": { lat: 9.0095, lng: -79.476 },
   "río abajo": { lat: 9.0136, lng: -79.5028 },
   "rio abajo": { lat: 9.0136, lng: -79.5028 },
@@ -100,12 +103,13 @@ export function centroFromTable(zona: string | null): ZonaCentro | null {
  * del mismo anuncio NO cambia entre corridas — sólo se separa de sus
  * vecinos dentro de la zona.
  *
- * Radio default: ~250 m (≈0.0025° en Panamá).
+ * Radio default: ~120 m (≈0.0012° en Panamá). Pequeño a propósito para
+ * que el jitter NO empuje pines fuera del corregimiento ni a la costa.
  */
 export function jitterCoords(
   center: ZonaCentro,
   seed: string,
-  radiusDeg = 0.0025,
+  radiusDeg = 0.0012,
 ): ZonaCentro {
   let h = 0;
   for (let i = 0; i < seed.length; i++) {

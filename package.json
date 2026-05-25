@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "scrape:test": "tsx scripts/scrapers/fuente-prueba.ts",
-    "scrape:resumenes": "tsx scripts/scrapers/enriquecer-resumenes.ts"
+    "scrape:resumenes": "tsx scripts/scrapers/enriquecer-resumenes.ts",
+    "scrape:coords": "tsx scripts/scrapers/recalcular-coords.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
