@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ArrowLeft,
   Bath,
   BedDouble,
   Car,
@@ -27,12 +28,14 @@ import type { Propiedad } from "../types";
 type PropertyCardProps = {
   propiedad: Propiedad;
   onClose: () => void;
+  onBack?: () => void;
   className?: string;
 };
 
 export function PropertyCard({
   propiedad,
   onClose,
+  onBack,
   className,
 }: PropertyCardProps) {
   const dict = useDict();
@@ -55,7 +58,19 @@ export function PropertyCard({
       )}
     >
       <header className="flex items-start justify-between gap-2 border-b border-border/60 px-5 py-4">
-        <div className="min-w-0 space-y-1">
+        {onBack ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={dict.common.back}
+            className="-ml-1 size-7 shrink-0"
+            onClick={onBack}
+          >
+            <ArrowLeft className="size-4" />
+          </Button>
+        ) : null}
+        <div className="min-w-0 flex-1 space-y-1">
           <div className="flex flex-wrap items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
             <MapPin className="size-3" />
             <span className="truncate">{localizacion}</span>

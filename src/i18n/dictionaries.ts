@@ -30,7 +30,9 @@ export type Dictionary = {
     min: string;
     max: string;
     close: string;
+    back: string;
     new_badge: string;
+    results: string;
   };
   properties: {
     title: string;
@@ -141,7 +143,9 @@ const es: Dictionary = {
     min: "Mín",
     max: "Máx",
     close: "Cerrar",
+    back: "Volver",
     new_badge: "Nuevo",
+    results: "resultados",
   },
   properties: {
     title: "Propiedades",
@@ -257,7 +261,9 @@ const en: Dictionary = {
     min: "Min",
     max: "Max",
     close: "Close",
+    back: "Back",
     new_badge: "New",
+    results: "results",
   },
   properties: {
     title: "Properties",

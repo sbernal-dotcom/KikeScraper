@@ -12,6 +12,7 @@ import {
   useAnalyticsFiltersCtx,
 } from "@/features/propiedades/AnalyticsFiltersContext";
 import { PropertyCard } from "@/features/propiedades/components/PropertyCard";
+import { ZonaList } from "@/features/propiedades/components/ZonaList";
 import { usePropiedades } from "@/features/propiedades/usePropiedades";
 import type { Propiedad } from "@/features/propiedades/types";
 
@@ -20,6 +21,12 @@ export function HomeContent() {
   const { data: propiedades, error } = usePropiedades();
   const { filters, reset, activeCount } = useAnalyticsFiltersCtx();
   const [seleccionada, setSeleccionada] = useState<Propiedad | null>(null);
+  // Lista lateral cuando hay >1 pin en la misma zona. Mantiene el grupo
+  // abierto cuando el usuario clica una de las propiedades y luego "Volver".
+  const [zonaList, setZonaList] = useState<{
+    zona: string;
+    items: Propiedad[];
+  } | null>(null);
 
   // Detectar preview por contenido (no por query param) para mantener
   // consistencia con /propiedades y /analisis.
@@ -89,8 +96,20 @@ export function HomeContent() {
         className="h-full w-full"
         propiedades={visibles}
         selectedId={seleccionada?.id ?? null}
-        onSelect={setSeleccionada}
-        rightInsetPx={seleccionada ? 380 : 0}
+        onSelect={(p) => {
+          const zona = p.ubicacion.corregimiento;
+          const cluster = zona
+            ? visibles.filter((x) => x.ubicacion.corregimiento === zona)
+            : [p];
+          if (cluster.length > 1) {
+            setZonaList({ zona: zona ?? "", items: cluster });
+            setSeleccionada(p);
+          } else {
+            setZonaList(null);
+            setSeleccionada(p);
+          }
+        }}
+        rightInsetPx={seleccionada || zonaList ? 380 : 0}
       />
       {error ? (
         <div className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-md border border-destructive/60 bg-background/95 px-3 py-2 text-xs text-destructive">
@@ -101,7 +120,20 @@ export function HomeContent() {
         <div className="absolute inset-y-0 right-0 z-20 flex">
           <PropertyCard
             propiedad={seleccionada}
-            onClose={() => setSeleccionada(null)}
+            onClose={() => {
+              setSeleccionada(null);
+              setZonaList(null);
+            }}
+            onBack={zonaList ? () => setSeleccionada(null) : undefined}
+          />
+        </div>
+      ) : zonaList ? (
+        <div className="absolute inset-y-0 right-0 z-20 flex">
+          <ZonaList
+            zona={zonaList.zona}
+            items={zonaList.items}
+            onSelect={(p) => setSeleccionada(p)}
+            onClose={() => setZonaList(null)}
           />
         </div>
       ) : null}
