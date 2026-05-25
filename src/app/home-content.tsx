@@ -123,7 +123,7 @@ export function HomeContent() {
         </div>
       ) : null}
 
-      <div className="absolute left-16 top-3 z-30 flex items-center gap-2">
+      <div className="absolute left-16 top-3 z-20 flex items-center gap-2">
         <Button
           type="button"
           variant="outline"
@@ -172,15 +172,18 @@ export function HomeContent() {
             : items;
           if (visibleItems.length === 0) return;
           if (visibleItems.length > 1) {
+            // Cluster: abrir SOLO la lista. El usuario elige cuál ver.
             const zona = visibleItems[0].ubicacion.corregimiento ?? "";
             setZonaList({ zona, items: visibleItems });
-            setSeleccionada(visibleItems[0]);
+            setSeleccionada(null);
           } else {
+            // Pin único: abrir la card directo.
             setZonaList(null);
             setSeleccionada(visibleItems[0]);
           }
         }}
         rightInsetPx={seleccionada || zonaList ? 380 : 0}
+        leftInsetPx={activeCount > 0 ? 260 : 180}
       />
       {error ? (
         <div className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-md border border-destructive/60 bg-background/95 px-3 py-2 text-xs text-destructive">

@@ -45,6 +45,9 @@ type MapViewProps = {
   matchedIds?: Set<string> | null;
   /** Px to reserve on the right of the map (e.g. width of the open detail card). */
   rightInsetPx?: number;
+  /** Px to reserve on the left (sidebar trigger + filtros) — la search bar
+   *  se centra en el área visible restante, no en el viewport completo. */
+  leftInsetPx?: number;
 };
 
 export function MapView({
@@ -56,6 +59,7 @@ export function MapView({
   onSelect,
   matchedIds = null,
   rightInsetPx = 0,
+  leftInsetPx = 0,
 }: MapViewProps) {
   const dict = useDict();
   const { locale } = useLocale();
@@ -361,8 +365,10 @@ export function MapView({
       <div ref={containerRef} className={cn("h-full w-full", className)} />
       <div
         ref={geocoderRef}
-        className="mii-geocoder pointer-events-auto absolute top-3 z-20 w-[420px] max-w-[calc(100vw-7rem)] -translate-x-1/2 transition-[left] duration-300 ease-out"
-        style={{ left: `calc(50% - ${rightInsetPx / 2}px)` }}
+        className="mii-geocoder pointer-events-auto absolute top-3 z-20 w-[360px] max-w-[calc(100vw-18rem)] -translate-x-1/2 transition-[left] duration-300 ease-out"
+        style={{
+          left: `calc(50% + ${leftInsetPx / 2}px - ${rightInsetPx / 2}px)`,
+        }}
       />
     </>
   );
