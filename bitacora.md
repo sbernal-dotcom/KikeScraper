@@ -23,7 +23,8 @@ A futuro, podría incluir una sección de análisis de rentabilidad para compara
 | Mapa | Mapbox GL JS |
 | Base de datos | Supabase / PostgreSQL |
 | Scraping | Node.js + Playwright |
-| IA | OpenAI API |
+| Geocoding | Nominatim (OpenStreetMap) — free, 1 req/s |
+| IA | Gemini API (`gemini-flash-lite-latest`, free tier) |
 | Tareas programadas | Railway Cron Jobs |
 | Hosting | Vercel |
 | Código | GitHub + Visual Studio Code + Claude Code |
@@ -118,14 +119,50 @@ A futuro, podría incluir una sección de análisis de rentabilidad para compara
 
   Aplicado en el root de `PropertyCard` (side panel del mapa) y `PropertyGridCard` (/propiedades). Reemplazado todo el `#D6FF00` hardcodeado por `var(--accent)` (y tintes). Resultado: precio, badge de estado, chip de operación, icono ✦ del resumen IA, precios de "otros anuncios" y el botón "Ver anuncio" se pintan lime (#D6FF00) si es venta y amarillo (#FFEC00) si es alquiler. UI global (sidebar, filtros, language toggle) sigue en lime.
 
+### Scraper V1 + Modo Preview + Resumen IA (2026-05-23 → 2026-05-25)
+
+- **Primer scraper en `scripts/scrapers/fuente-prueba.ts`** (`npm run scrape:test`):
+  - **Fuente principal: encuentra24.com.** Probamos compreoalquile primero pero devolvió 403 (Cloudflare-like). encuentra24 publica JSON-LD `schema.org/Product`, que es la fuente más confiable: `name`, `offers.price`, `offers.priceCurrency`, `offers.availableAtOrFrom.address.addressLocality`, `offers.seller.name`, `image.contentUrl`, `description`.
+  - **Reglas éticas (durables):** máximo 5 anuncios por corrida, `User-Agent: MapaInteractivoInteligente/0.1 (+contacto: abilendesign@gmail.com)`, lee `robots.txt` antes de cada listado y aborta si está prohibido, delay aleatorio 1.5–3 s entre anuncios, aborta si detecta captcha/login/4xx. No descarga imágenes (sólo URL). No copia descripción completa: la trunca a 280 caracteres.
+  - **Características desde HTML** (no solo descripción libre): bloque estructurado de encuentra24 con pares `[<label>][<value>]` — labels son `span.text-muted-foreground.text-xs.capitalize` y el valor es el `nextElementSibling`. Espera `networkidle` (max 8 s) para que React hidrate. Resultado: 5/5 anuncios con `area_m2`, recámaras, baños y parking reales (antes 1/5).
+  - **`toNumber` locale-aware**: distingue miles vs decimal estilo US. `"20,536 Mts2" → 20536`, `"1,425.50" → 1425.50`, `"1.42" → 1.42`.
+  - **Filtro de calidad**: descartamos `/bienes-raices-proyectos-nuevos/` porque son rangos promocionales ("desde X, 1-3 recámaras") no comparables — romperían `opportunity_score`.
+
+- **Geocoding con Nominatim (OpenStreetMap), gratis**:
+  - Rate-limit 1 req/s (margen 1100 ms), User-Agent identificable, query a nivel zona (no direcciones exactas): `"{zona}, Panamá"`. Si falla, fallback a `"{zona}, Ciudad de Panamá, Panamá"` para corregimientos poco identificables a nivel país (Santa María, Bella Vista, etc.). Solo acepta resultados a nivel barrio/distrito/ciudad (rechaza country/state).
+  - **Atribución obligatoria a OSM** en el footer del `AppSidebar`: "Geocoding © OpenStreetMap contributors" con link a `openstreetmap.org/copyright` (ES + EN en `dictionaries.brand.attribution`).
+
+- **Modo preview** — el scraper escribe `public/scrape-preview.json` y las 3 vistas (mapa, /propiedades, /analisis) leen de ahí sin tocar Supabase:
+  - `src/features/propiedades/preview.ts` adapta `ScrapedRow → Propiedad` y `→ Oportunidad`. Los IDs scrapeados llevan prefijo `preview:` para identificarlos sin tocar el tipo.
+  - `usePropiedades` y `useOportunidades` usan `isPreviewEnabled()`: por DEFAULT está activo (mientras estemos demostrando con scrape). Para volver a los mock de Supabase: `?preview=0`.
+  - Decisión clave (2026-05-25): preview **reemplaza** la fuente de datos en lugar de mergear con Supabase. Sin esto las 3 vistas mostraban N diferente.
+  - **Badge "NUEVO"** en `PropertyCard`, `PropertyGridCard` y como chip flotante sobre los pines del mapa (color = `--mii-fill`, anclado con `top/left/translate` absolutos al tamaño conocido del marker para evitar el `position:absolute` de Mapbox).
+  - `public/scrape-preview.json` curado a 2 entradas demo: 1 venta real de Coco del Mar + 1 alquiler ejemplo en Marbella (para mostrar ambos colores de pin sin saturar el mapa).
+
+- **Resumen IA con Gemini** (free tier):
+  - Modelo: `gemini-flash-lite-latest`. Probamos `gemini-2.0-flash` y `gemini-1.5-flash` y devolvieron `quota: 0` para nuestra key — el primero por restricciones del free tier, el segundo no existe en `v1beta`.
+  - **Gemini SOLO escribe en `resumen_ia`**. Nunca modifica los campos del scraper (precio, área, hab, etc.). El prompt vive en 2 lugares (uno por script):
+    - [scripts/scrapers/fuente-prueba.ts](scripts/scrapers/fuente-prueba.ts) — `generarResumenIA()`, llamado al final de cada scrape.
+    - [scripts/scrapers/enriquecer-resumenes.ts](scripts/scrapers/enriquecer-resumenes.ts) — `npm run scrape:resumenes`, para enriquecer un JSON existente sin re-scrapear (útil tras editar el JSON manualmente).
+  - Strip de prefijo `Resumen:` en la respuesta (Gemini lo agrega siempre aunque le pedimos que no).
+  - `@google/genai` + `dotenv` como devDependencies. `GEMINI_API_KEY` en `.env.local` (gitignored, documentado en `.env.example`). `dotenv` cargado explícitamente con `path: ".env.local"` (no se carga automático fuera de Next.js).
+  - El campo `resumenIA` ya existía en `Propiedad`, ya renderizado por las cards — el scraper solo lo llena.
+
+- **Bug fix prerender Vercel**: `useSearchParams` en App Router requiere `<Suspense>` boundary durante prerender. Splitting clave: `src/app/page.tsx` (server component, exporta default + `Suspense`) → `src/app/home-content.tsx` (client component, usa hooks). Antes el archivo entero era `"use client"` y el Suspense también era cliente, no protegía el prerender.
+
+- **Paridad mapa ↔ análisis**: `fetchPropiedades` ahora filtra `precio not null AND area_m2 > 0` igual que `vw_oportunidades`. Antes el mapa traía propiedades sin precio/área que /analisis descartaba → conteos diferentes.
+
 ### Pendientes
 
 - **Env vars en Vercel** — agregar `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` (Production, Preview, Development) y redeploy. Sin esto el deploy de prod no puede leer la DB.
 - **Token restrictions en Mapbox** — agregar `http://localhost:3000/*` a la URL allowlist del token. Cuando exista dominio de Vercel, agregarlo también.
 - **Tipos de Supabase** — regenerar `src/lib/supabase/types.ts` con `supabase gen types typescript --project-id lbvboqoyvuxuanwvtypf > src/lib/supabase/types.ts` (requiere `supabase` CLI o usar el dashboard).
-- **Rotar claves Supabase** — `anon` y `service_role` quedaron expuestas en el chat de desarrollo. Para producción real, rotar en Project → Settings → API → Reset keys.
-- **Scraper (Node.js + Playwright)** — pospuesto para fase muy posterior.
-- **Resumen IA y títulos** — actualmente solo en español. Cuando integremos OpenAI habrá que generar/almacenar en ambos idiomas o traducir dinámicamente.
+- **Rotar claves Supabase y Gemini** — `anon`, `service_role` y `GEMINI_API_KEY` quedaron expuestas en el chat de desarrollo. Rotar en cada proveedor cuando termine la fase de prueba (Gemini: aistudio.google.com → API keys → revoke + create new).
+- **Consolidar el prompt de Gemini** en `scripts/scrapers/resumen-ia.ts` para no mantenerlo en 2 lugares (`fuente-prueba.ts` + `enriquecer-resumenes.ts`).
+- **Resumen IA bilingüe** — actualmente solo en español. Cuando se promueva a producción habrá que generar/almacenar en ambos idiomas o traducir dinámicamente.
+- **Más fuentes de scraping** — agregar compreoalquile e inmuebles24 cuando se resuelva el bloqueo anti-bot, y/o probar `MercadoLibre Inmuebles`. Estructura JSON-LD/HTML cambia por sitio → un módulo por fuente.
+- **Modo producción del scraper** — pasar de "modo prueba" (escribe a JSON, no toca DB) a `npm run scrape:prod` que use el admin client de Supabase para upsert en `propiedades` + `anuncios`. Requiere lógica de deduplicación por `url_original`.
+- **Migrar `?preview=0` → flag de runtime/admin** cuando empecemos a escribir scrapes reales a Supabase.
 
 ## Notas Pendientes
 
