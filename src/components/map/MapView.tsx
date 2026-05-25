@@ -367,7 +367,10 @@ export function MapView({
         ref={geocoderRef}
         className="mii-geocoder pointer-events-auto absolute top-3 z-20 w-[360px] max-w-[calc(100vw-18rem)] -translate-x-1/2 transition-[left] duration-300 ease-out"
         style={{
-          left: `calc(50% + ${leftInsetPx / 2}px - ${rightInsetPx / 2}px)`,
+          // Centrada en el viewport, pero con un PISO: no permite que el
+          // borde izquierdo de la search bar invada el área del filtro.
+          // El piso es leftInsetPx + halfWidth (180 = w-[360px]/2).
+          left: `max(${leftInsetPx + 180}px, calc(50% - ${rightInsetPx / 2}px))`,
         }}
       />
     </>
