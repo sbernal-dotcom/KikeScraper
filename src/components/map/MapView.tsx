@@ -14,6 +14,7 @@ import {
   MAPBOX_TOKEN,
   MARKER_COLOR,
   MARKER_COLOR_ALQUILER,
+  MARKER_COLOR_CLUSTER,
   PANAMA_CITY_CENTER,
 } from "@/lib/mapbox/config";
 import { cn } from "@/lib/utils";
@@ -248,6 +249,11 @@ export function MapView({
         }
         .mii-marker--alquiler {
           --mii-fill: ${MARKER_COLOR_ALQUILER};
+          --mii-glow: 255, 187, 0;
+        }
+        /* Pin cluster: amarillo distintivo (sobreescribe color de operación). */
+        .mii-marker--cluster {
+          --mii-fill: ${MARKER_COLOR_CLUSTER};
           --mii-glow: 255, 236, 0;
         }
         /* Pines preview ("NUEVO"): el badge va DENTRO del SVG, así que

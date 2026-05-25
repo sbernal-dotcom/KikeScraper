@@ -14,7 +14,7 @@ export function operationAccent(op: TipoOperacion): {
   rgb: string;
 } {
   return op === "alquiler"
-    ? { color: "#FFEC00", rgb: "255, 236, 0" }
+    ? { color: "#FFBB00", rgb: "255, 187, 0" }
     : { color: "#D6FF00", rgb: "214, 255, 0" };
 }
 
