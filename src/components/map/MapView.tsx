@@ -168,13 +168,24 @@ export function MapView({
       if (selectedId === p.id) el.classList.add("mii-marker--active");
       const isPreview = p.id.startsWith("preview:");
       if (isPreview) el.classList.add("mii-marker--nuevo");
-      el.innerHTML = `
+      // El badge "NUEVO" vive DENTRO del SVG del pin para garantizar
+      // que se mueve/escala junto al pin (no como sibling HTML que se podía
+      // desincronizar con el transform de Mapbox).
+      // viewBox negativo en Y reserva espacio arriba del pin sin afectar
+      // su posición (el tip del pin sigue siendo el bottom del marker).
+      el.innerHTML = isPreview
+        ? `
+        <svg viewBox="-2 -11 28 43" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect class="mii-badge-bg" x="-2" y="-11" width="28" height="8" rx="1.5" />
+          <text class="mii-badge-text" x="12" y="-5" font-size="6" font-weight="800" text-anchor="middle" letter-spacing="0.4">${newLabel}</text>
+          <path fill-rule="evenodd" clip-rule="evenodd"
+                d="M12 0C5.373 0 0 5.373 0 12c0 8.4 12 20 12 20s12-11.6 12-20c0-6.627-5.373-12-12-12zm0 7a5 5 0 100 10 5 5 0 000-10z" />
+        </svg>`
+        : `
         <svg viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <path fill-rule="evenodd" clip-rule="evenodd"
                 d="M12 0C5.373 0 0 5.373 0 12c0 8.4 12 20 12 20s12-11.6 12-20c0-6.627-5.373-12-12-12zm0 7a5 5 0 100 10 5 5 0 000-10z" />
-        </svg>
-        ${isPreview ? `<span class="mii-marker__badge">${newLabel}</span>` : ""}
-      `;
+        </svg>`;
       el.addEventListener("click", (e) => {
         e.stopPropagation();
         onSelect?.(p);
@@ -204,7 +215,6 @@ export function MapView({
       <style>{`
         /* Marker root: positioned by mapbox via transform — NEVER transition this */
         .mii-marker {
-          position: relative;
           width: 18px;
           height: 24px;
           cursor: pointer;
@@ -216,27 +226,19 @@ export function MapView({
           --mii-fill: ${MARKER_COLOR_ALQUILER};
           --mii-glow: 255, 236, 0;
         }
-        /* Pines scrapeados ("Nuevo"): chip arriba del pin con el color de su operación.
-           Anclado al CENTRO-TOP del marker (que mide 18x24 con anchor:bottom),
-           usando translate puro para evitar conflicto con position:absolute de Mapbox. */
-        .mii-marker__badge {
-          position: absolute;
-          top: -10px;
-          left: 9px;
-          transform: translateX(-50%);
-          padding: 1px 5px;
+        /* Pines preview ("NUEVO"): el badge va DENTRO del SVG, así que
+           necesitan más altura. Mantenemos el ancho/aspecto para que el
+           pin se vea igual de grande pero con el chip encima. */
+        .mii-marker--nuevo {
+          width: 22px;
+          height: 34px;
+        }
+        .mii-marker svg .mii-badge-bg {
+          fill: var(--mii-fill);
+        }
+        .mii-marker svg .mii-badge-text {
+          fill: #0a0a0a;
           font-family: var(--font-geist-sans), system-ui, sans-serif;
-          font-size: 8px;
-          font-weight: 700;
-          letter-spacing: 0.06em;
-          line-height: 1;
-          color: #0a0a0a;
-          background: var(--mii-fill);
-          border-radius: 3px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-          pointer-events: none;
-          white-space: nowrap;
-          z-index: 1;
         }
         /* Hover/active effects live on the inner SVG so they don't fight
            the positional transform set by mapbox on the root. */
