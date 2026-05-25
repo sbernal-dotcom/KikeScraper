@@ -4,7 +4,7 @@
  * Modo PRUEBA: imprime los resultados en consola, NO guarda en Supabase.
  *
  * Reglas (ver bitacora):
- *  - Máximo MAX_ANUNCIOS por ejecución.
+ *  - Límite por listado configurado en LISTADOS.
  *  - User-Agent honesto identifica al proyecto.
  *  - Respeta robots.txt — si el path está bloqueado, aborta.
  *  - Si la página responde 403/429/captcha/login → aborta.
@@ -17,7 +17,7 @@
  *   SCRAPE_URL="https://www.compreoalquile.com/..." npm run scrape:test
  */
 
-import { writeFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 
 import { GoogleGenAI } from "@google/genai";
@@ -31,10 +31,20 @@ loadEnv({ path: ".env.local" });
 loadEnv();
 
 const FUENTE_ID = "encuentra24";
-const DEFAULT_URL =
-  "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades";
-const URL_LISTADO = process.env.SCRAPE_URL ?? DEFAULT_URL;
-const MAX_ANUNCIOS = 10;
+// Si SCRAPE_URL está definido, se respeta como única fuente.
+// Si no, se corre la lista por default (mezcla venta + alquiler).
+const DEFAULT_LISTADOS: Array<{ url: string; limit: number }> = [
+  // El slug correcto de alquiler es "bienes-raices-alquiler" — sin "-de-propiedades".
+  // La variante con "-de-propiedades" devuelve 200 OK pero NO renderiza listados
+  // (probable misconfig de Next.js en encuentra24). Verificado vía debug.
+  {
+    url: "https://www.encuentra24.com/panama-es/bienes-raices-alquiler",
+    limit: 10,
+  },
+];
+const LISTADOS: Array<{ url: string; limit: number }> = process.env.SCRAPE_URL
+  ? [{ url: process.env.SCRAPE_URL, limit: 10 }]
+  : DEFAULT_LISTADOS;
 const USER_AGENT =
   "MapaInteractivoInteligente/0.1 (+contacto: abilendesign@gmail.com)";
 
@@ -363,11 +373,18 @@ function parseFromDescription(desc: string): {
   return { area_m2, habitaciones, banos, estacionamientos };
 }
 
-async function scrape(page: Page): Promise<AnuncioRaw[]> {
+async function scrape(
+  page: Page,
+  limit: number,
+  skipUrls: Set<string>,
+): Promise<AnuncioRaw[]> {
+  // Pedimos más candidatos de los que queremos: muchos serán duplicados
+  // (ya en skipUrls) o se descartarán por el filtro de proyectos-nuevos.
+  const overscan = Math.max(limit * 4, 30);
   // Solo anuncios individuales. Descartamos /bienes-raices-proyectos-nuevos/
   // porque son rangos promocionales ("desde X, 1-3 recámaras") no comparables
   // y romperían los cálculos de opportunity_score.
-  const found = await page
+  const allCandidates = await page
     .locator('a[href*="/panama-es/bienes-raices"]')
     .evaluateAll((nodes, max) => {
       const seen = new Set<string>();
@@ -384,12 +401,16 @@ async function scrape(page: Page): Promise<AnuncioRaw[]> {
         out.push({ url, titulo: a.textContent?.trim() ?? null });
       }
       return out;
-    }, MAX_ANUNCIOS);
+    }, overscan);
 
-  console.log(`Encontrados ${found.length} candidatos en el listado.`);
+  const found = allCandidates.filter((c) => !skipUrls.has(c.url)).slice(0, limit);
+  const skippedDupes = allCandidates.length - found.length;
+  console.log(
+    `Encontrados ${allCandidates.length} candidatos (${skippedDupes} ya en JSON) → procesaré ${found.length}.`,
+  );
 
   const results: AnuncioRaw[] = [];
-  for (const item of found.slice(0, MAX_ANUNCIOS)) {
+  for (const item of found) {
     await jitter(1500, 3000);
     console.log(`→ ${item.url}`);
     try {
@@ -499,14 +520,25 @@ async function scrape(page: Page): Promise<AnuncioRaw[]> {
   return results;
 }
 
-async function main() {
-  const url = new URL(URL_LISTADO);
-  const allowed = await checkRobotsTxt(url.origin, url.pathname);
-  if (!allowed) {
-    console.error(`robots.txt prohíbe ${url.pathname} — abortando.`);
-    process.exit(1);
+function loadExisting(outPath: string): AnuncioRaw[] {
+  if (!existsSync(outPath)) return [];
+  try {
+    const parsed = JSON.parse(readFileSync(outPath, "utf-8")) as {
+      results?: AnuncioRaw[];
+    };
+    return Array.isArray(parsed.results) ? parsed.results : [];
+  } catch {
+    return [];
   }
-  console.log(`robots.txt OK para ${url.pathname}`);
+}
+
+async function main() {
+  const outPath = join(process.cwd(), "public", "scrape-preview.json");
+  const existing = loadExisting(outPath);
+  const skipUrls = new Set(existing.map((r) => r.url_original));
+  console.log(
+    `JSON existente: ${existing.length} anuncios — se hará merge (dedupe por url_original).`,
+  );
 
   const browser = await chromium.launch({ headless: true });
   const ctx = await browser.newContext({
@@ -516,35 +548,62 @@ async function main() {
   });
   const page = await ctx.newPage();
 
+  const allNew: AnuncioRaw[] = [];
+
   try {
-    const res = await page.goto(URL_LISTADO, {
-      waitUntil: "domcontentloaded",
-      timeout: 25_000,
-    });
-    if (!res || res.status() >= 400) {
-      console.error(`Listado respondió ${res?.status() ?? "??"} — abortando.`);
-      return;
+    for (const { url: listadoUrl, limit } of LISTADOS) {
+      const parsed = new URL(listadoUrl);
+      const allowed = await checkRobotsTxt(parsed.origin, parsed.pathname);
+      if (!allowed) {
+        console.warn(`robots.txt prohíbe ${parsed.pathname} — saltando.`);
+        continue;
+      }
+      console.log(`\n▶ Listado: ${listadoUrl}`);
+
+      const res = await page.goto(listadoUrl, {
+        waitUntil: "domcontentloaded",
+        timeout: 25_000,
+      });
+      if (!res || res.status() >= 400) {
+        console.warn(`  Listado respondió ${res?.status() ?? "??"} — saltando.`);
+        continue;
+      }
+      // Espera que React hidrate las tarjetas. networkidle solo no basta
+      // en alquiler — explícitamente esperamos a que aparezca al menos
+      // un link a un anuncio individual.
+      await page
+        .waitForLoadState("networkidle", { timeout: 10_000 })
+        .catch(() => null);
+      await page
+        .locator('a[href*="/panama-es/bienes-raices"]')
+        .first()
+        .waitFor({ state: "attached", timeout: 10_000 })
+        .catch(() => null);
+      await jitter(1000, 2000);
+
+      const data = await scrape(page, limit, skipUrls);
+      for (const d of data) skipUrls.add(d.url_original);
+      allNew.push(...data);
     }
-    await jitter(1000, 2000);
 
-    const data = await scrape(page);
-    console.log("\n=== RESULTADOS (modo prueba — NO guardado en Supabase) ===");
-    console.log(JSON.stringify(data, null, 2));
-    console.log(`\nTotal: ${data.length}/${MAX_ANUNCIOS}`);
+    console.log(`\nNuevos en esta corrida: ${allNew.length}`);
+    const merged = [...existing, ...allNew];
 
-    // Modo preview: escribe el JSON a public/ para que el mapa lo pueda mostrar
-    // sin tocar la DB. Abrir el mapa con ?preview=1 para verlo.
-    const outPath = join(process.cwd(), "public", "scrape-preview.json");
     writeFileSync(
       outPath,
       JSON.stringify(
-        { generated_at: new Date().toISOString(), fuente: FUENTE_ID, results: data },
+        {
+          generated_at: new Date().toISOString(),
+          fuente: FUENTE_ID,
+          results: merged,
+        },
         null,
         2,
       ),
     );
-    console.log(`\nPreview escrito en ${outPath}`);
-    console.log(`Abrir el mapa con ?preview=1 para verlos.`);
+    console.log(
+      `Preview escrito en ${outPath} — total: ${merged.length} (${existing.length} previos + ${allNew.length} nuevos).`,
+    );
   } finally {
     await browser.close();
   }

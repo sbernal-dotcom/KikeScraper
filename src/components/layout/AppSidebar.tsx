@@ -22,6 +22,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { usePreviewMeta } from "@/features/propiedades/preview";
 import { useDict } from "@/i18n/LocaleProvider";
 
 import { LanguageToggle } from "./LanguageToggle";
@@ -46,6 +47,7 @@ const secondaryNav: NavItem[] = [
 export function AppSidebar() {
   const pathname = usePathname();
   const dict = useDict();
+  const preview = usePreviewMeta();
 
   return (
     <Sidebar collapsible="offcanvas" variant="sidebar">
@@ -86,6 +88,19 @@ export function AppSidebar() {
                 />
               ))}
             </SidebarMenu>
+            {preview.enabled && preview.count > 0 ? (
+              <div
+                className="mx-2 mt-2 rounded-md border px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider"
+                style={{
+                  background: "rgba(214,255,0,0.12)",
+                  color: "#D6FF00",
+                  borderColor: "rgba(214,255,0,0.4)",
+                }}
+                title="Mostrando anuncios scrapeados desde public/scrape-preview.json (no guardados en DB)"
+              >
+                Preview · {preview.count} scrapeados
+              </div>
+            ) : null}
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

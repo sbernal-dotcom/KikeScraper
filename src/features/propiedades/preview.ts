@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import type {
   CategoriaPropiedad,
   Oportunidad,
@@ -166,4 +168,27 @@ export async function fetchPreviewOportunidades(): Promise<Oportunidad[]> {
   return file.results
     .map(toOportunidad)
     .filter((o): o is Oportunidad => o !== null);
+}
+
+/**
+ * Cuenta los anuncios scrapeados visibles (mismo criterio que el mapa:
+ * descarta los que no tienen lat/lng/precio). Se usa para el indicador
+ * "Preview · N scrapeados" en el sidebar.
+ */
+export function usePreviewMeta(): { enabled: boolean; count: number } {
+  const [count, setCount] = useState(0);
+  const enabled = isPreviewEnabled();
+
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    fetchPreviewPropiedades().then((items) => {
+      if (!cancelled) setCount(items.length);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled]);
+
+  return { enabled, count };
 }

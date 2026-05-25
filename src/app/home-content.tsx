@@ -31,10 +31,6 @@ export function HomeContent() {
     items: Propiedad[];
   } | null>(null);
 
-  // Detectar preview por contenido (no por query param) para mantener
-  // consistencia con /propiedades y /analisis.
-  const previewEnabled = propiedades.some((p) => p.id.startsWith("preview:"));
-
   // Propiedades que pasan los filtros (matched). Null = sin filtros = todas matched.
   const matchedSet = useMemo<Set<string> | null>(() => {
     if (activeCount === 0) return null;
@@ -97,31 +93,12 @@ export function HomeContent() {
     [propiedades],
   );
 
-  const previewCount = useMemo(
-    () => propiedades.filter((p) => p.id.startsWith("preview:")).length,
-    [propiedades],
-  );
-
   return (
     <>
       <SidebarTrigger
         aria-label={dict.nav.open_nav}
         className="absolute left-3 top-3 z-20 size-9 rounded-md border bg-background/80 shadow-sm backdrop-blur hover:bg-background"
       />
-
-      {previewEnabled ? (
-        <div
-          className="absolute right-3 top-3 z-20 rounded-md border px-2 py-1 text-[11px] font-semibold uppercase tracking-wider shadow-sm backdrop-blur"
-          style={{
-            background: "rgba(214,255,0,0.18)",
-            color: "#D6FF00",
-            borderColor: "rgba(214,255,0,0.5)",
-          }}
-          title="Mostrando anuncios scrapeados desde public/scrape-preview.json (no guardados en DB)"
-        >
-          Preview · {previewCount} scrapeados
-        </div>
-      ) : null}
 
       <div className="absolute left-16 top-3 z-20 flex items-center gap-2">
         <Button
