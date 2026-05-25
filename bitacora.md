@@ -38,6 +38,23 @@ A futuro, podría incluir una sección de análisis de rentabilidad para compara
 - Detección de cambios en propiedades
 - (Futuro) Análisis de rentabilidad compra vs alquiler
 
+## Paleta de Colores
+
+| Uso | Color | Hex | RGB |
+|-----|-------|-----|-----|
+| Venta (pin + cards + acentos) | Lime | `#D6FF00` | 214, 255, 0 |
+| Alquiler (pin + cards + acentos) | Ámbar | `#FFBB00` | 255, 187, 0 |
+| Cluster (grupo de pines en el mapa) | Amarillo | `#FFEC00` | 255, 236, 0 |
+| Background | Negro casi puro | `#0a0a0a` | 10, 10, 10 |
+| Texto sobre acento | Casi negro | `#0a0a0a` | 10, 10, 10 |
+
+**Reglas:**
+- El color de **cluster sobreescribe** el de operación (un cluster de venta o alquiler siempre se ve amarillo `#FFEC00`).
+- Cards e indicadores derivan tints suaves del acento vía `accentVars()` en `src/features/propiedades/format.ts`:
+  - `--accent-soft` = `rgba(R, G, B, 0.10)`
+  - `--accent-medium` = `rgba(R, G, B, 0.14)`
+- Definición canónica: `src/lib/mapbox/config.ts` (`MARKER_COLOR`, `MARKER_COLOR_ALQUILER`, `MARKER_COLOR_CLUSTER`) + `src/features/propiedades/format.ts` (`operationAccent()`).
+
 ## Decisiones y Cambios
 
 <!-- Registrar aquí cambios importantes, decisiones técnicas, hitos del proyecto -->
