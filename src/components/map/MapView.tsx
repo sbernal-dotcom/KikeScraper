@@ -25,6 +25,9 @@ type MapViewProps = {
   propiedades?: Propiedad[];
   selectedId?: string | null;
   onSelect?: (propiedad: Propiedad) => void;
+  /** Si se pasa, los pines NO incluidos en el Set se oscurecen
+   *  (siguen visibles pero no interactuables). null = todos los pines normales. */
+  matchedIds?: Set<string> | null;
   /** Px to reserve on the right of the map (e.g. width of the open detail card). */
   rightInsetPx?: number;
 };
@@ -36,6 +39,7 @@ export function MapView({
   propiedades = [],
   selectedId = null,
   onSelect,
+  matchedIds = null,
   rightInsetPx = 0,
 }: MapViewProps) {
   const dict = useDict();
@@ -168,6 +172,8 @@ export function MapView({
       if (selectedId === p.id) el.classList.add("mii-marker--active");
       const isPreview = p.id.startsWith("preview:");
       if (isPreview) el.classList.add("mii-marker--nuevo");
+      const isDimmed = matchedIds !== null && !matchedIds.has(p.id);
+      if (isDimmed) el.classList.add("mii-marker--dimmed");
       // El badge "NUEVO" vive DENTRO del SVG del pin para garantizar
       // que se mueve/escala junto al pin (no como sibling HTML que se podía
       // desincronizar con el transform de Mapbox).
@@ -195,7 +201,7 @@ export function MapView({
         .addTo(map);
       markersRef.current.push(marker);
     });
-  }, [propiedades, onSelect, selectedId, dict.common.new_badge]);
+  }, [propiedades, onSelect, selectedId, matchedIds, dict.common.new_badge]);
 
   if (!MAPBOX_TOKEN) {
     return (
@@ -239,6 +245,15 @@ export function MapView({
         .mii-marker svg .mii-badge-text {
           fill: #0a0a0a;
           font-family: var(--font-geist-sans), system-ui, sans-serif;
+        }
+        /* Pines fuera del filtro: visibles pero apagados y no interactuables. */
+        .mii-marker--dimmed {
+          opacity: 0.18;
+          pointer-events: none;
+          filter: grayscale(0.7);
+        }
+        .mii-marker--dimmed svg {
+          filter: none;
         }
         /* Hover/active effects live on the inner SVG so they don't fight
            the positional transform set by mapbox on the root. */
