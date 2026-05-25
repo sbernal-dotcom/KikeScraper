@@ -20,7 +20,13 @@
 import { writeFileSync } from "fs";
 import { join } from "path";
 
+import { GoogleGenAI } from "@google/genai";
+import { config as loadEnv } from "dotenv";
 import { chromium, type Page } from "playwright";
+
+// Next.js usa .env.local — cargarlo explícitamente.
+loadEnv({ path: ".env.local" });
+loadEnv();
 
 const FUENTE_ID = "encuentra24";
 const DEFAULT_URL =
@@ -44,6 +50,7 @@ type AnuncioRaw = {
   descripcion: string | null;
   imagen: string | null;
   vendedor: string | null;
+  resumen_ia: string | null;
   url_original: string;
   fuente: string;
   fecha_deteccion: string;
@@ -112,6 +119,53 @@ async function geocodeZona(
   // Intento 2: "Zona, Ciudad de Panamá, Panamá" para corregimientos
   // poco identificables a nivel país (ej. "Santa María").
   return nominatimQuery(`${zona}, Ciudad de Panamá, Panamá`);
+}
+
+// ============================================================================
+// Gemini — resumen IA (free tier: 15 RPM / 1500 RPD)
+// ============================================================================
+const gemini = process.env.GEMINI_API_KEY
+  ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+  : null;
+
+async function generarResumenIA(
+  anuncio: Omit<AnuncioRaw, "resumen_ia">,
+): Promise<string | null> {
+  if (!gemini) return null;
+  const ficha = [
+    `Título: ${anuncio.titulo ?? ""}`,
+    `Operación: ${anuncio.url_original.includes("alquiler") ? "alquiler" : "venta"}`,
+    `Precio: ${anuncio.precio} ${anuncio.moneda ?? ""}`,
+    anuncio.area_m2 ? `Área: ${anuncio.area_m2} m²` : null,
+    anuncio.habitaciones ? `Recámaras: ${anuncio.habitaciones}` : null,
+    anuncio.banos ? `Baños: ${anuncio.banos}` : null,
+    anuncio.estacionamientos
+      ? `Estacionamientos: ${anuncio.estacionamientos}`
+      : null,
+    anuncio.zona ? `Zona: ${anuncio.zona}` : null,
+    anuncio.descripcion ? `Descripción: ${anuncio.descripcion}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const prompt = `Eres un asistente de bienes raíces en Panamá. Resume el siguiente anuncio en 2-3 frases cortas en español, destacando lo más relevante para un comprador/inquilino (zona, precio por m² si aplica, características distintivas). No repitas datos numéricos al detalle, NO inventes información, sé objetivo y conciso.
+
+${ficha}
+
+Resumen:`;
+
+  try {
+    const res = await gemini.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt,
+    });
+    const text =
+      res.text?.replace(/^\s*resumen\s*:?\s*/i, "").trim() ?? null;
+    return text && text.length > 10 ? text : null;
+  } catch (err) {
+    console.warn(`  resumen-ia: ${(err as Error).message}`);
+    return null;
+  }
 }
 
 /**
@@ -394,7 +448,7 @@ async function scrape(page: Page): Promise<AnuncioRaw[]> {
         console.log(`  geocode → sin resultado confiable para "${zona}"`);
       }
 
-      results.push({
+      const anuncioBase: Omit<AnuncioRaw, "resumen_ia"> = {
         titulo,
         precio,
         moneda: normalizeMoneda(product.offers?.priceCurrency),
@@ -411,7 +465,12 @@ async function scrape(page: Page): Promise<AnuncioRaw[]> {
         url_original: item.url,
         fuente: FUENTE_ID,
         fecha_deteccion: new Date().toISOString(),
-      });
+      };
+
+      const resumen_ia = await generarResumenIA(anuncioBase);
+      if (resumen_ia) console.log(`  resumen-ia ✓ (${resumen_ia.length} chars)`);
+
+      results.push({ ...anuncioBase, resumen_ia });
     } catch (err) {
       console.warn(`  Error procesando ${item.url}:`, (err as Error).message);
     }

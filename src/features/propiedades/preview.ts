@@ -34,6 +34,7 @@ type ScrapedRow = {
   descripcion?: string | null;
   imagen?: string | null;
   vendedor?: string | null;
+  resumen_ia?: string | null;
   url_original: string;
   fuente: string;
   fecha_deteccion: string;
@@ -99,6 +100,7 @@ function toPropiedad(row: ScrapedRow): Propiedad | null {
     banos: row.banos ?? undefined,
     estacionamientos: row.estacionamientos ?? undefined,
     estadoAnuncio: "activo",
+    resumenIA: row.resumen_ia ?? undefined,
     fuenteId: row.fuente,
     fuenteNombre,
     urlOriginal: row.url_original,

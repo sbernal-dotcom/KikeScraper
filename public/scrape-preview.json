@@ -18,7 +18,8 @@
       "vendedor": "PRIVE REAL ESTATE",
       "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-apartamentos/apartamento-a-estrenar-coco-del-mar/32409708",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-24T13:35:49.860Z"
+      "fecha_deteccion": "2026-05-24T13:35:49.860Z",
+      "resumen_ia": "Se vende moderno apartamento a estrenar de 107 m² en Coco del Mar, con 2 recámaras, 2 baños y 1 estacionamiento. Esta propiedad destaca por su arquitectura de vanguardia que integra un diseño orgánico con vistas al Pacífico."
     },
     {
       "titulo": "Alquiler de apartamento amoblado en Marbella",
@@ -36,7 +37,8 @@
       "vendedor": "Ejemplo",
       "url_original": "https://example.com/preview/alquiler-marbella-demo",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-24T13:36:05.307Z"
+      "fecha_deteccion": "2026-05-24T13:36:05.307Z",
+      "resumen_ia": "Se alquila apartamento amoblado de 120 m² en la céntrica zona de Marbella, ideal por su ubicación comercial. Cuenta con 2 recámaras, 2 baños, 1 estacionamiento y ofrece una agradable vista parcial al mar."
     }
   ]
 }
