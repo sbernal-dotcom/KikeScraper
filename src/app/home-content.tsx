@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
 
 import { MapView } from "@/components/map/MapView";
@@ -22,8 +21,9 @@ export function HomeContent() {
   const { filters, reset, activeCount } = useAnalyticsFiltersCtx();
   const [seleccionada, setSeleccionada] = useState<Propiedad | null>(null);
 
-  const searchParams = useSearchParams();
-  const previewEnabled = searchParams.get("preview") === "1";
+  // Detectar preview por contenido (no por query param) para mantener
+  // consistencia con /propiedades y /analisis.
+  const previewEnabled = propiedades.some((p) => p.id.startsWith("preview:"));
 
   const visibles = useMemo(
     () => applyMapFilters(propiedades, filters),
