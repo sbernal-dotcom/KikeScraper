@@ -15,15 +15,13 @@ export function useOportunidades() {
 
   useEffect(() => {
     let cancelled = false;
-    const preview = isPreviewEnabled();
-    const tasks: [Promise<Oportunidad[]>, Promise<Oportunidad[]>] = [
-      fetchOportunidades(),
-      preview ? fetchPreviewOportunidades() : Promise.resolve([]),
-    ];
-    Promise.all(tasks)
-      .then(([base, extra]) => {
-        if (!cancelled)
-          setState({ data: [...base, ...extra], loading: false, error: null });
+    // En modo preview, mostrar SOLO los scrapeados (no merge con Supabase).
+    const promise = isPreviewEnabled()
+      ? fetchPreviewOportunidades()
+      : fetchOportunidades();
+    promise
+      .then((data) => {
+        if (!cancelled) setState({ data, loading: false, error: null });
       })
       .catch((err: Error) => {
         if (!cancelled)

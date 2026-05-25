@@ -21,15 +21,13 @@ export function usePropiedades(): State {
 
   useEffect(() => {
     let cancelled = false;
-    const preview = isPreviewEnabled();
-    const tasks: [Promise<Propiedad[]>, Promise<Propiedad[]>] = [
-      fetchPropiedades(),
-      preview ? fetchPreviewPropiedades() : Promise.resolve([]),
-    ];
-    Promise.all(tasks)
-      .then(([base, extra]) => {
-        if (!cancelled)
-          setState({ data: [...base, ...extra], loading: false, error: null });
+    // En modo preview, mostrar SOLO los scrapeados (no merge con Supabase).
+    const promise = isPreviewEnabled()
+      ? fetchPreviewPropiedades()
+      : fetchPropiedades();
+    promise
+      .then((data) => {
+        if (!cancelled) setState({ data, loading: false, error: null });
       })
       .catch((err: Error) => {
         if (!cancelled)
