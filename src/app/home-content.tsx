@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 
-import { MapView } from "@/components/map/MapView";
+import { MapView, type MapPin } from "@/components/map/MapView";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -35,16 +35,55 @@ export function HomeContent() {
   // consistencia con /propiedades y /analisis.
   const previewEnabled = propiedades.some((p) => p.id.startsWith("preview:"));
 
-  // Set de IDs que pasan los filtros. Si no hay filtros activos → null
-  // (todos los pines se ven normales). Con filtros → los no-matched se
-  // oscurecen pero siguen visibles.
-  const matchedIds = useMemo<Set<string> | null>(() => {
+  // Propiedades que pasan los filtros (matched). Null = sin filtros = todas matched.
+  const matchedSet = useMemo<Set<string> | null>(() => {
     if (activeCount === 0) return null;
     const list = applyMapFilters(propiedades, filters);
     return new Set(list.map((p) => p.id));
   }, [propiedades, filters, activeCount]);
 
-  const matchedCount = matchedIds?.size ?? propiedades.length;
+  const matchedCount = matchedSet?.size ?? propiedades.length;
+
+  // Agrupa propiedades por (zona, operación) → un pin por grupo.
+  // Pin con count>1 representa un cluster; count=1 es una propiedad sola.
+  // `clusters` mapea pinId → propiedades de ese pin para el click handler.
+  const { pins, clusters } = useMemo(() => {
+    const byKey = new Map<string, Propiedad[]>();
+    for (const p of propiedades) {
+      const zona = p.ubicacion.corregimiento ?? `_solo:${p.id}`;
+      const key = `${zona}__${p.tipoOperacion}`;
+      const existing = byKey.get(key);
+      if (existing) existing.push(p);
+      else byKey.set(key, [p]);
+    }
+    const pinsArr: MapPin[] = [];
+    const clusterMap = new Map<string, Propiedad[]>();
+    for (const [key, items] of byKey) {
+      const first = items[0];
+      const pinId = items.length > 1 ? `cluster:${key}` : first.id;
+      pinsArr.push({
+        id: pinId,
+        lat: first.ubicacion.lat,
+        lng: first.ubicacion.lng,
+        tipoOperacion: first.tipoOperacion,
+        isPreview: items.some((i) => i.id.startsWith("preview:")),
+        count: items.length,
+      });
+      clusterMap.set(pinId, items);
+    }
+    return { pins: pinsArr, clusters: clusterMap };
+  }, [propiedades]);
+
+  // Pin matched si AL MENOS uno de sus items pasa el filtro.
+  const matchedPinIds = useMemo<Set<string> | null>(() => {
+    if (!matchedSet) return null;
+    const ids = new Set<string>();
+    for (const pin of pins) {
+      const items = clusters.get(pin.id) ?? [];
+      if (items.some((i) => matchedSet.has(i.id))) ids.add(pin.id);
+    }
+    return ids;
+  }, [pins, clusters, matchedSet]);
 
   const zonasDisponibles = useMemo(
     () =>
@@ -122,25 +161,23 @@ export function HomeContent() {
 
       <MapView
         className="h-full w-full"
-        propiedades={propiedades}
-        matchedIds={matchedIds}
+        pins={pins}
+        matchedIds={matchedPinIds}
         selectedId={seleccionada?.id ?? null}
-        onSelect={(p) => {
-          // Solo pines matched (no oscurecidos) son clickeables; el cluster
-          // se calcula sobre el set matched cuando hay filtros activos.
-          const pool = matchedIds
-            ? propiedades.filter((x) => matchedIds.has(x.id))
-            : propiedades;
-          const zona = p.ubicacion.corregimiento;
-          const cluster = zona
-            ? pool.filter((x) => x.ubicacion.corregimiento === zona)
-            : [p];
-          if (cluster.length > 1) {
-            setZonaList({ zona: zona ?? "", items: cluster });
-            setSeleccionada(p);
+        onSelect={(pinId) => {
+          const items = clusters.get(pinId) ?? [];
+          // Si hay filtros activos, solo mostrar los items que pasan.
+          const visibleItems = matchedSet
+            ? items.filter((i) => matchedSet.has(i.id))
+            : items;
+          if (visibleItems.length === 0) return;
+          if (visibleItems.length > 1) {
+            const zona = visibleItems[0].ubicacion.corregimiento ?? "";
+            setZonaList({ zona, items: visibleItems });
+            setSeleccionada(visibleItems[0]);
           } else {
             setZonaList(null);
-            setSeleccionada(p);
+            setSeleccionada(visibleItems[0]);
           }
         }}
         rightInsetPx={seleccionada || zonaList ? 380 : 0}

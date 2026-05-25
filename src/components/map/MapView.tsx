@@ -6,7 +6,7 @@ import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
 import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-geocoder/lib/mapbox-gl-geocoder.css";
 
-import type { Propiedad } from "@/features/propiedades/types";
+import type { TipoOperacion } from "@/features/propiedades/types";
 import { useDict, useLocale } from "@/i18n/LocaleProvider";
 import {
   DEFAULT_ZOOM,
@@ -18,13 +18,27 @@ import {
 } from "@/lib/mapbox/config";
 import { cn } from "@/lib/utils";
 
+/**
+ * Pin del mapa. Puede representar una sola propiedad (count=1) o un
+ * cluster de varias en la misma zona+operación (count>1). El cluster
+ * se ancla a las coords del primer item del grupo.
+ */
+export type MapPin = {
+  id: string;
+  lat: number;
+  lng: number;
+  tipoOperacion: TipoOperacion;
+  isPreview: boolean;
+  count: number;
+};
+
 type MapViewProps = {
   className?: string;
   center?: [number, number];
   zoom?: number;
-  propiedades?: Propiedad[];
+  pins?: MapPin[];
   selectedId?: string | null;
-  onSelect?: (propiedad: Propiedad) => void;
+  onSelect?: (pinId: string) => void;
   /** Si se pasa, los pines NO incluidos en el Set se oscurecen
    *  (siguen visibles pero no interactuables). null = todos los pines normales. */
   matchedIds?: Set<string> | null;
@@ -36,7 +50,7 @@ export function MapView({
   className,
   center = PANAMA_CITY_CENTER,
   zoom = DEFAULT_ZOOM,
-  propiedades = [],
+  pins = [],
   selectedId = null,
   onSelect,
   matchedIds = null,
@@ -165,25 +179,29 @@ export function MapView({
     markersRef.current = [];
 
     const newLabel = dict.common.new_badge.toUpperCase();
-    propiedades.forEach((p) => {
+    pins.forEach((p) => {
       const el = document.createElement("div");
       el.className = "mii-marker";
       if (p.tipoOperacion === "alquiler") el.classList.add("mii-marker--alquiler");
       if (selectedId === p.id) el.classList.add("mii-marker--active");
-      const isPreview = p.id.startsWith("preview:");
-      if (isPreview) el.classList.add("mii-marker--nuevo");
+      const isCluster = p.count > 1;
+      // Chip arriba del pin: cluster muestra el número, single+preview muestra "NUEVO",
+      // single normal no muestra nada.
+      const badgeText = isCluster ? String(p.count) : p.isPreview ? newLabel : null;
+      const hasBadge = badgeText !== null;
+      if (hasBadge) el.classList.add("mii-marker--nuevo");
+      if (isCluster) el.classList.add("mii-marker--cluster");
       const isDimmed = matchedIds !== null && !matchedIds.has(p.id);
       if (isDimmed) el.classList.add("mii-marker--dimmed");
-      // El badge "NUEVO" vive DENTRO del SVG del pin para garantizar
-      // que se mueve/escala junto al pin (no como sibling HTML que se podía
-      // desincronizar con el transform de Mapbox).
-      // viewBox negativo en Y reserva espacio arriba del pin sin afectar
-      // su posición (el tip del pin sigue siendo el bottom del marker).
-      el.innerHTML = isPreview
+      // El chip vive DENTRO del SVG del pin para garantizar que se mueve/
+      // escala junto al pin (no como sibling HTML que se podía desincronizar
+      // con el transform de Mapbox). viewBox negativo en Y reserva espacio
+      // arriba del pin sin afectar su posición (el tip sigue siendo el bottom).
+      el.innerHTML = hasBadge
         ? `
         <svg viewBox="-2 -11 28 43" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <rect class="mii-badge-bg" x="-2" y="-11" width="28" height="8" rx="1.5" />
-          <text class="mii-badge-text" x="12" y="-5" font-size="6" font-weight="800" text-anchor="middle" letter-spacing="0.4">${newLabel}</text>
+          <text class="mii-badge-text" x="12" y="-5" font-size="6" font-weight="800" text-anchor="middle" letter-spacing="0.4">${badgeText}</text>
           <path fill-rule="evenodd" clip-rule="evenodd"
                 d="M12 0C5.373 0 0 5.373 0 12c0 8.4 12 20 12 20s12-11.6 12-20c0-6.627-5.373-12-12-12zm0 7a5 5 0 100 10 5 5 0 000-10z" />
         </svg>`
@@ -194,14 +212,14 @@ export function MapView({
         </svg>`;
       el.addEventListener("click", (e) => {
         e.stopPropagation();
-        onSelect?.(p);
+        onSelect?.(p.id);
       });
       const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
-        .setLngLat([p.ubicacion.lng, p.ubicacion.lat])
+        .setLngLat([p.lng, p.lat])
         .addTo(map);
       markersRef.current.push(marker);
     });
-  }, [propiedades, onSelect, selectedId, matchedIds, dict.common.new_badge]);
+  }, [pins, onSelect, selectedId, matchedIds, dict.common.new_badge]);
 
   if (!MAPBOX_TOKEN) {
     return (
