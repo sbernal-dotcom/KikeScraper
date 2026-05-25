@@ -32,7 +32,7 @@ const FUENTE_ID = "encuentra24";
 const DEFAULT_URL =
   "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades";
 const URL_LISTADO = process.env.SCRAPE_URL ?? DEFAULT_URL;
-const MAX_ANUNCIOS = 5;
+const MAX_ANUNCIOS = 10;
 const USER_AGENT =
   "MapaInteractivoInteligente/0.1 (+contacto: abilendesign@gmail.com)";
 
