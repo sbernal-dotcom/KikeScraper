@@ -53,6 +53,8 @@ export type Dictionary = {
   card: {
     no_image: string;
     ai_summary: string;
+    tags: string;
+    tag_extra_hint: string;
     source: string;
     detected: string;
     published: string;
@@ -167,6 +169,8 @@ const es: Dictionary = {
   card: {
     no_image: "sin imagen",
     ai_summary: "Resumen IA",
+    tags: "Características",
+    tag_extra_hint: "Sugerencia automática (fuera de la lista oficial)",
     source: "Fuente",
     detected: "Detectada",
     published: "Publicada",
@@ -285,6 +289,8 @@ const en: Dictionary = {
   card: {
     no_image: "no image",
     ai_summary: "AI summary",
+    tags: "Features",
+    tag_extra_hint: "Auto-suggested (not in the official list)",
     source: "Source",
     detected: "Detected",
     published: "Published",

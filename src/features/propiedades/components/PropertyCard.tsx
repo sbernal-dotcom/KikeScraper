@@ -10,6 +10,7 @@ import {
   MapPin,
   Maximize2,
   Sparkles,
+  Tag,
   X,
 } from "lucide-react";
 
@@ -193,6 +194,39 @@ export function PropertyCard({
               <p className="text-sm leading-relaxed text-foreground/90">
                 {propiedad.resumenIA}
               </p>
+            </section>
+          </>
+        ) : null}
+
+        {(propiedad.tagsCaracteristicas?.length ?? 0) +
+          (propiedad.tagsExtra?.length ?? 0) >
+        0 ? (
+          <>
+            <Separator className="my-5" />
+            <section>
+              <div className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                <Tag className="size-3.5" />
+                <span>{dict.card.tags}</span>
+              </div>
+              <ul className="flex flex-wrap gap-1.5">
+                {(propiedad.tagsCaracteristicas ?? []).map((t) => (
+                  <li
+                    key={`c-${t}`}
+                    className="rounded-sm border border-border/60 bg-card/40 px-2 py-0.5 text-[11px] font-medium text-foreground/85"
+                  >
+                    {t.replace(/-/g, " ")}
+                  </li>
+                ))}
+                {(propiedad.tagsExtra ?? []).map((t) => (
+                  <li
+                    key={`x-${t}`}
+                    className="rounded-sm border border-dashed border-border/60 bg-card/20 px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+                    title={dict.card.tag_extra_hint}
+                  >
+                    {t.replace(/-/g, " ")}
+                  </li>
+                ))}
+              </ul>
             </section>
           </>
         ) : null}

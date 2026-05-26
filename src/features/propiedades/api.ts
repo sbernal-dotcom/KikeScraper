@@ -76,7 +76,6 @@ function mapPropiedad(p: DbPropiedad): Propiedad {
   return {
     id: p.id,
     titulo: p.titulo,
-    descripcion: p.descripcion ?? undefined,
     precio: toNumber(p.precio) ?? 0,
     moneda: p.moneda,
     tipoOperacion: p.tipo_operacion,
@@ -100,7 +99,6 @@ function mapPropiedad(p: DbPropiedad): Propiedad {
     fuenteNombre: p.fuente?.nombre ?? p.fuente_id,
     urlOriginal: p.url_original,
     otrosAnuncios: (p.anuncios ?? []).map(mapAnuncio),
-    imagenes: p.imagenes ?? [],
     fechaPublicacion: p.fecha_publicacion ?? "",
     fechaDeteccion: p.fecha_deteccion,
     fechaActualizacion: p.fecha_actualizacion,

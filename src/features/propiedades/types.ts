@@ -65,7 +65,6 @@ export interface AnuncioAdicional {
 export interface Propiedad {
   id: string;
   titulo: string;
-  descripcion?: string;
   precio: number;
   moneda: Moneda;
   tipoOperacion: TipoOperacion;
@@ -78,11 +77,12 @@ export interface Propiedad {
   condicion?: Condicion;
   estadoAnuncio: EstadoAnuncio;
   resumenIA?: string;
+  tagsCaracteristicas?: string[];
+  tagsExtra?: string[];
   fuenteId: string;
   fuenteNombre: string;
   urlOriginal: string;
   otrosAnuncios?: AnuncioAdicional[];
-  imagenes: string[];
   fechaPublicacion: string;
   fechaDeteccion: string;
   fechaActualizacion: string;

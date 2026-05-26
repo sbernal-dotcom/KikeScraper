@@ -33,21 +33,15 @@ type ScrapedRow = {
   zona: string | null;
   lat: number | null;
   lng: number | null;
-  descripcion?: string | null;
-  imagen?: string | null;
-  vendedor?: string | null;
   resumen_ia?: string | null;
+  tags_caracteristicas?: string[] | null;
+  tags_extra?: string[] | null;
+  ai_source_flag?: string | null;
   url_original: string;
   fuente: string;
   fecha_deteccion: string;
+  fecha_actualizacion?: string | null;
 };
-
-function buildDescripcion(row: ScrapedRow): string | undefined {
-  const parts: string[] = [];
-  if (row.vendedor) parts.push(`Vendedor: ${row.vendedor}`);
-  if (row.descripcion) parts.push(row.descripcion);
-  return parts.length ? parts.join(" · ") : undefined;
-}
 
 type ScrapePreviewFile = {
   generated_at: string;
@@ -83,11 +77,11 @@ function toPropiedad(row: ScrapedRow): Propiedad | null {
   if (row.precio === null) return null;
 
   const fuenteNombre = FUENTE_NOMBRES[row.fuente] ?? row.fuente;
+  const fechaAct = row.fecha_actualizacion ?? row.fecha_deteccion;
 
   return {
     id: `preview:${row.url_original}`,
     titulo: row.titulo ?? "(sin título)",
-    descripcion: buildDescripcion(row),
     precio: row.precio,
     moneda: row.moneda ?? "USD",
     tipoOperacion: tipoOperacionFromUrl(row.url_original),
@@ -103,14 +97,15 @@ function toPropiedad(row: ScrapedRow): Propiedad | null {
     estacionamientos: row.estacionamientos ?? undefined,
     estadoAnuncio: "activo",
     resumenIA: row.resumen_ia ?? undefined,
+    tagsCaracteristicas: row.tags_caracteristicas ?? [],
+    tagsExtra: row.tags_extra ?? [],
     fuenteId: row.fuente,
     fuenteNombre,
     urlOriginal: row.url_original,
     otrosAnuncios: [],
-    imagenes: row.imagen ? [row.imagen] : [],
     fechaPublicacion: row.fecha_deteccion,
     fechaDeteccion: row.fecha_deteccion,
-    fechaActualizacion: row.fecha_deteccion,
+    fechaActualizacion: fechaAct,
   };
 }
 

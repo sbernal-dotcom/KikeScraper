@@ -24,6 +24,13 @@ import { GoogleGenAI } from "@google/genai";
 import { config as loadEnv } from "dotenv";
 import { chromium, type Page } from "playwright";
 
+import {
+  filterTagsCerrados,
+  filterTagsExtra,
+  overlapAlto,
+  TAGS_CERRADOS,
+  type TagCerrado,
+} from "./tags-caracteristicas";
 import { centroFromTable, jitterCoords } from "./zonas-panama";
 
 // Next.js usa .env.local — cargarlo explícitamente.
@@ -48,6 +55,12 @@ const LISTADOS: Array<{ url: string; limit: number }> = process.env.SCRAPE_URL
 const USER_AGENT =
   "MapaInteractivoInteligente/0.1 (+contacto: abilendesign@gmail.com)";
 
+/**
+ * Campos finales aprobados (ver project_flow_scraper_supabase.md):
+ * solo datos factuales + resumen IA original. NO se persiste descripción,
+ * imágenes, vendedor, email ni teléfono. La descripción solo existe como
+ * variable LOCAL durante la corrida — nunca toca disco ni logs.
+ */
 type AnuncioRaw = {
   titulo: string | null;
   precio: number | null;
@@ -59,13 +72,14 @@ type AnuncioRaw = {
   zona: string | null;
   lat: number | null;
   lng: number | null;
-  descripcion: string | null;
-  imagen: string | null;
-  vendedor: string | null;
-  resumen_ia: string | null;
   url_original: string;
   fuente: string;
   fecha_deteccion: string;
+  fecha_actualizacion: string;
+  resumen_ia: string | null;
+  tags_caracteristicas: TagCerrado[];
+  tags_extra: string[];
+  ai_source_flag: "generated_from_external_description" | null;
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -138,16 +152,44 @@ async function geocodeZona(
 }
 
 // ============================================================================
-// Gemini — resumen IA (free tier: 15 RPM / 1500 RPD)
+// Gemini — resumen IA + tags (free tier: 15 RPM / 1500 RPD)
+//
+// Pipeline:
+//   1. La descripción del anuncio se pasa como input TEMPORAL a Gemini.
+//   2. Gemini devuelve JSON { resumen_ia, tags, tags_extra } — texto original.
+//   3. Validación anti-copia (3-grams). Si overlap > 20% → resumen_ia=null.
+//   4. La descripción se descarta. Nunca toca disco, JSON ni logs.
+//
+// Feature flag: si AI_SUMMARY_ENABLED=false → no se llama a Gemini.
+// Apagar antes de monetizar sin permiso escrito de la fuente.
 // ============================================================================
-const gemini = process.env.GEMINI_API_KEY
+const AI_SUMMARY_ENABLED =
+  process.env.AI_SUMMARY_ENABLED !== "false" && !!process.env.GEMINI_API_KEY;
+
+const gemini = AI_SUMMARY_ENABLED
   ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
   : null;
 
-async function generarResumenIA(
-  anuncio: Omit<AnuncioRaw, "resumen_ia">,
-): Promise<string | null> {
-  if (!gemini) return null;
+type EnriquecimientoIA = {
+  resumen_ia: string | null;
+  tags_caracteristicas: TagCerrado[];
+  tags_extra: string[];
+  ai_source_flag: "generated_from_external_description" | null;
+};
+
+const ENRIQUECIMIENTO_VACIO: EnriquecimientoIA = {
+  resumen_ia: null,
+  tags_caracteristicas: [],
+  tags_extra: [],
+  ai_source_flag: null,
+};
+
+async function enriquecerConIA(
+  anuncio: AnuncioRaw,
+  descripcion: string | null,
+): Promise<EnriquecimientoIA> {
+  if (!gemini) return ENRIQUECIMIENTO_VACIO;
+
   const ficha = [
     `Título: ${anuncio.titulo ?? ""}`,
     `Operación: ${anuncio.url_original.includes("alquiler") ? "alquiler" : "venta"}`,
@@ -159,28 +201,77 @@ async function generarResumenIA(
       ? `Estacionamientos: ${anuncio.estacionamientos}`
       : null,
     anuncio.zona ? `Zona: ${anuncio.zona}` : null,
-    anuncio.descripcion ? `Descripción: ${anuncio.descripcion}` : null,
+    descripcion ? `Descripción (solo referencia, NO copiar): ${descripcion}` : null,
   ]
     .filter(Boolean)
     .join("\n");
 
-  const prompt = `Eres un asistente de bienes raíces en Panamá. Resume el siguiente anuncio en 2-3 frases cortas en español, destacando lo más relevante para un comprador/inquilino (zona, precio por m² si aplica, características distintivas). No repitas datos numéricos al detalle, NO inventes información, sé objetivo y conciso.
+  const prompt = `Eres un asistente de bienes raíces en Panamá. Recibes una ficha de anuncio. Produce JSON con dos cosas:
 
+1. "resumen_ia": Texto ORIGINAL, parafraseado, máximo 280 caracteres, 2 frases cortas en español. NO copies frases ni cláusulas literales de la descripción. NO inventes datos. Si no hay suficiente info, devuelve cadena vacía.
+
+2. "tags": Subconjunto exacto de esta lista cerrada (kebab-case), basado en lo que claramente aparece en la ficha. Si una característica no está soportada por evidencia, NO la incluyas.
+Lista permitida: ${TAGS_CERRADOS.join(", ")}
+
+3. "tags_extra": MÁXIMO 3 tags libres en kebab-case en español para características importantes que NO estén en la lista cerrada (ej: rooftop, coworking, smart-home). Si no hay nada relevante, devuelve arreglo vacío.
+
+Ficha:
 ${ficha}
 
-Resumen:`;
+Responde SOLO el JSON, sin texto adicional ni bloque markdown.`;
 
   try {
     const res = await gemini.models.generateContent({
       model: "gemini-flash-lite-latest",
       contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "object",
+          properties: {
+            resumen_ia: { type: "string" },
+            tags: { type: "array", items: { type: "string" } },
+            tags_extra: { type: "array", items: { type: "string" } },
+          },
+          required: ["resumen_ia", "tags", "tags_extra"],
+        },
+      },
     });
-    const text =
-      res.text?.replace(/^\s*resumen\s*:?\s*/i, "").trim() ?? null;
-    return text && text.length > 10 ? text : null;
+    const raw = res.text?.trim() ?? "";
+    if (!raw) return ENRIQUECIMIENTO_VACIO;
+    const parsed = JSON.parse(raw) as {
+      resumen_ia?: string;
+      tags?: unknown;
+      tags_extra?: unknown;
+    };
+
+    const tags_caracteristicas = filterTagsCerrados(parsed.tags);
+    const tags_extra = filterTagsExtra(parsed.tags_extra, tags_caracteristicas);
+
+    let resumen_ia: string | null = null;
+    const candidato = (parsed.resumen_ia ?? "").trim().slice(0, 280);
+    if (candidato.length >= 20) {
+      if (overlapAlto(descripcion, candidato)) {
+        // El modelo citó frases de la descripción — descartamos por riesgo
+        // de redistribución de contenido protegido (ToS encuentra24 cl. d).
+        console.warn(`  resumen-ia descartado: overlap alto con descripción`);
+      } else {
+        resumen_ia = candidato;
+      }
+    }
+
+    return {
+      resumen_ia,
+      tags_caracteristicas,
+      tags_extra,
+      ai_source_flag:
+        resumen_ia || tags_caracteristicas.length || tags_extra.length
+          ? "generated_from_external_description"
+          : null,
+    };
   } catch (err) {
     console.warn(`  resumen-ia: ${(err as Error).message}`);
-    return null;
+    return ENRIQUECIMIENTO_VACIO;
   }
 }
 
@@ -277,12 +368,6 @@ function normalizeMoneda(c: string | undefined): "USD" | "PAB" | null {
   const v = c.toUpperCase();
   if (v === "USD" || v === "PAB") return v;
   return null;
-}
-
-function extractImage(img: LdProduct["image"]): string | null {
-  if (!img) return null;
-  if (typeof img === "string") return img;
-  return img.contentUrl ?? null;
 }
 
 type Caracteristicas = {
@@ -489,7 +574,12 @@ async function scrape(
         console.log(`  geocode → sin resultado confiable para "${zona}"`);
       }
 
-      const anuncioBase: Omit<AnuncioRaw, "resumen_ia"> = {
+      // Descripción SOLO como variable local. Se pasa a Gemini y se descarta.
+      // Nunca se persiste a JSON ni a Supabase ni se loguea (ToS encuentra24).
+      const descripcionTemp = trimDescripcion(product.description);
+      const ahora = new Date().toISOString();
+
+      const anuncioBase: AnuncioRaw = {
         titulo,
         precio,
         moneda: normalizeMoneda(product.offers?.priceCurrency),
@@ -500,18 +590,25 @@ async function scrape(
         zona,
         lat: finalCoords?.lat ?? null,
         lng: finalCoords?.lng ?? null,
-        descripcion: trimDescripcion(product.description),
-        imagen: extractImage(product.image),
-        vendedor: product.offers?.seller?.name?.trim() || null,
         url_original: item.url,
         fuente: FUENTE_ID,
-        fecha_deteccion: new Date().toISOString(),
+        fecha_deteccion: ahora,
+        fecha_actualizacion: ahora,
+        resumen_ia: null,
+        tags_caracteristicas: [],
+        tags_extra: [],
+        ai_source_flag: null,
       };
 
-      const resumen_ia = await generarResumenIA(anuncioBase);
-      if (resumen_ia) console.log(`  resumen-ia ✓ (${resumen_ia.length} chars)`);
+      const enriq = await enriquecerConIA(anuncioBase, descripcionTemp);
+      if (enriq.resumen_ia)
+        console.log(`  resumen-ia ✓ (${enriq.resumen_ia.length} chars)`);
+      if (enriq.tags_caracteristicas.length || enriq.tags_extra.length)
+        console.log(
+          `  tags ✓ ${enriq.tags_caracteristicas.length} cerrados + ${enriq.tags_extra.length} extras`,
+        );
 
-      results.push({ ...anuncioBase, resumen_ia });
+      results.push({ ...anuncioBase, ...enriq });
     } catch (err) {
       console.warn(`  Error procesando ${item.url}:`, (err as Error).message);
     }
