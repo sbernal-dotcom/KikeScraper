@@ -45,6 +45,10 @@ const DEFAULT_LISTADOS: Array<{ url: string; limit: number }> = [
   // La variante con "-de-propiedades" devuelve 200 OK pero NO renderiza listados
   // (probable misconfig de Next.js en encuentra24). Verificado vía debug.
   {
+    url: "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades",
+    limit: 10,
+  },
+  {
     url: "https://www.encuentra24.com/panama-es/bienes-raices-alquiler",
     limit: 10,
   },
