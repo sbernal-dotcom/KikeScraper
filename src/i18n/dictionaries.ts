@@ -89,25 +89,6 @@ export type Dictionary = {
   compare: {
     add: string;
     remove: string;
-    bar_count: string;
-    compare_btn: string;
-    clear_btn: string;
-    title: string;
-    subtitle_hint: string;
-    field_image: string;
-    field_price: string;
-    field_price_m2: string;
-    field_operation: string;
-    field_category: string;
-    field_zone: string;
-    field_area: string;
-    field_bedrooms: string;
-    field_bathrooms: string;
-    field_parking: string;
-    field_tags: string;
-    field_source: string;
-    field_link: string;
-    open_listing: string;
   };
   geocoder: { placeholder: string };
   analytics: {
@@ -260,25 +241,6 @@ const es: Dictionary = {
   compare: {
     add: "Agregar a comparación",
     remove: "Quitar de comparación",
-    bar_count: "{count}/{max} propiedades seleccionadas",
-    compare_btn: "Comparar",
-    clear_btn: "Limpiar",
-    title: "Comparar propiedades",
-    subtitle_hint: "Mínimo 2, máximo 3",
-    field_image: "Foto",
-    field_price: "Precio",
-    field_price_m2: "Precio / m²",
-    field_operation: "Operación",
-    field_category: "Categoría",
-    field_zone: "Zona",
-    field_area: "Área",
-    field_bedrooms: "Recámaras",
-    field_bathrooms: "Baños",
-    field_parking: "Estacionamientos",
-    field_tags: "Características",
-    field_source: "Fuente",
-    field_link: "Anuncio",
-    open_listing: "Abrir",
   },
   geocoder: { placeholder: "Buscar dirección o lugar…" },
   analytics: {
@@ -431,25 +393,6 @@ const en: Dictionary = {
   compare: {
     add: "Add to comparison",
     remove: "Remove from comparison",
-    bar_count: "{count}/{max} properties selected",
-    compare_btn: "Compare",
-    clear_btn: "Clear",
-    title: "Compare properties",
-    subtitle_hint: "At least 2, up to 3",
-    field_image: "Photo",
-    field_price: "Price",
-    field_price_m2: "Price / m²",
-    field_operation: "Operation",
-    field_category: "Category",
-    field_zone: "Area",
-    field_area: "Size",
-    field_bedrooms: "Bedrooms",
-    field_bathrooms: "Bathrooms",
-    field_parking: "Parking",
-    field_tags: "Features",
-    field_source: "Source",
-    field_link: "Listing",
-    open_listing: "Open",
   },
   geocoder: { placeholder: "Search address or place…" },
   analytics: {

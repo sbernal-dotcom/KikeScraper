@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useDict } from "@/i18n/LocaleProvider";
+import { useComparison } from "@/features/comparacion/ComparisonContext";
 import {
   applyMapFilters,
   useAnalyticsFiltersCtx,
@@ -22,8 +23,19 @@ export function HomeContent() {
   const dict = useDict();
   const { data: propiedades, error } = usePropiedades();
   const { filters, setFilters, reset, activeCount } = useAnalyticsFiltersCtx();
+  const comparison = useComparison();
   const [seleccionada, setSeleccionada] = useState<Propiedad | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Cards visibles a la derecha: las items en comparación + la seleccionada
+  // si no está ya comparada. Se apilan de izquierda (más vieja) a derecha
+  // (más nueva). Cada una ocupa 380px.
+  const visibleCards = useMemo<Propiedad[]>(() => {
+    const inCompare = new Set(comparison.items.map((p) => p.id));
+    const list: Propiedad[] = [...comparison.items];
+    if (seleccionada && !inCompare.has(seleccionada.id)) list.push(seleccionada);
+    return list;
+  }, [comparison.items, seleccionada]);
   // Lista lateral cuando hay >1 pin en la misma zona. Mantiene el grupo
   // abierto cuando el usuario clica una de las propiedades y luego "Volver".
   const [zonaList, setZonaList] = useState<{
@@ -159,7 +171,9 @@ export function HomeContent() {
             setSeleccionada(visibleItems[0]);
           }
         }}
-        rightInsetPx={seleccionada || zonaList ? 380 : 0}
+        rightInsetPx={
+          zonaList ? 380 : visibleCards.length > 0 ? visibleCards.length * 380 : 0
+        }
         leftInsetPx={activeCount > 0 ? 260 : 180}
       />
       {error ? (
@@ -167,18 +181,7 @@ export function HomeContent() {
           {error}
         </div>
       ) : null}
-      {seleccionada ? (
-        <div className="absolute inset-y-0 right-0 z-20 flex">
-          <PropertyCard
-            propiedad={seleccionada}
-            onClose={() => {
-              setSeleccionada(null);
-              setZonaList(null);
-            }}
-            onBack={zonaList ? () => setSeleccionada(null) : undefined}
-          />
-        </div>
-      ) : zonaList ? (
+      {zonaList ? (
         <div className="absolute inset-y-0 right-0 z-20 flex">
           <ZonaList
             zona={zonaList.zona}
@@ -186,6 +189,25 @@ export function HomeContent() {
             onSelect={(p) => setSeleccionada(p)}
             onClose={() => setZonaList(null)}
           />
+        </div>
+      ) : visibleCards.length > 0 ? (
+        <div className="absolute inset-y-0 right-0 z-20 flex">
+          {visibleCards.map((p) => (
+            <PropertyCard
+              key={p.id}
+              propiedad={p}
+              onClose={() => {
+                // Si está en comparación, sacarla de ahí (y de seleccionada si
+                // coincidía). Si era la seleccionada sola, limpiar selección.
+                if (comparison.has(p.id)) {
+                  comparison.remove(p.id);
+                  if (seleccionada?.id === p.id) setSeleccionada(null);
+                } else {
+                  setSeleccionada(null);
+                }
+              }}
+            />
+          ))}
         </div>
       ) : null}
 

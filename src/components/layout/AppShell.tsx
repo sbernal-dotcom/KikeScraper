@@ -7,8 +7,6 @@ import {
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LocaleProvider } from "@/i18n/LocaleProvider";
 import { AnalyticsFiltersProvider } from "@/features/propiedades/AnalyticsFiltersContext";
-import { ComparisonBar } from "@/features/comparacion/ComparisonBar";
-import { ComparisonPanel } from "@/features/comparacion/ComparisonPanel";
 import { ComparisonProvider } from "@/features/comparacion/ComparisonContext";
 
 import { AppSidebar } from "./AppSidebar";
@@ -25,8 +23,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {children}
               </SidebarInset>
             </SidebarProvider>
-            <ComparisonBar />
-            <ComparisonPanel />
           </TooltipProvider>
         </ComparisonProvider>
       </AnalyticsFiltersProvider>
