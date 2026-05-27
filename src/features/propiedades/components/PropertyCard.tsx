@@ -1,5 +1,6 @@
 "use client";
 
+import { useLayoutEffect, useRef } from "react";
 import {
   ArrowLeft,
   Bath,
@@ -133,14 +134,14 @@ export function PropertyCard({
               </span>
             ) : null}
           </div>
-          <h2
+          <FittedTitle
+            text={propiedad.titulo}
             className={cn(
               "font-semibold leading-tight tracking-tight",
               compact ? "text-sm" : "text-lg",
             )}
-          >
-            {propiedad.titulo}
-          </h2>
+            minPx={compact ? 11 : 13}
+          />
         </div>
         <Button
           type="button"
@@ -427,6 +428,54 @@ export function PropertyCard({
         </Button>
       </footer>
     </aside>
+  );
+}
+
+/**
+ * Renderiza el título de la propiedad y baja el font-size 1px a la vez hasta
+ * que entre en máximo 2 líneas (a ancho actual del contenedor). Si llega al
+ * mínimo y todavía no entra, deja line-clamp-2 como safety net.
+ *
+ * Re-mide automáticamente cuando cambia el ancho (Resize del card).
+ */
+function FittedTitle({
+  text,
+  className,
+  minPx,
+}: {
+  text: string;
+  className?: string;
+  minPx: number;
+}) {
+  const ref = useRef<HTMLHeadingElement>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const fit = () => {
+      // Reset al tamaño base que define la clase para empezar desde arriba.
+      el.style.fontSize = "";
+      const cs = window.getComputedStyle(el);
+      let px = parseFloat(cs.fontSize);
+      const lh = parseFloat(cs.lineHeight) || px * 1.25;
+      const max = lh * 2 + 1; // tolerancia 1px
+      // Guard: máximo 20 iteraciones por si algo raro.
+      let i = 0;
+      while (el.scrollHeight > max && px > minPx && i++ < 20) {
+        px -= 1;
+        el.style.fontSize = `${px}px`;
+      }
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [text, minPx]);
+
+  return (
+    <h2 ref={ref} className={cn(className, "line-clamp-2")}>
+      {text}
+    </h2>
   );
 }
 
