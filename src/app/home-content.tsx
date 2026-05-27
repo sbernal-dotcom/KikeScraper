@@ -172,13 +172,7 @@ export function HomeContent() {
           }
         }}
         rightInsetPx={
-          zonaList
-            ? 380
-            : visibleCards.length === 0
-              ? 0
-              : visibleCards.length === 1
-                ? 380
-                : visibleCards.length * 300
+          zonaList ? 380 : visibleCards.length * 300
         }
         leftInsetPx={activeCount > 0 ? 260 : 180}
       />
@@ -195,6 +189,7 @@ export function HomeContent() {
           <div className="absolute inset-y-0 right-0 z-20 flex">
             <PropertyCard
               propiedad={seleccionada}
+              compact
               onBack={() => setSeleccionada(null)}
               onClose={() => {
                 setSeleccionada(null);
@@ -218,7 +213,7 @@ export function HomeContent() {
             <PropertyCard
               key={p.id}
               propiedad={p}
-              compact={visibleCards.length > 1}
+              compact
               onClose={() => {
                 // Si está en comparación, sacarla de ahí (y de seleccionada si
                 // coincidía). Si era la seleccionada sola, limpiar selección.
