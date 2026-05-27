@@ -59,4 +59,4 @@ supabase/.temp
 *.pem
 
 # Claude Code local settings
-.claude/settings.local.json
+.claude/
