@@ -85,9 +85,6 @@ export function ComparisonList({
           {items.map((p, i) => {
             const ppm2 = precioPorM2(p);
             const isSelected = p.id === selectedId;
-            const tagsTotal =
-              (p.tagsCaracteristicas?.length ?? 0) +
-              (p.tagsExtra?.length ?? 0);
             return (
               <li key={p.id}>
                 <button
@@ -168,27 +165,6 @@ export function ComparisonList({
                     <Stat icon={<Bath className="size-3" />} value={p.banos ?? "—"} />
                     <Stat icon={<Car className="size-3" />} value={p.estacionamientos ?? "—"} />
                   </div>
-
-                  {tagsTotal > 0 ? (
-                    <ul className="flex flex-wrap gap-1">
-                      {(p.tagsCaracteristicas ?? []).slice(0, 4).map((t) => (
-                        <li
-                          key={`c-${t}`}
-                          className="rounded-sm border border-border/60 bg-card/40 px-1.5 py-0.5 text-[9px] font-medium text-foreground/85"
-                        >
-                          {dict.tags[t] ?? t.replace(/-/g, " ")}
-                        </li>
-                      ))}
-                      {(p.tagsExtra ?? []).slice(0, 2).map((t) => (
-                        <li
-                          key={`x-${t}`}
-                          className="rounded-sm border border-dashed border-border/60 bg-card/20 px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground"
-                        >
-                          {t.replace(/-/g, " ")}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
 
                   <div className="flex items-center justify-between text-[9px] text-muted-foreground">
                     <span>{p.fuenteNombre}</span>
