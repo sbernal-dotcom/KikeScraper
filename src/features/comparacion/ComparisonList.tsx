@@ -20,7 +20,7 @@ import {
 import { accentVars, precioPorM2 } from "@/features/propiedades/format";
 import type { Propiedad } from "@/features/propiedades/types";
 
-import { useComparison } from "./ComparisonContext";
+import { MAX_COMPARACION, useComparison } from "./ComparisonContext";
 
 type Props = {
   items: Propiedad[];
@@ -61,7 +61,10 @@ export function ComparisonList({
             <span className="truncate">{dict.compare.title}</span>
           </div>
           <h2 className="text-sm font-semibold leading-tight tracking-tight">
-            {items.length} {dict.common.results}
+            {items.length} {dict.common.results}{" "}
+            <span className="ml-0.5 text-[11px] font-normal text-muted-foreground tabular-nums">
+              {items.length}/{MAX_COMPARACION}
+            </span>
           </h2>
         </div>
         <Button

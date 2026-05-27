@@ -10,7 +10,7 @@ import {
 
 import type { Propiedad } from "@/features/propiedades/types";
 
-export const MAX_COMPARACION = 3;
+export const MAX_COMPARACION = 6;
 export const MIN_COMPARACION = 2;
 
 type ComparisonContextValue = {

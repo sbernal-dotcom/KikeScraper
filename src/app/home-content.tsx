@@ -159,25 +159,17 @@ export function HomeContent() {
           const isCluster = visibleItems.length > 1;
 
           if (compareMode) {
-            // En compareMode los pines alimentan la lista de comparación.
+            // En compareMode el pin NUNCA se agrega automáticamente. Solo
+            // abre la card (o ZonaList) a la izquierda; el usuario decide
+            // si la agrega usando el botón "Agregar a comparación".
             if (isCluster) {
-              // Cluster → abrir ZonaList al lado de la ComparisonList; al
-              // elegir un item se agrega a compare (manejado en onSelect).
               const zona = visibleItems[0].ubicacion.corregimiento ?? "";
               setZonaList({ zona, items: visibleItems });
               setSeleccionada(null);
-              return;
-            }
-            const p = visibleItems[0];
-            if (comparison.has(p.id)) {
-              // Ya estaba comparado → abrir su card a la izquierda de la lista.
-              setSeleccionada(p);
+            } else {
               setZonaList(null);
-            } else if (!comparison.isFull) {
-              // Pin nuevo → agregar a la lista. No abrir card.
-              comparison.add(p);
+              setSeleccionada(visibleItems[0]);
             }
-            // Si está full, no hacemos nada (el usuario tiene que quitar antes).
             return;
           }
 
@@ -209,20 +201,28 @@ export function HomeContent() {
       ) : null}
       {compareMode ? (
         // Modo comparación: ComparisonList anclada a la derecha. A su
-        // izquierda, según contexto: ZonaList si el usuario clickeó un
-        // pin amarillo, o PropertyCard del item seleccionado en la lista.
+        // izquierda, según contexto:
+        // - ZonaList + seleccionada: PropertyCard con Back (vuelve al listado)
+        // - Solo zonaList: ZonaList del cluster
+        // - Solo seleccionada: PropertyCard
+        // Nunca se agrega automáticamente — el usuario usa el botón
+        // "Agregar a comparación" dentro de la PropertyCard.
         <div className="absolute inset-y-0 right-0 z-20 flex">
-          {zonaList ? (
+          {zonaList && seleccionada ? (
+            <PropertyCard
+              propiedad={seleccionada}
+              compact
+              onBack={() => setSeleccionada(null)}
+              onClose={() => {
+                setSeleccionada(null);
+                setZonaList(null);
+              }}
+            />
+          ) : zonaList ? (
             <ZonaList
               zona={zonaList.zona}
               items={zonaList.items}
-              onSelect={(p) => {
-                // En compareMode elegir de la ZonaList agrega a compare
-                // (siempre que no esté ya y no estemos llenos).
-                if (!comparison.has(p.id) && !comparison.isFull) {
-                  comparison.add(p);
-                }
-              }}
+              onSelect={(p) => setSeleccionada(p)}
               onClose={() => setZonaList(null)}
             />
           ) : seleccionada ? (
