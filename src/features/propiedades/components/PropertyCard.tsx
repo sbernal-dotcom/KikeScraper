@@ -9,10 +9,16 @@ import {
   Globe2,
   MapPin,
   Maximize2,
+  Scale,
   Sparkles,
   Tag,
   X,
 } from "lucide-react";
+
+import {
+  MAX_COMPARACION,
+  useComparison,
+} from "@/features/comparacion/ComparisonContext";
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -44,6 +50,9 @@ export function PropertyCard({
   const { locale } = useLocale();
   const labels = useDomainLabels();
   const fmt = useFormatters();
+  const comparison = useComparison();
+  const inCompare = comparison.has(propiedad.id);
+  const cantAdd = !inCompare && comparison.isFull;
   // Si no hay versión EN aún (resumenes legacy), caemos al ES para no
   // mostrar la sección vacía.
   const resumenTexto =
@@ -301,7 +310,19 @@ export function PropertyCard({
         ) : null}
       </div>
 
-      <footer className="border-t border-border/60 px-5 py-3">
+      <footer className="space-y-2 border-t border-border/60 px-5 py-3">
+        <Button
+          type="button"
+          variant={inCompare ? "default" : "outline"}
+          size="sm"
+          className="w-full"
+          disabled={cantAdd}
+          title={cantAdd ? `Máx ${MAX_COMPARACION}` : undefined}
+          onClick={() => comparison.toggle(propiedad)}
+        >
+          <Scale className="mr-1 size-4" />
+          {inCompare ? dict.compare.remove : dict.compare.add}
+        </Button>
         <Button
           size="lg"
           className="w-full font-medium"
