@@ -188,14 +188,30 @@ export function HomeContent() {
         </div>
       ) : null}
       {zonaList ? (
-        <div className="absolute inset-y-0 right-0 z-20 flex">
-          <ZonaList
-            zona={zonaList.zona}
-            items={zonaList.items}
-            onSelect={(p) => setSeleccionada(p)}
-            onClose={() => setZonaList(null)}
-          />
-        </div>
+        // Modo cluster: si el usuario ya eligió una de la lista, mostramos su
+        // PropertyCard (con Back → vuelve al listado) para que pueda usar el
+        // botón "Agregar a comparación". Si no, mostramos el listado.
+        seleccionada ? (
+          <div className="absolute inset-y-0 right-0 z-20 flex">
+            <PropertyCard
+              propiedad={seleccionada}
+              onBack={() => setSeleccionada(null)}
+              onClose={() => {
+                setSeleccionada(null);
+                setZonaList(null);
+              }}
+            />
+          </div>
+        ) : (
+          <div className="absolute inset-y-0 right-0 z-20 flex">
+            <ZonaList
+              zona={zonaList.zona}
+              items={zonaList.items}
+              onSelect={(p) => setSeleccionada(p)}
+              onClose={() => setZonaList(null)}
+            />
+          </div>
+        )
       ) : visibleCards.length > 0 ? (
         <div className="absolute inset-y-0 right-0 z-20 flex">
           {visibleCards.map((p) => (
