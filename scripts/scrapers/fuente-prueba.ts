@@ -65,6 +65,8 @@ const USER_AGENT =
  * imágenes, vendedor, email ni teléfono. La descripción solo existe como
  * variable LOCAL durante la corrida — nunca toca disco ni logs.
  */
+type ResumenBilingue = { es: string; en: string };
+
 type AnuncioRaw = {
   titulo: string | null;
   precio: number | null;
@@ -80,7 +82,7 @@ type AnuncioRaw = {
   fuente: string;
   fecha_deteccion: string;
   fecha_actualizacion: string;
-  resumen_ia: string | null;
+  resumen_ia: ResumenBilingue | null;
   tags_caracteristicas: TagCerrado[];
   tags_extra: string[];
   ai_source_flag: "generated_from_external_description" | null;
@@ -175,7 +177,7 @@ const gemini = AI_SUMMARY_ENABLED
   : null;
 
 type EnriquecimientoIA = {
-  resumen_ia: string | null;
+  resumen_ia: ResumenBilingue | null;
   tags_caracteristicas: TagCerrado[];
   tags_extra: string[];
   ai_source_flag: "generated_from_external_description" | null;
@@ -210,14 +212,16 @@ async function enriquecerConIA(
     .filter(Boolean)
     .join("\n");
 
-  const prompt = `Eres un asistente de bienes raíces en Panamá. Recibes una ficha de anuncio. Produce JSON con dos cosas:
+  const prompt = `Eres un asistente de bienes raíces en Panamá. Recibes una ficha de anuncio. Produce JSON con:
 
-1. "resumen_ia": Texto ORIGINAL, parafraseado, máximo 280 caracteres, 2 frases cortas en español. NO copies frases ni cláusulas literales de la descripción. NO inventes datos. Si no hay suficiente info, devuelve cadena vacía.
+1. "resumen_ia_es": Texto ORIGINAL en ESPAÑOL, parafraseado, máximo 280 caracteres, 2 frases cortas. NO copies frases ni cláusulas literales de la descripción. NO inventes datos. Si no hay suficiente info, devuelve cadena vacía.
 
-2. "tags": Subconjunto exacto de esta lista cerrada (kebab-case), basado en lo que claramente aparece en la ficha. Si una característica no está soportada por evidencia, NO la incluyas.
+2. "resumen_ia_en": Traducción del resumen_ia_es al INGLÉS, mismo contenido (no agregues ni quites información), máximo 280 caracteres, también parafraseado para que NO copie frases literales si la descripción incluía inglés. Si resumen_ia_es está vacío, devuelve cadena vacía.
+
+3. "tags": Subconjunto EXACTO (kebab-case) de esta lista cerrada, basado en evidencia clara. NO incluyas si no está soportado por la ficha.
 Lista permitida: ${TAGS_CERRADOS.join(", ")}
 
-3. "tags_extra": MÁXIMO 3 tags libres en kebab-case en español para características importantes que NO estén en la lista cerrada (ej: rooftop, coworking, smart-home). Si no hay nada relevante, devuelve arreglo vacío.
+4. "tags_extra": MÁXIMO 3 tags libres en kebab-case en español para características importantes fuera de la lista cerrada (ej: rooftop, coworking, smart-home). Vacío si nada relevante.
 
 Ficha:
 ${ficha}
@@ -233,18 +237,20 @@ Responde SOLO el JSON, sin texto adicional ni bloque markdown.`;
         responseSchema: {
           type: "object",
           properties: {
-            resumen_ia: { type: "string" },
+            resumen_ia_es: { type: "string" },
+            resumen_ia_en: { type: "string" },
             tags: { type: "array", items: { type: "string" } },
             tags_extra: { type: "array", items: { type: "string" } },
           },
-          required: ["resumen_ia", "tags", "tags_extra"],
+          required: ["resumen_ia_es", "resumen_ia_en", "tags", "tags_extra"],
         },
       },
     });
     const raw = res.text?.trim() ?? "";
     if (!raw) return ENRIQUECIMIENTO_VACIO;
     const parsed = JSON.parse(raw) as {
-      resumen_ia?: string;
+      resumen_ia_es?: string;
+      resumen_ia_en?: string;
       tags?: unknown;
       tags_extra?: unknown;
     };
@@ -252,15 +258,17 @@ Responde SOLO el JSON, sin texto adicional ni bloque markdown.`;
     const tags_caracteristicas = filterTagsCerrados(parsed.tags);
     const tags_extra = filterTagsExtra(parsed.tags_extra, tags_caracteristicas);
 
-    let resumen_ia: string | null = null;
-    const candidato = (parsed.resumen_ia ?? "").trim().slice(0, 280);
-    if (candidato.length >= 20) {
-      if (overlapAlto(descripcion, candidato)) {
-        // El modelo citó frases de la descripción — descartamos por riesgo
-        // de redistribución de contenido protegido (ToS encuentra24 cl. d).
+    let resumen_ia: ResumenBilingue | null = null;
+    const es = (parsed.resumen_ia_es ?? "").trim().slice(0, 280);
+    const en = (parsed.resumen_ia_en ?? "").trim().slice(0, 280);
+    if (es.length >= 20 && en.length >= 20) {
+      // Anti-copia: validar AMBAS versiones contra la descripción original.
+      // Si cualquiera copia frases literales, se descartan las dos para
+      // mantener consistencia (la traducción debe representar lo mismo).
+      if (overlapAlto(descripcion, es) || overlapAlto(descripcion, en)) {
         console.warn(`  resumen-ia descartado: overlap alto con descripción`);
       } else {
-        resumen_ia = candidato;
+        resumen_ia = { es, en };
       }
     }
 
@@ -606,7 +614,9 @@ async function scrape(
 
       const enriq = await enriquecerConIA(anuncioBase, descripcionTemp);
       if (enriq.resumen_ia)
-        console.log(`  resumen-ia ✓ (${enriq.resumen_ia.length} chars)`);
+        console.log(
+          `  resumen-ia ✓ (es:${enriq.resumen_ia.es.length} en:${enriq.resumen_ia.en.length} chars)`,
+        );
       if (enriq.tags_caracteristicas.length || enriq.tags_extra.length)
         console.log(
           `  tags ✓ ${enriq.tags_caracteristicas.length} cerrados + ${enriq.tags_extra.length} extras`,

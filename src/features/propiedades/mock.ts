@@ -21,8 +21,6 @@ export const mockPropiedades: Propiedad[] = [
     estacionamientos: 1,
     condicion: "usada",
     estadoAnuncio: "activo",
-    resumenIA:
-      "Apartamento usado de 95 m² en Casco Viejo, con 2 recámaras y 2 baños. Ubicación premium con valor histórico; precio por m² alto, dentro de lo esperado para la zona.",
     fuenteId: "encuentra24",
     fuenteNombre: "Encuentra24",
     urlOriginal: "https://encuentra24.com/panama/casco-viejo-apartamento-1",
@@ -68,8 +66,6 @@ export const mockPropiedades: Propiedad[] = [
     estacionamientos: 2,
     condicion: "nueva",
     estadoAnuncio: "activo",
-    resumenIA:
-      "Penthouse nuevo de 180 m² sobre Av. Balboa con vista al mar. 3 recámaras, 3 baños y 2 estacionamientos. Precio por m² está en el rango alto de la zona, justificado por la ubicación y la condición.",
     fuenteId: "compreoalquile",
     fuenteNombre: "Compre o Alquile",
     urlOriginal: "https://compreoalquile.com/balboa-ph-2",
@@ -97,8 +93,6 @@ export const mockPropiedades: Propiedad[] = [
     estacionamientos: 1,
     condicion: "usada",
     estadoAnuncio: "activo",
-    resumenIA:
-      "Apartamento usado de 110 m² en Bella Vista para alquilar. 2 recámaras y 2 baños, con 1 estacionamiento. Renta competitiva para el corregimiento.",
     fuenteId: "encuentra24",
     fuenteNombre: "Encuentra24",
     urlOriginal: "https://encuentra24.com/panama/bella-vista-3",
@@ -124,8 +118,6 @@ export const mockPropiedades: Propiedad[] = [
     estacionamientos: 2,
     condicion: "usada",
     estadoAnuncio: "activo",
-    resumenIA:
-      "Oficina usada de 85 m² en Obarrio, con 2 estacionamientos. Zona corporativa consolidada; renta dentro del promedio del corregimiento.",
     fuenteId: "compreoalquile",
     fuenteNombre: "Compre o Alquile",
     urlOriginal: "https://compreoalquile.com/obarrio-oficina-4",
@@ -153,8 +145,6 @@ export const mockPropiedades: Propiedad[] = [
     estacionamientos: 1,
     condicion: "usada",
     estadoAnuncio: "activo",
-    resumenIA:
-      "Apartamento usado de 105 m² en Marbella, 2 recámaras y 2 baños. Precio por m² ligeramente por debajo de la media de la zona — posible oportunidad.",
     fuenteId: "encuentra24",
     fuenteNombre: "Encuentra24",
     urlOriginal: "https://encuentra24.com/panama/marbella-5",
@@ -182,8 +172,6 @@ export const mockPropiedades: Propiedad[] = [
     estacionamientos: 3,
     condicion: "nueva",
     estadoAnuncio: "activo",
-    resumenIA:
-      "Penthouse nuevo de 280 m² en Punta Pacífica frente al mar. 4 recámaras, 4 baños, 3 estacionamientos. Producto premium; precio por m² alto pero consistente con propiedades comparables.",
     fuenteId: "inmuebles24",
     fuenteNombre: "Inmuebles 24",
     urlOriginal: "https://inmuebles24.com/panama/punta-pacifica-6",
@@ -211,8 +199,6 @@ export const mockPropiedades: Propiedad[] = [
     estacionamientos: 2,
     condicion: "usada",
     estadoAnuncio: "activo",
-    resumenIA:
-      "Apartamento usado de 120 m² en San Francisco, con 3 recámaras, 2 baños y 2 estacionamientos. Su precio por m² está dentro del rango medio de la zona.",
     fuenteId: "encuentra24",
     fuenteNombre: "Encuentra24",
     urlOriginal: "https://encuentra24.com/panama/san-francisco-7",
@@ -250,8 +236,6 @@ export const mockPropiedades: Propiedad[] = [
     estacionamientos: 3,
     condicion: "usada",
     estadoAnuncio: "activo",
-    resumenIA:
-      "Casa usada de 340 m² en Costa del Este, 4 recámaras y 4 baños. Zona residencial consolidada; precio por m² competitivo respecto a comparables recientes.",
     fuenteId: "compreoalquile",
     fuenteNombre: "Compre o Alquile",
     urlOriginal: "https://compreoalquile.com/costa-del-este-8",
@@ -295,8 +279,6 @@ export const mockPropiedades: Propiedad[] = [
     estacionamientos: 2,
     condicion: "usada",
     estadoAnuncio: "activo",
-    resumenIA:
-      "Local comercial usado de 160 m² en El Cangrejo, ideal para restaurante/oficina. Tráfico peatonal alto. Renta dentro del promedio comercial de la zona.",
     fuenteId: "inmuebles24",
     fuenteNombre: "Inmuebles 24",
     urlOriginal: "https://inmuebles24.com/panama/el-cangrejo-9",
@@ -321,8 +303,6 @@ export const mockPropiedades: Propiedad[] = [
     areaM2: 820,
     condicion: "usada",
     estadoAnuncio: "activo",
-    resumenIA:
-      "Terreno de 820 m² en Clayton, con uso residencial. Zona en crecimiento; precio por m² bajo respecto a la media de venta de terrenos en el corregimiento.",
     fuenteId: "encuentra24",
     fuenteNombre: "Encuentra24",
     urlOriginal: "https://encuentra24.com/panama/clayton-10",

@@ -1,7 +1,367 @@
 {
-  "generated_at": "2026-05-26T23:17:01.389Z",
+  "generated_at": "2026-05-26T23:17:40.418Z",
   "fuente": "encuentra24",
   "results": [
+    {
+      "titulo": "Venta de Casa en Villa de las Fuentes totalmente remodelada",
+      "precio": 365000,
+      "moneda": "PAB",
+      "area_m2": 325,
+      "habitaciones": 3,
+      "banos": 3,
+      "estacionamientos": 2,
+      "zona": "Villa de las Fuentes",
+      "lat": 9.022294850792651,
+      "lng": -79.53679803777997,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-casas/venta-de-casa-en-villa-de-las-fuentes-totalmente-remodelada/32405491",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-25T15:53:15.535Z",
+      "resumen_ia": null,
+      "fecha_actualizacion": "2026-05-25T15:53:15.535Z",
+      "tags_caracteristicas": [],
+      "tags_extra": [],
+      "ai_source_flag": null
+    },
+    {
+      "titulo": "Venta de apartamento en San Francisco Ph Citrus",
+      "precio": 335000,
+      "moneda": "PAB",
+      "area_m2": 174,
+      "habitaciones": 3,
+      "banos": 3,
+      "estacionamientos": 2,
+      "zona": "San Francisco",
+      "lat": 8.985291669866694,
+      "lng": -79.51643493086019,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-apartamentos/venta-de-apartamento-en-san-francisco-ph-citrus/32235686",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-25T15:53:24.011Z",
+      "resumen_ia": null,
+      "fecha_actualizacion": "2026-05-25T15:53:24.011Z",
+      "tags_caracteristicas": [],
+      "tags_extra": [],
+      "ai_source_flag": null
+    },
+    {
+      "titulo": "ULTIMAS UNIDADES! OCEANA - 3RCS DUPLEX DESDE $808K",
+      "precio": 808000,
+      "moneda": "PAB",
+      "area_m2": 205,
+      "habitaciones": 3,
+      "banos": 2.5,
+      "estacionamientos": 2,
+      "zona": "Santa María",
+      "lat": 9.030342702572808,
+      "lng": -79.47911163587189,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-apartamentos/ultimas-unidades-oceana-3rcs-duplex-desde-808k/30714361",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-25T15:53:31.749Z",
+      "resumen_ia": null,
+      "fecha_actualizacion": "2026-05-25T15:53:31.749Z",
+      "tags_caracteristicas": [],
+      "tags_extra": [],
+      "ai_source_flag": null
+    },
+    {
+      "titulo": "PH BREEZE- PISO ALTO- A ESTRENAR! $535K",
+      "precio": 535000,
+      "moneda": "PAB",
+      "area_m2": 241,
+      "habitaciones": 3,
+      "banos": 3.5,
+      "estacionamientos": 4,
+      "zona": "Costa del Este",
+      "lat": 9.013267090087503,
+      "lng": -79.47234488122616,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-apartamentos/ph-breeze-piso-alto-a-estrenar-535k/32063352",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-25T15:53:39.922Z",
+      "resumen_ia": null,
+      "fecha_actualizacion": "2026-05-25T15:53:39.922Z",
+      "tags_caracteristicas": [],
+      "tags_extra": [],
+      "ai_source_flag": null
+    },
+    {
+      "titulo": "Se vende casa en Costa del Este.",
+      "precio": 950000,
+      "moneda": "PAB",
+      "area_m2": 531,
+      "habitaciones": 3,
+      "banos": 3.5,
+      "estacionamientos": 2,
+      "zona": "Costa del Este",
+      "lat": 9.013487488081704,
+      "lng": -79.4721700927206,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-casas/se-vende-casa-en-costa-del-este/32376611",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-25T15:53:47.346Z",
+      "resumen_ia": null,
+      "fecha_actualizacion": "2026-05-25T15:53:47.346Z",
+      "tags_caracteristicas": [],
+      "tags_extra": [],
+      "ai_source_flag": null
+    },
+    {
+      "titulo": "Se vende casa con piscina en Costa del Este.",
+      "precio": 1120000,
+      "moneda": "PAB",
+      "area_m2": 721,
+      "habitaciones": 4,
+      "banos": 4.5,
+      "estacionamientos": 4,
+      "zona": "Costa del Este",
+      "lat": 9.014746165024304,
+      "lng": -79.47138271860833,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-casas/se-vende-casa-con-piscina-en-costa-del-este/31624669",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-25T15:53:55.163Z",
+      "resumen_ia": null,
+      "fecha_actualizacion": "2026-05-25T15:53:55.163Z",
+      "tags_caracteristicas": [],
+      "tags_extra": [],
+      "ai_source_flag": null
+    },
+    {
+      "titulo": "REMATO 2 LOCALES COMERCIALES_PLAZA PAITILLA, CIUDAD DE PANAMÁ",
+      "precio": 80000,
+      "moneda": "PAB",
+      "area_m2": 77,
+      "habitaciones": null,
+      "banos": 1,
+      "estacionamientos": 1,
+      "zona": "Punta Paitilla",
+      "lat": 8.9809,
+      "lng": -79.5189,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-comercios/remato-2-locales-comerciales-plaza-paitilla-ciudad-de-panama/31727325",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-25T15:54:02.199Z",
+      "resumen_ia": null,
+      "fecha_actualizacion": "2026-05-25T15:54:02.199Z",
+      "tags_caracteristicas": [],
+      "tags_extra": [],
+      "ai_source_flag": null
+    },
+    {
+      "titulo": "Casa en venta en Dorado Lake Remodelada",
+      "precio": 350000,
+      "moneda": "PAB",
+      "area_m2": 280,
+      "habitaciones": 4,
+      "banos": 3.5,
+      "estacionamientos": 2,
+      "zona": "Condado del Rey",
+      "lat": 9.028657720070285,
+      "lng": -79.52379342686321,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-casas/casa-en-venta-en-dorado-lake-remodelada/30930908",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-25T15:54:10.507Z",
+      "resumen_ia": null,
+      "fecha_actualizacion": "2026-05-25T15:54:10.507Z",
+      "tags_caracteristicas": [],
+      "tags_extra": [],
+      "ai_source_flag": null
+    },
+    {
+      "titulo": "VENDO LOTE PLANO DE 9,000Mts EN EL VALLE",
+      "precio": 360000,
+      "moneda": "PAB",
+      "area_m2": 9000,
+      "habitaciones": null,
+      "banos": null,
+      "estacionamientos": null,
+      "zona": "El Valle",
+      "lat": 8.601950029641156,
+      "lng": -80.11502029651004,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-lotes-y-terrenos/vendo-lote-plano-de-9-000mts-en-el-valle/32024966",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-25T15:54:19.288Z",
+      "resumen_ia": null,
+      "fecha_actualizacion": "2026-05-25T15:54:19.288Z",
+      "tags_caracteristicas": [],
+      "tags_extra": [],
+      "ai_source_flag": null
+    },
+    {
+      "titulo": "Amplio Local Comercial en Planta Baja en Alquiler Llano Bonito",
+      "precio": 5019,
+      "moneda": "PAB",
+      "area_m2": 478,
+      "habitaciones": null,
+      "banos": 2,
+      "estacionamientos": 8,
+      "zona": "Llano Bonito",
+      "lat": 7.974264621869911,
+      "lng": -80.427643948823,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-comercios/amplio-local-comercial-en-planta-baja-en-alquiler-llano-bonito/31383222",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-25T18:38:27.827Z",
+      "resumen_ia": null,
+      "fecha_actualizacion": "2026-05-25T18:38:27.827Z",
+      "tags_caracteristicas": [],
+      "tags_extra": [],
+      "ai_source_flag": null
+    },
+    {
+      "titulo": "¿Recién llegaste a Panamá? Encuentra tu apartamento ideal",
+      "precio": 1500,
+      "moneda": "PAB",
+      "area_m2": 100,
+      "habitaciones": 2,
+      "banos": 2,
+      "estacionamientos": 2,
+      "zona": "Avenida Balboa",
+      "lat": 8.974352426521326,
+      "lng": -79.52978771465604,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-apartamentos/recien-llegaste-a-panama-encuentra-tu-apartamento-ideal/32457706",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-25T18:38:36.695Z",
+      "resumen_ia": null,
+      "fecha_actualizacion": "2026-05-25T18:38:36.695Z",
+      "tags_caracteristicas": [],
+      "tags_extra": [],
+      "ai_source_flag": null
+    },
+    {
+      "titulo": "Moderno Apartamento para la renta en San Francisco",
+      "precio": 1650,
+      "moneda": "PAB",
+      "area_m2": 100,
+      "habitaciones": 2,
+      "banos": 2,
+      "estacionamientos": 1,
+      "zona": "San Francisco",
+      "lat": 8.98471541719433,
+      "lng": -79.5169795835176,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-apartamentos/moderno-apartamento-para-la-renta-en-san-francisco/32221728",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-25T18:38:46.609Z",
+      "resumen_ia": null,
+      "fecha_actualizacion": "2026-05-25T18:38:46.609Z",
+      "tags_caracteristicas": [],
+      "tags_extra": [],
+      "ai_source_flag": null
+    },
+    {
+      "titulo": "Centrica bodega de 1500mts ubicada en La Locería",
+      "precio": 9700,
+      "moneda": "PAB",
+      "area_m2": 1500,
+      "habitaciones": null,
+      "banos": 4,
+      "estacionamientos": 7,
+      "zona": "La Loceria",
+      "lat": 8.994013524581453,
+      "lng": -79.53592192812943,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-comercios/centrica-bodega-de-1500mts-ubicada-en-la-loceria/32382000",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-25T18:38:56.291Z",
+      "resumen_ia": null,
+      "fecha_actualizacion": "2026-05-25T18:38:56.291Z",
+      "tags_caracteristicas": [],
+      "tags_extra": [],
+      "ai_source_flag": null
+    },
+    {
+      "titulo": "Apartamentos amueblados listos para mudarse en Bethania desde $650 – SERVICIOS INCLUIDOS",
+      "precio": 650,
+      "moneda": "PAB",
+      "area_m2": null,
+      "habitaciones": 1,
+      "banos": 1,
+      "estacionamientos": null,
+      "zona": "Betania",
+      "lat": 9.007733227609515,
+      "lng": -79.53325659376551,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-apartamentos/apartamentos-amueblados-listos-para-mudarse-en-bethania-desde-650-servicios-incluidos/32269276",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-25T18:39:05.940Z",
+      "resumen_ia": null,
+      "fecha_actualizacion": "2026-05-25T18:39:05.940Z",
+      "tags_caracteristicas": [],
+      "tags_extra": [],
+      "ai_source_flag": null
+    },
+    {
+      "titulo": "Rento apartamento en Green Park de 2 recamaras",
+      "precio": 800,
+      "moneda": "PAB",
+      "area_m2": null,
+      "habitaciones": 2,
+      "banos": 2,
+      "estacionamientos": 1,
+      "zona": "Betania",
+      "lat": 9.00801863830936,
+      "lng": -79.53306605564168,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-apartamentos/rento-apartamento-en-green-park-de-2-recamaras/32435188",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-25T18:39:23.752Z",
+      "resumen_ia": null,
+      "fecha_actualizacion": "2026-05-25T18:39:23.752Z",
+      "tags_caracteristicas": [],
+      "tags_extra": [],
+      "ai_source_flag": null
+    },
+    {
+      "titulo": "Encantador Apartamento PH Grandbay Tower Avenida Balboa Bella Vista  - Amoblado",
+      "precio": 1700,
+      "moneda": "PAB",
+      "area_m2": 120,
+      "habitaciones": 1,
+      "banos": 1.5,
+      "estacionamientos": 1,
+      "zona": "Avenida Balboa",
+      "lat": 8.975015066155448,
+      "lng": -79.5287035351798,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-apartamentos/encantador-apartamento-ph-grandbay-tower-avenida-balboa-bella-vista-amoblado/32269247",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-25T18:39:32.494Z",
+      "resumen_ia": null,
+      "fecha_actualizacion": "2026-05-25T18:39:32.494Z",
+      "tags_caracteristicas": [],
+      "tags_extra": [],
+      "ai_source_flag": null
+    },
+    {
+      "titulo": "OFICINA O LOCAL ALQUILER EN  EL DORADO  PLANTA BAJA",
+      "precio": 750,
+      "moneda": "PAB",
+      "area_m2": 80,
+      "habitaciones": null,
+      "banos": 1,
+      "estacionamientos": 4,
+      "zona": "El Dorado",
+      "lat": 8.48525197544998,
+      "lng": -82.5086051732336,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-alquiler-de-oficinas/oficina-o-local-alquiler-en-el-dorado-planta-baja/32282071",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-25T18:39:43.806Z",
+      "resumen_ia": null,
+      "fecha_actualizacion": "2026-05-25T18:39:43.806Z",
+      "tags_caracteristicas": [],
+      "tags_extra": [],
+      "ai_source_flag": null
+    },
+    {
+      "titulo": "VIA ESPAÑA ALQUILA OFICINA  DE 270 M2 EN VIA ESPAÑA",
+      "precio": 2700,
+      "moneda": "PAB",
+      "area_m2": 300,
+      "habitaciones": null,
+      "banos": 3,
+      "estacionamientos": 4,
+      "zona": "Vía España",
+      "lat": 9.017446818345034,
+      "lng": -79.49654137392646,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-alquiler-de-oficinas/via-espana-alquila-oficina-de-270-m2-en-via-espana/31986361",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-25T18:39:54.964Z",
+      "resumen_ia": null,
+      "fecha_actualizacion": "2026-05-25T18:39:54.964Z",
+      "tags_caracteristicas": [],
+      "tags_extra": [],
+      "ai_source_flag": null
+    },
     {
       "titulo": "APARTAMENTO EN VENTA EN PH DIAMANTE III – PRECIO ACCESIBLE Y LISTO PARA MUDARSE",
       "precio": 130000,
@@ -15,9 +375,12 @@
       "lng": -79.53772316000135,
       "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-apartamentos/apartamento-en-venta-en-ph-diamante-iii-precio-accesible-y-listo-para-mudarse/32230901",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-26T23:00:53.137Z",
-      "fecha_actualizacion": "2026-05-26T23:00:53.137Z",
-      "resumen_ia": "Excelente oportunidad de inversión en Villa de las Fuentes con espacios bien distribuidos. Propiedad funcional ideal para vivir en una zona tranquila y accesible.",
+      "fecha_deteccion": "2026-05-26T23:00:43.196Z",
+      "fecha_actualizacion": "2026-05-26T23:00:43.196Z",
+      "resumen_ia": {
+        "es": "Propiedad funcional con buena distribución ubicada en una zona estratégica de la capital. Excelente opción residencial o de inversión disponible en Villa de las Fuentes.",
+        "en": "Functional property with an excellent layout located in a strategic area of the capital. An outstanding residential or investment opportunity available in Villa de las Fuentes."
+      },
       "tags_caracteristicas": [
         "centrico"
       ],
@@ -37,14 +400,14 @@
       "lng": -79.5778898445466,
       "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-apartamentos/ph-clayton-park-2-vendo-hermoso-apartamento-oportunidad/32452835",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-26T23:01:00.884Z",
-      "fecha_actualizacion": "2026-05-26T23:01:00.884Z",
-      "resumen_ia": "Espaciosa propiedad ubicada en un entorno residencial rodeado de naturaleza. El inmueble destaca por su excelente distribución y gran claridad interior.",
+      "fecha_deteccion": "2026-05-26T23:00:52.889Z",
+      "fecha_actualizacion": "2026-05-26T23:00:52.889Z",
+      "resumen_ia": "Disfruta de esta propiedad moderna y bien distribuida en una zona residencial tranquila. El apartamento destaca por su calidez, espacios amplios y excelente iluminación natural.",
       "tags_caracteristicas": [],
       "tags_extra": [
         "clayton",
-        "residencial",
-        "ambiente-familiar"
+        "familiar",
+        "residencial"
       ],
       "ai_source_flag": "generated_from_external_description"
     },
@@ -61,15 +424,18 @@
       "lng": -79.5912258182893,
       "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-casas/casa-en-venta-en-panama-pacifico-ph-nativa/32390368",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-26T23:01:14.366Z",
-      "fecha_actualizacion": "2026-05-26T23:01:14.366Z",
-      "resumen_ia": "Residencia exclusiva situada en la tranquila comunidad de Panamá Pacífico. Propiedad espaciosa rodeada de entorno natural y excelentes servicios.",
+      "fecha_deteccion": "2026-05-26T23:01:07.478Z",
+      "fecha_actualizacion": "2026-05-26T23:01:07.478Z",
+      "resumen_ia": {
+        "es": "Propiedad espaciosa situada en el exclusivo complejo residencial PH Nativa. Entorno sereno y privilegiado dentro de la zona de Panamá Pacífico.",
+        "en": "Spacious property located in the exclusive PH Nativa residential complex. A serene and privileged setting within the Panama Pacifico area."
+      },
       "tags_caracteristicas": [
-        "seguridad-24-7"
+        "seguridad-24-7",
+        "area-social"
       ],
       "tags_extra": [
-        "comunidad-exclusiva",
-        "entorno-natural"
+        "rodeado-de-naturaleza"
       ],
       "ai_source_flag": "generated_from_external_description"
     },
@@ -86,14 +452,17 @@
       "lng": -79.50520059795276,
       "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-apartamentos/venta-apartamento-oasis-on-tower-via-porras-para-inversion/32061094",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-26T23:01:24.240Z",
-      "fecha_actualizacion": "2026-05-26T23:01:24.240Z",
-      "resumen_ia": "Propiedad de 95 metros cuadrados disponible para inversión en sector estratégico. El apartamento destaca por su luminosidad natural y excelente distribución interna.",
+      "fecha_deteccion": "2026-05-26T23:01:16.852Z",
+      "fecha_actualizacion": "2026-05-26T23:01:16.852Z",
+      "resumen_ia": {
+        "es": "Excelente unidad residencial con dos dormitorios en ubicación estratégica. Propiedad luminosa y bien ventilada ideal para tu próxima inversión.",
+        "en": "Excellent residential unit with two bedrooms in a strategic location. Bright and well-ventilated property, ideal for your next investment."
+      },
       "tags_caracteristicas": [
-        "linea-blanca"
+        "linea-blanca",
+        "centrico"
       ],
       "tags_extra": [
-        "via-porras",
         "cerca-supermercado"
       ],
       "ai_source_flag": "generated_from_external_description"
@@ -111,15 +480,16 @@
       "lng": -79.47651614629726,
       "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-apartamentos/venta-apartamento-en-ph-florencia-para-inversion/29793554",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-26T23:01:31.748Z",
-      "fecha_actualizacion": "2026-05-26T23:01:31.748Z",
-      "resumen_ia": "Propiedad de dos recámaras disponible en Parque Lefevre. Excelente oportunidad para inversión con inquilino actual incluido.",
+      "fecha_deteccion": "2026-05-26T23:01:33.533Z",
+      "fecha_actualizacion": "2026-05-26T23:01:33.533Z",
+      "resumen_ia": "Propiedad en Parque Lefevre ideal para inversionistas. Genera rentabilidad inmediata con inquilino actual.",
       "tags_caracteristicas": [
         "seguridad-24-7",
         "estacionamiento-techado"
       ],
       "tags_extra": [
-        "inversion-rentable"
+        "inversion",
+        "dos-recamaras"
       ],
       "ai_source_flag": "generated_from_external_description"
     },
@@ -136,15 +506,19 @@
       "lng": -79.56961282693484,
       "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-apartamentos/lujo-en-buenaventura-paseo-de-las-casas-coastal-luxury-living-at-its-finest/31654881",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-26T23:01:42.386Z",
-      "fecha_actualizacion": "2026-05-26T23:01:42.386Z",
-      "resumen_ia": "Disfrute de un elegante departamento en la exclusiva zona costera de Buenaventura. Esta propiedad ofrece ambientes completamente equipados para una vida de máximo confort.",
+      "fecha_deteccion": "2026-05-26T23:01:51.786Z",
+      "fecha_actualizacion": "2026-05-26T23:01:51.786Z",
+      "resumen_ia": {
+        "es": "Sofisticada propiedad en la exclusiva comunidad de Buenaventura. Espacioso apartamento de lujo diseñado para ofrecer el máximo confort costero.",
+        "en": "Sophisticated property in the exclusive Buenaventura community. Spacious luxury apartment designed to offer the ultimate coastal comfort."
+      },
       "tags_caracteristicas": [
         "amoblado"
       ],
       "tags_extra": [
+        "lujo",
         "comunidad-exclusiva",
-        "vida-costera"
+        "costero"
       ],
       "ai_source_flag": "generated_from_external_description"
     },
@@ -161,16 +535,18 @@
       "lng": -82.43447996346282,
       "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-casas/lujosa-residencia-en-venta-en-valle-escondido-boquete/32235221",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-26T23:01:54.991Z",
-      "fecha_actualizacion": "2026-05-26T23:01:54.991Z",
-      "resumen_ia": "Amplia propiedad de lujo situada en la exclusiva comunidad privada de Valle Escondido. La residencia incluye mobiliario completo y se destaca por sus vistas panorámicas a las montañas.",
+      "fecha_deteccion": "2026-05-26T23:02:06.498Z",
+      "fecha_actualizacion": "2026-05-26T23:02:06.498Z",
+      "resumen_ia": {
+        "es": "Imponente propiedad ubicada en la exclusiva zona de Escondido Estates en Boquete. Espaciosa residencia totalmente equipada con vistas privilegiadas a las montañas.",
+        "en": "Stunning property located in the exclusive Escondido Estates area in Boquete. Spacious, fully equipped residence with privileged mountain views."
+      },
       "tags_caracteristicas": [
         "amoblado"
       ],
       "tags_extra": [
-        "valle-escondido",
-        "boquete",
-        "finca-privada"
+        "vistas-montana",
+        "terreno-amplio"
       ],
       "ai_source_flag": "generated_from_external_description"
     },
@@ -187,9 +563,12 @@
       "lng": -80.77568791424389,
       "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-casas/vendo-casa-en-ocu-especial-para-quienes-disfrutan-de-la-paz-y-tranquilidad/32362589",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-26T23:02:03.327Z",
-      "fecha_actualizacion": "2026-05-26T23:02:03.327Z",
-      "resumen_ia": "Propiedad espaciosa situada estratégicamente en Ocú. La vivienda ofrece tres dormitorios y terreno amplio próximo a comercios y servicios.",
+      "fecha_deteccion": "2026-05-26T23:02:22.680Z",
+      "fecha_actualizacion": "2026-05-26T23:02:22.680Z",
+      "resumen_ia": {
+        "es": "Propiedad espaciosa ubicada estratégicamente en el acceso principal de Ocú. Cercana a comercios y servicios básicos en un entorno apacible.",
+        "en": "Spacious property strategically located at the main entrance of Ocú. Close to shops and basic services in a peaceful environment."
+      },
       "tags_caracteristicas": [],
       "tags_extra": [
         "terreno-amplio",
@@ -210,15 +589,18 @@
       "lng": -79.47235115591394,
       "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-apartamentos/se-vende-apartamento-tipo-penthouse/31735971",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-26T23:02:10.684Z",
-      "fecha_actualizacion": "2026-05-26T23:02:10.684Z",
-      "resumen_ia": "Exclusivo penthouse de gran amplitud ubicado en una zona privilegiada de Costa del Este. Esta residencia destaca por sus acabados renovados y diseño moderno que maximiza la luminosidad.",
+      "fecha_deteccion": "2026-05-26T23:02:41.589Z",
+      "fecha_actualizacion": "2026-05-26T23:02:41.589Z",
+      "resumen_ia": {
+        "es": "Amplio y elegante penthouse ubicado en el sector de Costa del Este. Esta propiedad destaca por su diseño moderno y acabados renovados.",
+        "en": "Spacious and elegant penthouse located in the Costa del Este area. This property stands out for its modern design and renovated finishes."
+      },
       "tags_caracteristicas": [
         "remodelado",
         "penthouse"
       ],
       "tags_extra": [
-        "control-de-acceso"
+        "costa-del-este"
       ],
       "ai_source_flag": "generated_from_external_description"
     },
@@ -235,18 +617,20 @@
       "lng": -79.52972132943472,
       "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-apartamentos-amueblados/alquiler-apartamento-2-recamaras-avenida-balboa-id-822/32391133",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-26T23:02:41.422Z",
-      "fecha_actualizacion": "2026-05-26T23:02:41.422Z",
-      "resumen_ia": "Disfruta de esta propiedad en Avenida Balboa que destaca por su diseño funcional y ambientes iluminados. El edificio cuenta con espacios recreativos y de relajación ideales para un estilo de vida moderno.",
+      "fecha_deteccion": "2026-05-26T23:03:12.234Z",
+      "fecha_actualizacion": "2026-05-26T23:03:12.234Z",
+      "resumen_ia": {
+        "es": "Esta propiedad en Avenida Balboa destaca por sus acabados de lujo y excelente iluminación natural. El apartamento cuenta con espacios bien distribuidos y acceso a completas instalaciones recreativas.",
+        "en": "This Avenida Balboa property stands out for its luxury finishes and excellent natural light. The apartment features well-distributed spaces and access to full recreational facilities."
+      },
       "tags_caracteristicas": [
         "area-social",
-        "spa",
-        "estacionamiento-techado"
+        "spa"
       ],
       "tags_extra": [
         "sauna",
         "bano-turco",
-        "juegos-infantiles"
+        "area-de-juegos"
       ],
       "ai_source_flag": "generated_from_external_description"
     },
@@ -263,15 +647,18 @@
       "lng": -79.51865902068782,
       "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-apartamentos/alquiler-apartamento-2-rec-paitilla-ph-toledo-disponible-desde-el-30-de-mayo/32344388",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-26T23:03:03.129Z",
-      "fecha_actualizacion": "2026-05-26T23:03:03.129Z",
-      "resumen_ia": "Se alquila apartamento en Paitilla con línea blanca incluida. El espacio cuenta con dos habitaciones, ventanales amplios y cuarto de servicio.",
+      "fecha_deteccion": "2026-05-26T23:03:26.837Z",
+      "fecha_actualizacion": "2026-05-26T23:03:26.837Z",
+      "resumen_ia": {
+        "es": "Se alquila amplio apartamento en Paitilla con dos habitaciones y cuarto de servicio. El inmueble incluye línea blanca y goza de una excelente ubicación cercana a centros comerciales.",
+        "en": "Spacious apartment for rent in Paitilla featuring two bedrooms and a maid's room. The property includes appliances and enjoys an excellent location near shopping centers."
+      },
       "tags_caracteristicas": [
         "linea-blanca",
         "centrico"
       ],
       "tags_extra": [
-        "cuarto-y-bano-de-empleada"
+        "cuarto-de-servicio"
       ],
       "ai_source_flag": "generated_from_external_description"
     },
@@ -288,45 +675,12 @@
       "lng": -79.51619362240146,
       "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-comercios/alquiler-local-frente-ca-lle-50/31386078",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-26T23:03:12.693Z",
-      "fecha_actualizacion": "2026-05-26T23:03:12.693Z",
-      "resumen_ia": "Espacio versátil de 105 m² disponible para oficina o consultorio en ubicación privilegiada de Calle 50. Incluye baño propio, área de depósito y acceso a numerosos estacionamientos compartidos.",
-      "tags_caracteristicas": [
-        "deposito",
-        "centrico"
-      ],
-      "tags_extra": [
-        "local-comercial",
-        "oficina",
-        "consultorio"
-      ],
-      "ai_source_flag": "generated_from_external_description"
-    },
-    {
-      "titulo": "Apartamento Dúplex Amoblado con Vista al Mar en Casco Viejo",
-      "precio": 1900,
-      "moneda": "PAB",
-      "area_m2": 98,
-      "habitaciones": 1,
-      "banos": 1.5,
-      "estacionamientos": null,
-      "zona": "Casco Viejo, San Felipe",
-      "lat": 8.952274011806551,
-      "lng": -79.53408059506134,
-      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-apartamentos/apartamento-duplex-amoblado-con-vista-al-mar-en-casco-viejo/32323809",
-      "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-26T23:03:27.613Z",
-      "fecha_actualizacion": "2026-05-26T23:03:27.613Z",
-      "resumen_ia": "Luminoso dúplex de un dormitorio situado en una esquina privilegiada de Casco Viejo. Ofrece ambientes amplios con techos altos y panorámicas vistas marinas.",
-      "tags_caracteristicas": [
-        "amoblado",
-        "vista-al-mar"
-      ],
-      "tags_extra": [
-        "duplex",
-        "techo-doble-altura"
-      ],
-      "ai_source_flag": "generated_from_external_description"
+      "fecha_deteccion": "2026-05-26T23:03:34.686Z",
+      "fecha_actualizacion": "2026-05-26T23:03:34.686Z",
+      "resumen_ia": null,
+      "tags_caracteristicas": [],
+      "tags_extra": [],
+      "ai_source_flag": null
     },
     {
       "titulo": "Alquilo casa de 4 recamaras en San Antonio cerca Metromall",
@@ -341,14 +695,102 @@
       "lng": -79.44568261605171,
       "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-casas/alquilo-casa-de-4-recamaras-en-san-antonio-cerca-metromall/32438189",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-26T23:03:36.981Z",
-      "fecha_actualizacion": "2026-05-26T23:03:36.981Z",
-      "resumen_ia": "Amplia casa de cuatro habitaciones ubicada en San Antonio. Propiedad cercada con espacio suficiente para tres vehículos.",
+      "fecha_deteccion": "2026-05-26T23:16:59.054Z",
+      "fecha_actualizacion": "2026-05-26T23:16:59.054Z",
+      "resumen_ia": {
+        "es": "Amplia propiedad de cuatro habitaciones disponible para alquiler en San Antonio. La residencia cuenta con espacio para múltiples vehículos y una ubicación conveniente.",
+        "en": "Spacious four-bedroom property available for rent in San Antonio. The residence features space for multiple vehicles and a convenient location."
+      },
       "tags_caracteristicas": [
         "remodelado"
       ],
       "tags_extra": [
-        "casa-independiente"
+        "casa-cercada",
+        "ubicacion-centrica"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "PH Nuovo by Armani/Casa | Avenida Balboa / Bella Vista | 110 m² | $2,300",
+      "precio": 2300,
+      "moneda": "PAB",
+      "area_m2": 110,
+      "habitaciones": 2,
+      "banos": 2,
+      "estacionamientos": 2,
+      "zona": "Avenida Balboa",
+      "lat": 8.974637443269804,
+      "lng": -79.52921690252961,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-apartamentos-amueblados/ph-nuovo-by-armani-casa-avenida-balboa-bella-vista-110-m-2-300/32389543",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-26T23:17:14.148Z",
+      "fecha_actualizacion": "2026-05-26T23:17:14.148Z",
+      "resumen_ia": {
+        "es": "Disfrute de un estilo de vida exclusivo en este moderno apartamento ubicado en la prestigiosa Avenida Balboa. El inmueble destaca por su sofisticado diseño en una de las zonas más buscadas de la capital.",
+        "en": "Enjoy an exclusive lifestyle in this modern apartment located on the prestigious Avenida Balboa. The property stands out for its sophisticated design in one of the capital's most sought-after areas."
+      },
+      "tags_caracteristicas": [
+        "a-estrenar"
+      ],
+      "tags_extra": [
+        "lujo",
+        "exclusivo"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "EDIFICIO LAS REINAS, RÍO ABAJO – USD 500",
+      "precio": 500,
+      "moneda": "PAB",
+      "area_m2": null,
+      "habitaciones": 1,
+      "banos": 1,
+      "estacionamientos": null,
+      "zona": "Ciudad de Panamá",
+      "lat": 8.97143471452257,
+      "lng": -79.53439089576133,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-apartamentos-amueblados/edificio-las-reinas-rio-abajo-usd-500/32332036",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-26T23:17:22.430Z",
+      "fecha_actualizacion": "2026-05-26T23:17:22.430Z",
+      "resumen_ia": {
+        "es": "Este apartamento en planta baja se encuentra en Río Abajo. Es una opción práctica para una persona o pareja que necesite vivir en una ubicación céntrica.",
+        "en": "This ground-floor apartment is located in Río Abajo. It is a practical option for an individual or couple looking for a central location."
+      },
+      "tags_caracteristicas": [
+        "centrico"
+      ],
+      "tags_extra": [
+        "planta-baja"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "Exclusive House in Albrook Gardens – Clayton | 260 m² Construction | Prime Residential Area",
+      "precio": 2750,
+      "moneda": "PAB",
+      "area_m2": 260,
+      "habitaciones": 3,
+      "banos": 3,
+      "estacionamientos": 2,
+      "zona": "Ciudad de Panamá",
+      "lat": 8.971211514768887,
+      "lng": -79.53463273024634,
+      "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-casas/exclusive-house-in-albrook-gardens-clayton-260-m-construction-prime-residential-area/32133673",
+      "fuente": "encuentra24",
+      "fecha_deteccion": "2026-05-26T23:17:31.582Z",
+      "fecha_actualizacion": "2026-05-26T23:17:31.582Z",
+      "resumen_ia": {
+        "es": "Amplia residencia de 260 m² ubicada en el entorno natural de Clayton. Disfruta de un estilo de vida tranquilo en una de las zonas más exclusivas de la capital.",
+        "en": "Spacious 260 m² residence located in the natural surroundings of Clayton. Enjoy a peaceful lifestyle in one of the capital's most exclusive areas."
+      },
+      "tags_caracteristicas": [
+        "urbanizacion-cerrada"
+      ],
+      "tags_extra": [
+        "albrook-gardens",
+        "zona-residencial",
+        "rodeado-naturaleza"
       ],
       "ai_source_flag": "generated_from_external_description"
     },
@@ -365,9 +807,12 @@
       "lng": -79.50850203743758,
       "url_original": "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-apartamentos-amueblados/ph-oceanaire-apartamento-de-2-recamaras-amoblado-en-alquiler/32437895",
       "fuente": "encuentra24",
-      "fecha_deteccion": "2026-05-26T23:16:58.960Z",
-      "fecha_actualizacion": "2026-05-26T23:16:58.960Z",
-      "resumen_ia": "Espacioso apartamento de dos habitaciones disponible para habitar inmediatamente en Punta Pacífica. La propiedad se entrega totalmente equipada y ofrece un entorno de confort con acabados de alta calidad.",
+      "fecha_deteccion": "2026-05-26T23:17:39.285Z",
+      "fecha_actualizacion": "2026-05-26T23:17:39.285Z",
+      "resumen_ia": {
+        "es": "Elegante propiedad de dos habitaciones disponible para habitar en Punta Pacífica. Este espacio cuenta con acabados modernos y equipamiento completo.",
+        "en": "Elegant two-bedroom property available for rent in Punta Pacifica. This space features modern finishes and is fully equipped."
+      },
       "tags_caracteristicas": [
         "amoblado"
       ],

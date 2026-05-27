@@ -21,6 +21,7 @@ import {
   useDict,
   useDomainLabels,
   useFormatters,
+  useLocale,
 } from "@/i18n/LocaleProvider";
 
 import { accentVars, precioPorM2 } from "../format";
@@ -40,8 +41,13 @@ export function PropertyCard({
   className,
 }: PropertyCardProps) {
   const dict = useDict();
+  const { locale } = useLocale();
   const labels = useDomainLabels();
   const fmt = useFormatters();
+  // Si no hay versión EN aún (resumenes legacy), caemos al ES para no
+  // mostrar la sección vacía.
+  const resumenTexto =
+    propiedad.resumenIA?.[locale] || propiedad.resumenIA?.es || null;
 
   const ppm2 = precioPorM2(propiedad);
   const localizacion =
@@ -183,7 +189,7 @@ export function PropertyCard({
           />
         </div>
 
-        {propiedad.resumenIA ? (
+        {resumenTexto ? (
           <>
             <Separator className="my-5" />
             <section>
@@ -192,7 +198,7 @@ export function PropertyCard({
                 <span>{dict.card.ai_summary}</span>
               </div>
               <p className="text-sm leading-relaxed text-foreground/90">
-                {propiedad.resumenIA}
+                {resumenTexto}
               </p>
             </section>
           </>

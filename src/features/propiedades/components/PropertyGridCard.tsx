@@ -18,6 +18,7 @@ import {
   useDict,
   useDomainLabels,
   useFormatters,
+  useLocale,
 } from "@/i18n/LocaleProvider";
 
 import { accentVars, precioPorM2 } from "../format";
@@ -30,8 +31,11 @@ type Props = {
 
 export function PropertyGridCard({ propiedad, className }: Props) {
   const dict = useDict();
+  const { locale } = useLocale();
   const labels = useDomainLabels();
   const fmt = useFormatters();
+  const resumenTexto =
+    propiedad.resumenIA?.[locale] || propiedad.resumenIA?.es || null;
 
   const ppm2 = precioPorM2(propiedad);
   const localizacion =
@@ -141,7 +145,7 @@ export function PropertyGridCard({ propiedad, className }: Props) {
           />
         </dl>
 
-        {propiedad.resumenIA ? (
+        {resumenTexto ? (
           <>
             <Separator />
             <div>
@@ -150,7 +154,7 @@ export function PropertyGridCard({ propiedad, className }: Props) {
                 <span>{dict.card.ai_summary}</span>
               </div>
               <p className="line-clamp-3 text-xs leading-relaxed text-foreground/85">
-                {propiedad.resumenIA}
+                {resumenTexto}
               </p>
             </div>
           </>

@@ -94,7 +94,7 @@ function mapPropiedad(p: DbPropiedad): Propiedad {
     estacionamientos: p.estacionamientos ?? undefined,
     condicion: p.condicion ?? undefined,
     estadoAnuncio: p.estado_anuncio,
-    resumenIA: p.resumen_ia ?? undefined,
+    resumenIA: p.resumen_ia ? { es: p.resumen_ia, en: "" } : undefined,
     fuenteId: p.fuente_id,
     fuenteNombre: p.fuente?.nombre ?? p.fuente_id,
     urlOriginal: p.url_original,

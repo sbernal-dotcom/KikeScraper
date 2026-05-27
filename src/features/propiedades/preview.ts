@@ -33,7 +33,7 @@ type ScrapedRow = {
   zona: string | null;
   lat: number | null;
   lng: number | null;
-  resumen_ia?: string | null;
+  resumen_ia?: { es: string; en: string } | string | null;
   tags_caracteristicas?: string[] | null;
   tags_extra?: string[] | null;
   ai_source_flag?: string | null;
@@ -54,6 +54,18 @@ const FUENTE_NOMBRES: Record<string, string> = {
   compreoalquile: "CompreOalquile",
   inmuebles24: "Inmuebles24",
 };
+
+// Acepta el shape nuevo { es, en } y también el legacy string (resumen
+// generado antes del cambio bilingüe). Si es string lo asumimos en ES y
+// dejamos en vacío hasta el próximo backfill.
+function normalizeResumen(
+  raw: ScrapedRow["resumen_ia"],
+): { es: string; en: string } | undefined {
+  if (!raw) return undefined;
+  if (typeof raw === "string") return raw.trim() ? { es: raw, en: "" } : undefined;
+  if (raw.es || raw.en) return { es: raw.es ?? "", en: raw.en ?? "" };
+  return undefined;
+}
 
 function categoriaFromUrl(url: string): CategoriaPropiedad {
   if (url.includes("-apartamentos")) return "apartamento";
@@ -96,7 +108,7 @@ function toPropiedad(row: ScrapedRow): Propiedad | null {
     banos: row.banos ?? undefined,
     estacionamientos: row.estacionamientos ?? undefined,
     estadoAnuncio: "activo",
-    resumenIA: row.resumen_ia ?? undefined,
+    resumenIA: normalizeResumen(row.resumen_ia),
     tagsCaracteristicas: row.tags_caracteristicas ?? [],
     tagsExtra: row.tags_extra ?? [],
     fuenteId: row.fuente,

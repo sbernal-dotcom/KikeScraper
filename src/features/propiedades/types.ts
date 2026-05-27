@@ -76,7 +76,7 @@ export interface Propiedad {
   estacionamientos?: number;
   condicion?: Condicion;
   estadoAnuncio: EstadoAnuncio;
-  resumenIA?: string;
+  resumenIA?: { es: string; en: string };
   tagsCaracteristicas?: string[];
   tagsExtra?: string[];
   fuenteId: string;
