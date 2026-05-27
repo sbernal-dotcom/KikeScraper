@@ -52,17 +52,21 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="offcanvas" variant="sidebar">
       <SidebarHeader className="border-b">
-        <div className="px-2 py-3">
-          <h2 className="text-sm font-semibold tracking-tight">
+        <div className="px-2 py-2">
+          <h2 className="text-xs font-semibold leading-tight tracking-tight">
             {dict.brand.name}
           </h2>
-          <p className="text-xs text-muted-foreground">{dict.brand.tagline}</p>
+          <p className="text-[10px] leading-tight text-muted-foreground">
+            {dict.brand.tagline}
+          </p>
         </div>
       </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>{dict.nav.section}</SidebarGroupLabel>
+          <SidebarGroupLabel className="h-6 text-[10px]">
+            {dict.nav.section}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {primaryNav.map((item) => (
@@ -77,7 +81,9 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>{dict.nav.section_project}</SidebarGroupLabel>
+          <SidebarGroupLabel className="h-6 text-[10px]">
+            {dict.nav.section_project}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {secondaryNav.map((item) => (
@@ -134,14 +140,17 @@ function NavMenuItem({ item, active }: { item: NavItem; active: boolean }) {
     return (
       <SidebarMenuItem>
         <SidebarMenuButton
+          size="sm"
           disabled
           tooltip={`${label} — ${dict.nav.soon}`}
           className="cursor-not-allowed opacity-60"
         >
-          <Icon className="size-4" />
+          <Icon className="size-3.5" />
           <span>{label}</span>
         </SidebarMenuButton>
-        <SidebarMenuBadge>{dict.nav.soon}</SidebarMenuBadge>
+        <SidebarMenuBadge className="text-[9px]">
+          {dict.nav.soon}
+        </SidebarMenuBadge>
       </SidebarMenuItem>
     );
   }
@@ -149,11 +158,12 @@ function NavMenuItem({ item, active }: { item: NavItem; active: boolean }) {
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
+        size="sm"
         render={<Link href={item.href} />}
         isActive={active}
         tooltip={label}
       >
-        <Icon className="size-4" />
+        <Icon className="size-3.5" />
         <span>{label}</span>
       </SidebarMenuButton>
     </SidebarMenuItem>
