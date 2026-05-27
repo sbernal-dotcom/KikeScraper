@@ -32,17 +32,17 @@ export function ZonaList({ zona, items, onSelect, onClose, className }: Props) {
   return (
     <aside
       className={cn(
-        "flex h-dvh w-[380px] max-w-[92vw] flex-col border-l border-border/60 bg-background/95 font-sans backdrop-blur-md",
+        "flex h-dvh w-[300px] max-w-[92vw] flex-col border-l border-border/60 bg-background/95 font-sans backdrop-blur-md",
         className,
       )}
     >
-      <header className="flex items-start justify-between gap-2 border-b border-border/60 px-5 py-4">
+      <header className="flex items-start justify-between gap-2 border-b border-border/60 px-3 py-2.5">
         <div className="min-w-0 space-y-0.5">
-          <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
             <MapPin className="size-3" />
             <span className="truncate">{zona}</span>
           </div>
-          <h2 className="text-lg font-semibold leading-tight tracking-tight">
+          <h2 className="text-sm font-semibold leading-tight tracking-tight">
             {items.length} {dict.common.results}
           </h2>
         </div>
@@ -58,18 +58,18 @@ export function ZonaList({ zona, items, onSelect, onClose, className }: Props) {
         </Button>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-3">
-        <ol className="space-y-2">
+      <div className="flex-1 overflow-y-auto p-2">
+        <ol className="space-y-1.5">
           {sorted.map((p, i) => (
             <li key={p.id}>
               <button
                 type="button"
                 onClick={() => onSelect(p)}
                 style={accentVars(p.tipoOperacion)}
-                className="flex w-full items-start gap-3 rounded-lg border border-border/40 bg-card/30 p-3 text-left transition-colors hover:border-border hover:bg-card/60"
+                className="flex w-full items-start gap-2 rounded-lg border border-border/40 bg-card/30 p-2 text-left transition-colors hover:border-border hover:bg-card/60"
               >
                 <span
-                  className="flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums"
+                  className="flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold tabular-nums"
                   style={{
                     background: "var(--accent-soft)",
                     color: "var(--accent)",
@@ -90,18 +90,18 @@ export function ZonaList({ zona, items, onSelect, onClose, className }: Props) {
                     </span>
                     <span>{labels.categoria(p.categoria)}</span>
                   </div>
-                  <div className="mt-1 line-clamp-1 text-sm font-medium leading-snug">
+                  <div className="mt-1 line-clamp-1 text-xs font-medium leading-snug">
                     {p.titulo}
                   </div>
-                  <div className="mt-1.5 flex items-baseline gap-2">
+                  <div className="mt-1 flex items-baseline gap-2">
                     <span
-                      className="text-base font-bold tabular-nums"
+                      className="text-sm font-bold tabular-nums"
                       style={{ color: "var(--accent)" }}
                     >
                       {fmt.currency(p.precio)}
                     </span>
                   </div>
-                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground tabular-nums">
+                  <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-[10px] text-muted-foreground tabular-nums">
                     {p.areaM2 ? (
                       <span className="inline-flex items-center gap-1">
                         <Maximize2 className="size-3" />
@@ -122,7 +122,7 @@ export function ZonaList({ zona, items, onSelect, onClose, className }: Props) {
                     ) : null}
                   </div>
                 </div>
-                <ChevronRight className="size-4 shrink-0 self-center text-muted-foreground" />
+                <ChevronRight className="size-3.5 shrink-0 self-center text-muted-foreground" />
               </button>
             </li>
           ))}

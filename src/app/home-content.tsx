@@ -8,7 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useDict } from "@/i18n/LocaleProvider";
-import { useComparison } from "@/features/comparacion/ComparisonContext";
+import { ComparisonList } from "@/features/comparacion/ComparisonList";
+import {
+  MIN_COMPARACION,
+  useComparison,
+} from "@/features/comparacion/ComparisonContext";
 import {
   applyMapFilters,
   useAnalyticsFiltersCtx,
@@ -27,15 +31,21 @@ export function HomeContent() {
   const [seleccionada, setSeleccionada] = useState<Propiedad | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // Cards visibles a la derecha: las items en comparación + la seleccionada
-  // si no está ya comparada. Se apilan de izquierda (más vieja) a derecha
-  // (más nueva). Cada una ocupa 380px.
+  // Modo comparación: cuando hay 2+ items, a la derecha va una ComparisonList
+  // (formato ZonaList con toda la info) y a su izquierda — si hay
+  // seleccionada — la PropertyCard completa de ese item.
+  const compareMode = comparison.items.length >= MIN_COMPARACION;
+
+  // Cards visibles a la izquierda de la derecha. En modo normal son los
+  // comparados (0-1) + seleccionada si no está en compare. En modo
+  // comparación es sólo la seleccionada (el resto se ve en la lista).
   const visibleCards = useMemo<Propiedad[]>(() => {
+    if (compareMode) return seleccionada ? [seleccionada] : [];
     const inCompare = new Set(comparison.items.map((p) => p.id));
     const list: Propiedad[] = [...comparison.items];
     if (seleccionada && !inCompare.has(seleccionada.id)) list.push(seleccionada);
     return list;
-  }, [comparison.items, seleccionada]);
+  }, [compareMode, comparison.items, seleccionada]);
   // Lista lateral cuando hay >1 pin en la misma zona. Mantiene el grupo
   // abierto cuando el usuario clica una de las propiedades y luego "Volver".
   const [zonaList, setZonaList] = useState<{
@@ -172,7 +182,11 @@ export function HomeContent() {
           }
         }}
         rightInsetPx={
-          zonaList ? 380 : visibleCards.length * 300
+          zonaList
+            ? 300
+            : compareMode
+              ? 300 + visibleCards.length * 300
+              : visibleCards.length * 300
         }
         leftInsetPx={activeCount > 0 ? 260 : 180}
       />
@@ -207,6 +221,24 @@ export function HomeContent() {
             />
           </div>
         )
+      ) : compareMode ? (
+        // Modo comparación: ComparisonList a la derecha; si hay una
+        // seleccionada de esa lista, su PropertyCard completa se abre a
+        // la izquierda. Click en otro item cambia la card.
+        <div className="absolute inset-y-0 right-0 z-20 flex">
+          {seleccionada ? (
+            <PropertyCard
+              propiedad={seleccionada}
+              compact
+              onClose={() => setSeleccionada(null)}
+            />
+          ) : null}
+          <ComparisonList
+            items={comparison.items}
+            selectedId={seleccionada?.id ?? null}
+            onSelect={(p) => setSeleccionada(p)}
+          />
+        </div>
       ) : visibleCards.length > 0 ? (
         <div className="absolute inset-y-0 right-0 z-20 flex">
           {visibleCards.map((p) => (

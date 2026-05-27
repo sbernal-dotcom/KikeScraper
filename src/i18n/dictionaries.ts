@@ -89,6 +89,7 @@ export type Dictionary = {
   compare: {
     add: string;
     remove: string;
+    title: string;
   };
   geocoder: { placeholder: string };
   analytics: {
@@ -241,6 +242,7 @@ const es: Dictionary = {
   compare: {
     add: "Agregar a comparación",
     remove: "Quitar de comparación",
+    title: "Comparación",
   },
   geocoder: { placeholder: "Buscar dirección o lugar…" },
   analytics: {
@@ -393,6 +395,7 @@ const en: Dictionary = {
   compare: {
     add: "Add to comparison",
     remove: "Remove from comparison",
+    title: "Comparison",
   },
   geocoder: { placeholder: "Search address or place…" },
   analytics: {
