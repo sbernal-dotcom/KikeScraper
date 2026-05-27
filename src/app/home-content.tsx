@@ -172,7 +172,13 @@ export function HomeContent() {
           }
         }}
         rightInsetPx={
-          zonaList ? 380 : visibleCards.length > 0 ? visibleCards.length * 380 : 0
+          zonaList
+            ? 380
+            : visibleCards.length === 0
+              ? 0
+              : visibleCards.length === 1
+                ? 380
+                : visibleCards.length * 300
         }
         leftInsetPx={activeCount > 0 ? 260 : 180}
       />
@@ -196,6 +202,7 @@ export function HomeContent() {
             <PropertyCard
               key={p.id}
               propiedad={p}
+              compact={visibleCards.length > 1}
               onClose={() => {
                 // Si está en comparación, sacarla de ahí (y de seleccionada si
                 // coincidía). Si era la seleccionada sola, limpiar selección.

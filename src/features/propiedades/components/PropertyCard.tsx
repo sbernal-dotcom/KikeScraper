@@ -38,6 +38,8 @@ type PropertyCardProps = {
   onClose: () => void;
   onBack?: () => void;
   className?: string;
+  /** Compacta cuando hay 2+ cards apiladas (modo comparación). */
+  compact?: boolean;
 };
 
 export function PropertyCard({
@@ -45,6 +47,7 @@ export function PropertyCard({
   onClose,
   onBack,
   className,
+  compact = false,
 }: PropertyCardProps) {
   const dict = useDict();
   const { locale } = useLocale();
@@ -69,11 +72,17 @@ export function PropertyCard({
     <aside
       style={accentVars(propiedad.tipoOperacion)}
       className={cn(
-        "flex h-dvh w-[380px] max-w-[92vw] flex-col border-l border-border/60 bg-background/95 font-sans backdrop-blur-md",
+        "flex h-dvh max-w-[92vw] flex-col border-l border-border/60 bg-background/95 font-sans backdrop-blur-md",
+        compact ? "w-[300px]" : "w-[380px]",
         className,
       )}
     >
-      <header className="flex items-start justify-between gap-2 border-b border-border/60 px-5 py-4">
+      <header
+        className={cn(
+          "flex items-start justify-between gap-2 border-b border-border/60",
+          compact ? "px-3 py-2.5" : "px-5 py-4",
+        )}
+      >
         {onBack ? (
           <Button
             type="button"
@@ -124,7 +133,12 @@ export function PropertyCard({
               </span>
             ) : null}
           </div>
-          <h2 className="text-lg font-semibold leading-tight tracking-tight">
+          <h2
+            className={cn(
+              "font-semibold leading-tight tracking-tight",
+              compact ? "text-sm" : "text-lg",
+            )}
+          >
             {propiedad.titulo}
           </h2>
         </div>
@@ -140,73 +154,117 @@ export function PropertyCard({
         </Button>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-5 py-4">
+      <div
+        className={cn(
+          "flex-1 overflow-y-auto",
+          compact ? "px-3 py-3" : "px-5 py-4",
+        )}
+      >
         <div className="space-y-1.5">
           <div className="flex items-baseline gap-2">
             <span
-              className="text-3xl font-bold tracking-tight"
+              className={cn(
+                "font-bold tracking-tight",
+                compact ? "text-xl" : "text-3xl",
+              )}
               style={{ color: "var(--accent)" }}
             >
               {fmt.currency(propiedad.precio)}
             </span>
             {propiedad.tipoOperacion === "alquiler" ? (
-              <span className="text-xs text-muted-foreground">
+              <span
+                className={cn(
+                  "text-muted-foreground",
+                  compact ? "text-[10px]" : "text-xs",
+                )}
+              >
                 {dict.card.per_month}
               </span>
             ) : null}
           </div>
           {ppm2 ? (
-            <p className="text-xs text-muted-foreground">
+            <p
+              className={cn(
+                "text-muted-foreground",
+                compact ? "text-[10px]" : "text-xs",
+              )}
+            >
               {fmt.currency(ppm2)} {dict.card.per_m2}
             </p>
           ) : null}
         </div>
 
-        <Separator className="my-5" />
+        <Separator className={compact ? "my-3" : "my-5"} />
 
-        <div className="grid grid-cols-2 gap-3 text-sm">
+        <div
+          className={cn(
+            "grid grid-cols-2",
+            compact ? "gap-1.5 text-xs" : "gap-3 text-sm",
+          )}
+        >
           <SpecChip
             icon={<Maximize2 className="size-3.5" />}
             label={dict.card.area}
             value={propiedad.areaM2 ? `${propiedad.areaM2} m²` : "—"}
+            compact={compact}
           />
           <SpecChip
             icon={<BedDouble className="size-3.5" />}
             label={dict.card.bedrooms}
             value={propiedad.habitaciones?.toString() ?? "—"}
+            compact={compact}
           />
           <SpecChip
             icon={<Bath className="size-3.5" />}
             label={dict.card.bathrooms}
             value={propiedad.banos?.toString() ?? "—"}
+            compact={compact}
           />
           <SpecChip
             icon={<Car className="size-3.5" />}
             label={dict.card.parking}
             value={propiedad.estacionamientos?.toString() ?? "—"}
+            compact={compact}
           />
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+        <div
+          className={cn(
+            "grid grid-cols-2",
+            compact ? "mt-2 gap-1.5 text-xs" : "mt-4 gap-3 text-sm",
+          )}
+        >
           <SpecChip
             label={dict.card.condition_label}
             value={labels.condicion(propiedad.condicion)}
+            compact={compact}
           />
           <SpecChip
             label={dict.card.listing_status}
             value={labels.estado(propiedad.estadoAnuncio)}
+            compact={compact}
           />
         </div>
 
         {resumenTexto ? (
           <>
-            <Separator className="my-5" />
+            <Separator className={compact ? "my-3" : "my-5"} />
             <section>
-              <div className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <div
+                className={cn(
+                  "mb-2 flex items-center gap-1.5 font-medium uppercase tracking-wider text-muted-foreground",
+                  compact ? "text-[10px]" : "text-xs",
+                )}
+              >
                 <Sparkles className="size-3.5" style={{ color: "var(--accent)" }} />
                 <span>{dict.card.ai_summary}</span>
               </div>
-              <p className="text-sm leading-relaxed text-foreground/90">
+              <p
+                className={cn(
+                  "leading-relaxed text-foreground/90",
+                  compact ? "text-xs" : "text-sm",
+                )}
+              >
                 {resumenTexto}
               </p>
             </section>
@@ -217,9 +275,14 @@ export function PropertyCard({
           (propiedad.tagsExtra?.length ?? 0) >
         0 ? (
           <>
-            <Separator className="my-5" />
+            <Separator className={compact ? "my-3" : "my-5"} />
             <section>
-              <div className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <div
+                className={cn(
+                  "mb-2 flex items-center gap-1.5 font-medium uppercase tracking-wider text-muted-foreground",
+                  compact ? "text-[10px]" : "text-xs",
+                )}
+              >
                 <Tag className="size-3.5" />
                 <span>{dict.card.tags}</span>
               </div>
@@ -227,7 +290,10 @@ export function PropertyCard({
                 {(propiedad.tagsCaracteristicas ?? []).map((t) => (
                   <li
                     key={`c-${t}`}
-                    className="rounded-sm border border-border/60 bg-card/40 px-2 py-0.5 text-[11px] font-medium text-foreground/85"
+                    className={cn(
+                      "rounded-sm border border-border/60 bg-card/40 font-medium text-foreground/85",
+                      compact ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-0.5 text-[11px]",
+                    )}
                   >
                     {dict.tags[t] ?? t.replace(/-/g, " ")}
                   </li>
@@ -235,7 +301,10 @@ export function PropertyCard({
                 {(propiedad.tagsExtra ?? []).map((t) => (
                   <li
                     key={`x-${t}`}
-                    className="rounded-sm border border-dashed border-border/60 bg-card/20 px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+                    className={cn(
+                      "rounded-sm border border-dashed border-border/60 bg-card/20 font-medium text-muted-foreground",
+                      compact ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-0.5 text-[11px]",
+                    )}
                     title={dict.card.tag_extra_hint}
                   >
                     {t.replace(/-/g, " ")}
@@ -246,9 +315,14 @@ export function PropertyCard({
           </>
         ) : null}
 
-        <Separator className="my-5" />
+        <Separator className={compact ? "my-3" : "my-5"} />
 
-        <dl className="space-y-1 text-[11px]">
+        <dl
+          className={cn(
+            "space-y-1",
+            compact ? "text-[10px]" : "text-[11px]",
+          )}
+        >
           <div className="flex items-center justify-between gap-3">
             <dt className="text-muted-foreground">{dict.card.source}</dt>
             <dd className="font-medium">{propiedad.fuenteNombre}</dd>
@@ -269,9 +343,14 @@ export function PropertyCard({
 
         {propiedad.otrosAnuncios && propiedad.otrosAnuncios.length > 0 ? (
           <>
-            <Separator className="my-5" />
+            <Separator className={compact ? "my-3" : "my-5"} />
             <section>
-              <div className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <div
+                className={cn(
+                  "mb-2 flex items-center gap-1.5 font-medium uppercase tracking-wider text-muted-foreground",
+                  compact ? "text-[10px]" : "text-xs",
+                )}
+              >
                 <Globe2 className="size-3.5" />
                 <span>
                   {dict.card.also_listed_on} · {propiedad.otrosAnuncios.length}{" "}
@@ -285,7 +364,10 @@ export function PropertyCard({
                       href={a.urlOriginal}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-between gap-2 rounded-md border border-border/50 bg-card/30 px-3 py-2 text-xs transition-colors hover:bg-card/60"
+                      className={cn(
+                        "flex items-center justify-between gap-2 rounded-md border border-border/50 bg-card/30 transition-colors hover:bg-card/60",
+                        compact ? "px-2 py-1.5 text-[11px]" : "px-3 py-2 text-xs",
+                      )}
                     >
                       <span className="flex min-w-0 items-center gap-2">
                         <ExternalLink className="size-3.5 shrink-0 text-muted-foreground" />
@@ -310,22 +392,27 @@ export function PropertyCard({
         ) : null}
       </div>
 
-      <footer className="space-y-2 border-t border-border/60 px-5 py-3">
+      <footer
+        className={cn(
+          "space-y-2 border-t border-border/60",
+          compact ? "px-3 py-2" : "px-5 py-3",
+        )}
+      >
         <Button
           type="button"
           variant={inCompare ? "default" : "outline"}
           size="sm"
-          className="w-full"
+          className={cn("w-full", compact && "h-7 text-[11px]")}
           disabled={cantAdd}
           title={cantAdd ? `Máx ${MAX_COMPARACION}` : undefined}
           onClick={() => comparison.toggle(propiedad)}
         >
-          <Scale className="mr-1 size-4" />
+          <Scale className={cn("mr-1", compact ? "size-3" : "size-4")} />
           {inCompare ? dict.compare.remove : dict.compare.add}
         </Button>
         <Button
-          size="lg"
-          className="w-full font-medium"
+          size={compact ? "sm" : "lg"}
+          className={cn("w-full font-medium", compact && "text-[11px]")}
           style={{ background: "var(--accent)", color: "var(--accent-text-on)" }}
           render={
             <a
@@ -336,7 +423,7 @@ export function PropertyCard({
           }
         >
           {dict.card.view_original} — {propiedad.fuenteNombre}
-          <ExternalLink className="ml-1 size-4" />
+          <ExternalLink className={cn("ml-1", compact ? "size-3" : "size-4")} />
         </Button>
       </footer>
     </aside>
@@ -347,18 +434,37 @@ function SpecChip({
   icon,
   label,
   value,
+  compact = false,
 }: {
   icon?: React.ReactNode;
   label: string;
   value: string;
+  compact?: boolean;
 }) {
   return (
-    <div className="rounded-md border border-border/60 bg-card/40 px-3 py-2">
-      <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">
+    <div
+      className={cn(
+        "rounded-md border border-border/60 bg-card/40",
+        compact ? "px-2 py-1" : "px-3 py-2",
+      )}
+    >
+      <div
+        className={cn(
+          "flex items-center gap-1.5 uppercase tracking-wide text-muted-foreground",
+          compact ? "text-[9px]" : "text-[11px]",
+        )}
+      >
         {icon}
         <span>{label}</span>
       </div>
-      <div className="mt-0.5 text-sm font-medium tabular-nums">{value}</div>
+      <div
+        className={cn(
+          "mt-0.5 font-medium tabular-nums",
+          compact ? "text-xs" : "text-sm",
+        )}
+      >
+        {value}
+      </div>
     </div>
   );
 }
