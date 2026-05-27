@@ -9,10 +9,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useDict } from "@/i18n/LocaleProvider";
 import { ComparisonList } from "@/features/comparacion/ComparisonList";
-import {
-  MIN_COMPARACION,
-  useComparison,
-} from "@/features/comparacion/ComparisonContext";
+import { useComparison } from "@/features/comparacion/ComparisonContext";
 import {
   applyMapFilters,
   useAnalyticsFiltersCtx,
@@ -31,21 +28,10 @@ export function HomeContent() {
   const [seleccionada, setSeleccionada] = useState<Propiedad | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // Modo comparación: cuando hay 2+ items, a la derecha va una ComparisonList
-  // (formato ZonaList con toda la info) y a su izquierda — si hay
-  // seleccionada — la PropertyCard completa de ese item.
-  const compareMode = comparison.items.length >= MIN_COMPARACION;
-
-  // Cards visibles a la izquierda de la derecha. En modo normal son los
-  // comparados (0-1) + seleccionada si no está en compare. En modo
-  // comparación es sólo la seleccionada (el resto se ve en la lista).
-  const visibleCards = useMemo<Propiedad[]>(() => {
-    if (compareMode) return seleccionada ? [seleccionada] : [];
-    const inCompare = new Set(comparison.items.map((p) => p.id));
-    const list: Propiedad[] = [...comparison.items];
-    if (seleccionada && !inCompare.has(seleccionada.id)) list.push(seleccionada);
-    return list;
-  }, [compareMode, comparison.items, seleccionada]);
+  // Modo comparación: se activa apenas hay 1+ item en la lista. Mientras
+  // está activo, todo el lado derecho está anclado por la ComparisonList
+  // y los pines del mapa se agregan a la lista en vez de abrir cards sueltas.
+  const compareMode = comparison.items.length >= 1;
   // Lista lateral cuando hay >1 pin en la misma zona. Mantiene el grupo
   // abierto cuando el usuario clica una de las propiedades y luego "Volver".
   const [zonaList, setZonaList] = useState<{
@@ -170,23 +156,49 @@ export function HomeContent() {
             ? items.filter((i) => matchedSet.has(i.id))
             : items;
           if (visibleItems.length === 0) return;
-          if (visibleItems.length > 1) {
-            // Cluster: abrir SOLO la lista. El usuario elige cuál ver.
+          const isCluster = visibleItems.length > 1;
+
+          if (compareMode) {
+            // En compareMode los pines alimentan la lista de comparación.
+            if (isCluster) {
+              // Cluster → abrir ZonaList al lado de la ComparisonList; al
+              // elegir un item se agrega a compare (manejado en onSelect).
+              const zona = visibleItems[0].ubicacion.corregimiento ?? "";
+              setZonaList({ zona, items: visibleItems });
+              setSeleccionada(null);
+              return;
+            }
+            const p = visibleItems[0];
+            if (comparison.has(p.id)) {
+              // Ya estaba comparado → abrir su card a la izquierda de la lista.
+              setSeleccionada(p);
+              setZonaList(null);
+            } else if (!comparison.isFull) {
+              // Pin nuevo → agregar a la lista. No abrir card.
+              comparison.add(p);
+            }
+            // Si está full, no hacemos nada (el usuario tiene que quitar antes).
+            return;
+          }
+
+          // Fuera de compareMode: comportamiento original.
+          if (isCluster) {
             const zona = visibleItems[0].ubicacion.corregimiento ?? "";
             setZonaList({ zona, items: visibleItems });
             setSeleccionada(null);
           } else {
-            // Pin único: abrir la card directo.
             setZonaList(null);
             setSeleccionada(visibleItems[0]);
           }
         }}
         rightInsetPx={
-          zonaList
-            ? 300
-            : compareMode
-              ? 300 + visibleCards.length * 300
-              : visibleCards.length * 300
+          compareMode
+            ? 300 + (seleccionada || zonaList ? 300 : 0)
+            : zonaList
+              ? 300
+              : seleccionada
+                ? 300
+                : 0
         }
         leftInsetPx={activeCount > 0 ? 260 : 180}
       />
@@ -195,10 +207,44 @@ export function HomeContent() {
           {error}
         </div>
       ) : null}
-      {zonaList ? (
-        // Modo cluster: si el usuario ya eligió una de la lista, mostramos su
-        // PropertyCard (con Back → vuelve al listado) para que pueda usar el
-        // botón "Agregar a comparación". Si no, mostramos el listado.
+      {compareMode ? (
+        // Modo comparación: ComparisonList anclada a la derecha. A su
+        // izquierda, según contexto: ZonaList si el usuario clickeó un
+        // pin amarillo, o PropertyCard del item seleccionado en la lista.
+        <div className="absolute inset-y-0 right-0 z-20 flex">
+          {zonaList ? (
+            <ZonaList
+              zona={zonaList.zona}
+              items={zonaList.items}
+              onSelect={(p) => {
+                // En compareMode elegir de la ZonaList agrega a compare
+                // (siempre que no esté ya y no estemos llenos).
+                if (!comparison.has(p.id) && !comparison.isFull) {
+                  comparison.add(p);
+                }
+              }}
+              onClose={() => setZonaList(null)}
+            />
+          ) : seleccionada ? (
+            <PropertyCard
+              propiedad={seleccionada}
+              compact
+              onClose={() => setSeleccionada(null)}
+            />
+          ) : null}
+          <ComparisonList
+            items={comparison.items}
+            selectedId={seleccionada?.id ?? null}
+            onSelect={(p) => {
+              setSeleccionada(p);
+              setZonaList(null);
+            }}
+          />
+        </div>
+      ) : zonaList ? (
+        // Modo cluster sin compareMode: si el usuario ya eligió una de la
+        // lista, mostramos su PropertyCard (con Back → vuelve al listado).
+        // Si no, mostramos el listado solo.
         seleccionada ? (
           <div className="absolute inset-y-0 right-0 z-20 flex">
             <PropertyCard
@@ -221,43 +267,14 @@ export function HomeContent() {
             />
           </div>
         )
-      ) : compareMode ? (
-        // Modo comparación: ComparisonList a la derecha; si hay una
-        // seleccionada de esa lista, su PropertyCard completa se abre a
-        // la izquierda. Click en otro item cambia la card.
+      ) : seleccionada ? (
+        // Pin único sin comparación: una sola PropertyCard.
         <div className="absolute inset-y-0 right-0 z-20 flex">
-          {seleccionada ? (
-            <PropertyCard
-              propiedad={seleccionada}
-              compact
-              onClose={() => setSeleccionada(null)}
-            />
-          ) : null}
-          <ComparisonList
-            items={comparison.items}
-            selectedId={seleccionada?.id ?? null}
-            onSelect={(p) => setSeleccionada(p)}
+          <PropertyCard
+            propiedad={seleccionada}
+            compact
+            onClose={() => setSeleccionada(null)}
           />
-        </div>
-      ) : visibleCards.length > 0 ? (
-        <div className="absolute inset-y-0 right-0 z-20 flex">
-          {visibleCards.map((p) => (
-            <PropertyCard
-              key={p.id}
-              propiedad={p}
-              compact
-              onClose={() => {
-                // Si está en comparación, sacarla de ahí (y de seleccionada si
-                // coincidía). Si era la seleccionada sola, limpiar selección.
-                if (comparison.has(p.id)) {
-                  comparison.remove(p.id);
-                  if (seleccionada?.id === p.id) setSeleccionada(null);
-                } else {
-                  setSeleccionada(null);
-                }
-              }}
-            />
-          ))}
         </div>
       ) : null}
 
