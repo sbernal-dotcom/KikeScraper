@@ -54,15 +54,18 @@ export function ComparisonList({
         className,
       )}
     >
-      <header className="flex items-center justify-between gap-2 border-b border-border/60 px-2.5 py-2">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <Scale className="size-3 text-muted-foreground" />
-          <span className="truncate text-[11px] font-semibold tracking-tight">
-            {dict.compare.title}
-          </span>
-          <span className="ml-0.5 text-[10px] font-medium text-muted-foreground tabular-nums">
-            {items.length}/{MAX_COMPARACION}
-          </span>
+      <header className="flex items-start justify-between gap-2 border-b border-border/60 px-3 py-2.5">
+        <div className="min-w-0 space-y-0.5">
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+            <Scale className="size-3" />
+            <span className="truncate">{dict.compare.title}</span>
+          </div>
+          <h2 className="text-sm font-semibold leading-tight tracking-tight">
+            {items.length} {dict.common.results}{" "}
+            <span className="ml-0.5 text-[11px] font-normal text-muted-foreground tabular-nums">
+              {items.length}/{MAX_COMPARACION}
+            </span>
+          </h2>
         </div>
         <Button
           type="button"
@@ -70,15 +73,15 @@ export function ComparisonList({
           size="icon"
           aria-label={dict.common.clear}
           title={dict.common.clear}
-          className="-mr-1 size-6 shrink-0"
+          className="-mr-1 size-7 shrink-0"
           onClick={() => comparison.clear()}
         >
-          <X className="size-3.5" />
+          <X className="size-4" />
         </Button>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-1.5">
-        <ol className="space-y-1">
+      <div className="flex-1 overflow-y-auto p-2">
+        <ol className="space-y-1.5">
           {items.map((p, i) => {
             const ppm2 = precioPorM2(p);
             const isSelected = p.id === selectedId;
@@ -89,15 +92,15 @@ export function ComparisonList({
                   onClick={() => onSelect(p)}
                   style={accentVars(p.tipoOperacion)}
                   className={cn(
-                    "relative flex w-full flex-col gap-1 rounded-md border bg-card/30 p-1.5 text-left transition-colors",
+                    "relative flex w-full flex-col gap-1.5 rounded-lg border bg-card/30 p-2 text-left transition-colors",
                     isSelected
                       ? "border-[color:var(--accent)] bg-card/60"
                       : "border-border/40 hover:border-border hover:bg-card/60",
                   )}
                 >
-                  <div className="flex items-start gap-1.5">
+                  <div className="flex items-start gap-2">
                     <span
-                      className="flex size-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold tabular-nums"
+                      className="flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold tabular-nums"
                       style={{
                         background: "var(--accent-soft)",
                         color: "var(--accent)",
@@ -106,9 +109,9 @@ export function ComparisonList({
                       {i + 1}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground">
+                      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
                         <span
-                          className="inline-flex items-center rounded-sm px-1 py-px font-semibold"
+                          className="inline-flex items-center rounded-sm px-1 py-0.5 font-semibold"
                           style={{
                             color: "var(--accent)",
                             background: "var(--accent-soft)",
@@ -116,11 +119,9 @@ export function ComparisonList({
                         >
                           {labels.tipoOperacionCorto(p.tipoOperacion)}
                         </span>
-                        <span className="truncate">
-                          {labels.categoria(p.categoria)}
-                        </span>
+                        <span>{labels.categoria(p.categoria)}</span>
                       </div>
-                      <div className="line-clamp-2 text-[11px] font-medium leading-snug">
+                      <div className="mt-0.5 line-clamp-2 text-xs font-medium leading-snug">
                         {p.titulo}
                       </div>
                     </div>
@@ -134,52 +135,39 @@ export function ComparisonList({
                       }}
                       className="-mr-0.5 -mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
                     >
-                      <X className="size-3" />
+                      <X className="size-3.5" />
                     </button>
                   </div>
 
-                  <div className="flex items-baseline gap-1.5">
+                  <div className="flex items-baseline gap-2">
                     <span
-                      className="text-xs font-bold tabular-nums"
+                      className="text-sm font-bold tabular-nums"
                       style={{ color: "var(--accent)" }}
                     >
                       {fmt.currency(p.precio)}
                     </span>
                     {ppm2 ? (
-                      <span className="text-[9px] text-muted-foreground tabular-nums">
+                      <span className="text-[10px] text-muted-foreground tabular-nums">
                         {fmt.currency(ppm2)} {dict.card.per_m2}
                       </span>
                     ) : null}
                   </div>
 
                   {p.ubicacion.corregimiento ? (
-                    <div className="truncate text-[9px] text-muted-foreground">
+                    <div className="text-[10px] text-muted-foreground">
                       {p.ubicacion.corregimiento}
                     </div>
                   ) : null}
 
-                  <div className="grid grid-cols-4 gap-0.5 text-[9px] tabular-nums text-muted-foreground">
-                    <Stat
-                      icon={<Maximize2 className="size-2.5" />}
-                      value={p.areaM2 ? `${p.areaM2}` : "—"}
-                      suffix="m²"
-                    />
-                    <Stat
-                      icon={<BedDouble className="size-2.5" />}
-                      value={p.habitaciones ?? "—"}
-                    />
-                    <Stat
-                      icon={<Bath className="size-2.5" />}
-                      value={p.banos ?? "—"}
-                    />
-                    <Stat
-                      icon={<Car className="size-2.5" />}
-                      value={p.estacionamientos ?? "—"}
-                    />
+                  <div className="grid grid-cols-4 gap-1 text-[10px] tabular-nums text-muted-foreground">
+                    <Stat icon={<Maximize2 className="size-3" />} value={p.areaM2 ? `${p.areaM2}` : "—"} suffix="m²" />
+                    <Stat icon={<BedDouble className="size-3" />} value={p.habitaciones ?? "—"} />
+                    <Stat icon={<Bath className="size-3" />} value={p.banos ?? "—"} />
+                    <Stat icon={<Car className="size-3" />} value={p.estacionamientos ?? "—"} />
                   </div>
 
                   <div className="flex items-center justify-between text-[9px] text-muted-foreground">
-                    <span className="truncate">{p.fuenteNombre}</span>
+                    <span>{p.fuenteNombre}</span>
                     <span className="tabular-nums">
                       {fmt.date(p.fechaActualizacion)}
                     </span>
