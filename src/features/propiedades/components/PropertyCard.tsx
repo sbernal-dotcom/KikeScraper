@@ -214,7 +214,7 @@ export function PropertyCard({
                     key={`c-${t}`}
                     className="rounded-sm border border-border/60 bg-card/40 px-2 py-0.5 text-[11px] font-medium text-foreground/85"
                   >
-                    {t.replace(/-/g, " ")}
+                    {dict.tags[t] ?? t.replace(/-/g, " ")}
                   </li>
                 ))}
                 {(propiedad.tagsExtra ?? []).map((t) => (
