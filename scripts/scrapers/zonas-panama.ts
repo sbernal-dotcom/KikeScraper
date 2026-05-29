@@ -55,8 +55,37 @@ export const ZONAS_PANAMA: Record<string, ZonaCentro> = {
   "urbanización don bosco": { lat: 9.0560, lng: -79.4892 },
   "urbanizacion don bosco": { lat: 9.0560, lng: -79.4892 },
   "don bosco": { lat: 9.0560, lng: -79.4892 },
+  // Vía España es una avenida, no un corregimiento — usamos el tramo
+  // central (zona Bella Vista / El Cangrejo). Nominatim a veces devuelve
+  // un punto raro fuera del área.
+  "vía españa": { lat: 9.0014, lng: -79.5253 },
+  "via espana": { lat: 9.0014, lng: -79.5253 },
+  "via españa": { lat: 9.0014, lng: -79.5253 },
+  "vía porras": { lat: 8.9844, lng: -79.5108 },
+  "via porras": { lat: 8.9844, lng: -79.5108 },
+  // "El Dorado" (centro comercial / barrio en Betania) — Nominatim cae
+  // en Chiriquí por un caserío homónimo.
+  "el dorado": { lat: 9.0034, lng: -79.5363 },
+  // "Llano Bonito" (corregimiento de Juan Díaz, Ciudad de Panamá) —
+  // Nominatim cae en Coclé por un pueblo homónimo.
+  "llano bonito": { lat: 9.0383, lng: -79.4830 },
+  // "La Locería" (corregimiento de Bethania) — el Nominatim acertó,
+  // pero la anclamos para evitar dependencias futuras.
+  "la locería": { lat: 8.9940, lng: -79.5359 },
+  "la loceria": { lat: 8.9940, lng: -79.5359 },
+  "villa de las fuentes": { lat: 9.0222, lng: -79.5378 },
+  "panamá pacífico": { lat: 8.9248, lng: -79.6049 },
+  "panama pacifico": { lat: 8.9248, lng: -79.6049 },
 
   // Fuera de Ciudad de Panamá (interior y costa)
+  // Antón (cabecera del distrito en Coclé) — Nominatim cae en zona
+  // del Canal por un Antón homónimo.
+  antón: { lat: 8.4022, lng: -80.2575 },
+  anton: { lat: 8.4022, lng: -80.2575 },
+  // Buenaventura (resort en Río Hato, distrito de Antón) — anuncios
+  // de lujo lo usan como zona.
+  buenaventura: { lat: 8.4250, lng: -80.2030 },
+  "bajo boquete": { lat: 8.7833, lng: -82.4333 },
   "el valle": { lat: 8.6025, lng: -80.1142 },
   "el valle de antón": { lat: 8.6025, lng: -80.1142 },
   "el valle de anton": { lat: 8.6025, lng: -80.1142 },
@@ -76,6 +105,7 @@ function normalizeKey(zona: string): string {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "") // quita acentos
+    .replace(/\s+/g, " ") // colapsa espacios múltiples
     .trim();
 }
 
