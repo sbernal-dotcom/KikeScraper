@@ -44,10 +44,12 @@ type DbPropiedad = {
   habitaciones: number | null;
   banos: number | null;
   estacionamientos: number | null;
-  resumen_ia: string | null;
+  resumen_ia_es: string | null;
+  resumen_ia_en: string | null;
+  tags_caracteristicas: string[] | null;
+  tags_extra: string[] | null;
   fuente_id: string;
   url_original: string;
-  imagenes: string[] | null;
   fecha_publicacion: string | null;
   fecha_deteccion: string;
   fecha_actualizacion: string;
@@ -94,7 +96,12 @@ function mapPropiedad(p: DbPropiedad): Propiedad {
     estacionamientos: p.estacionamientos ?? undefined,
     condicion: p.condicion ?? undefined,
     estadoAnuncio: p.estado_anuncio,
-    resumenIA: p.resumen_ia ? { es: p.resumen_ia, en: "" } : undefined,
+    resumenIA:
+      p.resumen_ia_es || p.resumen_ia_en
+        ? { es: p.resumen_ia_es ?? "", en: p.resumen_ia_en ?? "" }
+        : undefined,
+    tagsCaracteristicas: p.tags_caracteristicas ?? [],
+    tagsExtra: p.tags_extra ?? [],
     fuenteId: p.fuente_id,
     fuenteNombre: p.fuente?.nombre ?? p.fuente_id,
     urlOriginal: p.url_original,

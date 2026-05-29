@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "scrape:test": "tsx scripts/scrapers/fuente-prueba.ts",
+    "scrape:prod": "tsx scripts/scrapers/fuente-prueba.ts --supabase",
     "scrape:coords": "tsx scripts/scrapers/recalcular-coords.ts"
   },
   "dependencies": {

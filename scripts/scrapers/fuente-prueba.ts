@@ -24,6 +24,7 @@ import { GoogleGenAI } from "@google/genai";
 import { config as loadEnv } from "dotenv";
 import { chromium, type Page } from "playwright";
 
+import { createScraperClient } from "./supabase-admin";
 import {
   filterTagsCerrados,
   filterTagsExtra,
@@ -58,6 +59,35 @@ const LISTADOS: Array<{ url: string; limit: number }> = process.env.SCRAPE_URL
   : DEFAULT_LISTADOS;
 const USER_AGENT =
   "MapaInteractivoInteligente/0.1 (+contacto: abilendesign@gmail.com)";
+
+// Modo de escritura. Por default escribe a public/scrape-preview.json
+// (preview/prueba, seguro). Con --supabase hace upsert a la DB + scraper_runs.
+const TARGET: "json" | "supabase" = process.argv.includes("--supabase")
+  ? "supabase"
+  : "json";
+
+// Categorías válidas en el enum categoria_propiedad de Supabase.
+type CategoriaDb =
+  | "apartamento"
+  | "casa"
+  | "terreno"
+  | "local-comercial"
+  | "oficina"
+  | "galera";
+
+function tipoOperacionFromUrl(url: string): "venta" | "alquiler" {
+  return /alquiler|renta/i.test(url) ? "alquiler" : "venta";
+}
+
+function categoriaFromUrl(url: string): CategoriaDb {
+  if (/apartamento/i.test(url)) return "apartamento";
+  if (/-casas?\b|-casa\b/i.test(url)) return "casa";
+  if (/lotes-y-terrenos|terreno/i.test(url)) return "terreno";
+  if (/comercios?|local-comercial|locales/i.test(url)) return "local-comercial";
+  if (/oficinas?/i.test(url)) return "oficina";
+  if (/galeras?/i.test(url)) return "galera";
+  return "apartamento";
+}
 
 /**
  * Campos finales aprobados (ver project_flow_scraper_supabase.md):
@@ -643,14 +673,54 @@ function loadExisting(outPath: string): AnuncioRaw[] {
   }
 }
 
-async function main() {
-  const outPath = join(process.cwd(), "public", "scrape-preview.json");
-  const existing = loadExisting(outPath);
-  const skipUrls = new Set(existing.map((r) => r.url_original));
-  console.log(
-    `JSON existente: ${existing.length} anuncios — se hará merge (dedupe por url_original).`,
-  );
+/**
+ * Mapea un AnuncioRaw a una fila de la tabla `propiedades`. Solo campos
+ * factuales + resumen IA bilingüe + tags. NO escribe descripcion/imagenes/
+ * vendedor (contrato ToS). Devuelve null si faltan campos NOT NULL.
+ */
+function toDbRow(a: AnuncioRaw): Record<string, unknown> | null {
+  if (a.precio == null || a.lat == null || a.lng == null) return null;
+  return {
+    titulo: a.titulo ?? "(sin título)",
+    tipo_operacion: tipoOperacionFromUrl(a.url_original),
+    categoria: categoriaFromUrl(a.url_original),
+    estado_anuncio: "activo",
+    lat: a.lat,
+    lng: a.lng,
+    corregimiento: a.zona,
+    area_m2: a.area_m2,
+    habitaciones: a.habitaciones,
+    banos: a.banos,
+    estacionamientos: a.estacionamientos,
+    precio: a.precio,
+    moneda: a.moneda ?? "USD",
+    resumen_ia_es: a.resumen_ia?.es ?? null,
+    resumen_ia_en: a.resumen_ia?.en ?? null,
+    tags_caracteristicas: a.tags_caracteristicas,
+    tags_extra: a.tags_extra,
+    ai_source_flag: a.ai_source_flag,
+    fuente_id: a.fuente,
+    url_original: a.url_original,
+    fecha_deteccion: a.fecha_deteccion,
+    fecha_actualizacion: a.fecha_actualizacion,
+  };
+}
 
+/** Devuelve el set de url_original ya presentes en la DB (para dedupe). */
+async function fetchExistingUrls(
+  supa: ReturnType<typeof createScraperClient>,
+): Promise<Set<string>> {
+  const { data, error } = await supa
+    .from("propiedades")
+    .select("url_original");
+  if (error) {
+    console.warn(`  No se pudo leer propiedades existentes: ${error.message}`);
+    return new Set();
+  }
+  return new Set((data ?? []).map((r) => r.url_original as string));
+}
+
+async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
   const browser = await chromium.launch({ headless: true });
   const ctx = await browser.newContext({
     userAgent: USER_AGENT,
@@ -658,9 +728,7 @@ async function main() {
     locale: "es-PA",
   });
   const page = await ctx.newPage();
-
   const allNew: AnuncioRaw[] = [];
-
   try {
     for (const { url: listadoUrl, limit } of LISTADOS) {
       const parsed = new URL(listadoUrl);
@@ -696,27 +764,98 @@ async function main() {
       for (const d of data) skipUrls.add(d.url_original);
       allNew.push(...data);
     }
-
-    console.log(`\nNuevos en esta corrida: ${allNew.length}`);
-    const merged = [...existing, ...allNew];
-
-    writeFileSync(
-      outPath,
-      JSON.stringify(
-        {
-          generated_at: new Date().toISOString(),
-          fuente: FUENTE_ID,
-          results: merged,
-        },
-        null,
-        2,
-      ),
-    );
-    console.log(
-      `Preview escrito en ${outPath} — total: ${merged.length} (${existing.length} previos + ${allNew.length} nuevos).`,
-    );
   } finally {
     await browser.close();
+  }
+  return allNew;
+}
+
+async function runJsonMode() {
+  const outPath = join(process.cwd(), "public", "scrape-preview.json");
+  const existing = loadExisting(outPath);
+  const skipUrls = new Set(existing.map((r) => r.url_original));
+  console.log(
+    `JSON existente: ${existing.length} anuncios — se hará merge (dedupe por url_original).`,
+  );
+
+  const allNew = await scrapeAll(skipUrls);
+  console.log(`\nNuevos en esta corrida: ${allNew.length}`);
+  const merged = [...existing, ...allNew];
+
+  writeFileSync(
+    outPath,
+    JSON.stringify(
+      {
+        generated_at: new Date().toISOString(),
+        fuente: FUENTE_ID,
+        results: merged,
+      },
+      null,
+      2,
+    ),
+  );
+  console.log(
+    `Preview escrito en ${outPath} — total: ${merged.length} (${existing.length} previos + ${allNew.length} nuevos).`,
+  );
+}
+
+async function runSupabaseMode() {
+  const supa = createScraperClient();
+  const startedAt = new Date().toISOString();
+  console.log("Modo Supabase: upsert por url_original + registro en scraper_runs.");
+
+  const skipUrls = await fetchExistingUrls(supa);
+  console.log(`Propiedades existentes en DB: ${skipUrls.size} (se saltan).`);
+
+  const allNew = await scrapeAll(skipUrls);
+  console.log(`\nNuevos scrapeados: ${allNew.length}`);
+
+  let inserted = 0;
+  let errors = 0;
+  for (const a of allNew) {
+    const row = toDbRow(a);
+    if (!row) {
+      console.warn(`  ✗ saltado (sin precio/lat/lng): ${a.url_original}`);
+      errors++;
+      continue;
+    }
+    const { error } = await supa
+      .from("propiedades")
+      .upsert(row, { onConflict: "url_original" });
+    if (error) {
+      console.warn(`  ✗ upsert falló: ${error.message}`);
+      errors++;
+    } else {
+      inserted++;
+    }
+  }
+
+  // Como scrapeAll salta los url_original ya presentes, todos los escritos
+  // son nuevos (updated=0). El refresco de existentes se hará en otra corrida.
+  const status = errors > 0 && inserted === 0 ? "error" : "ok";
+  const { error: runErr } = await supa.from("scraper_runs").insert({
+    fuente_id: FUENTE_ID,
+    started_at: startedAt,
+    finished_at: new Date().toISOString(),
+    status,
+    found: allNew.length,
+    inserted,
+    updated: 0,
+    errors,
+    notes: `listados: ${LISTADOS.map((l) => l.url).join(", ")}`,
+  });
+  if (runErr) console.warn(`  No se pudo registrar scraper_run: ${runErr.message}`);
+
+  console.log(
+    `\nUpsert terminado — insertados: ${inserted}, errores: ${errors}, status: ${status}.`,
+  );
+}
+
+async function main() {
+  if (TARGET === "supabase") {
+    await runSupabaseMode();
+  } else {
+    await runJsonMode();
   }
 }
 
