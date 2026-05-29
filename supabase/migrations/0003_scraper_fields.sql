@@ -30,6 +30,10 @@ alter table public.propiedades
   add column if not exists tags_extra           text[] not null default '{}',
   add column if not exists ai_source_flag       text;
 
+-- banos puede ser fraccionario (medios baños: 3.5). smallint los redondea.
+alter table public.propiedades
+  alter column banos type numeric(3,1);
+
 -- -------------------------------------------------------------------------
 -- 3. Unique(url_original) — clave de upsert del scraper
 --    (cada anuncio scrapeado = una propiedad canónica por ahora)
