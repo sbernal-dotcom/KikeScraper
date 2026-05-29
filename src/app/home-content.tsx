@@ -48,14 +48,15 @@ export function HomeContent() {
 
   const matchedCount = matchedSet?.size ?? propiedades.length;
 
-  // Agrupa propiedades por (zona, operación) → un pin por grupo.
-  // Pin con count>1 representa un cluster; count=1 es una propiedad sola.
-  // `clusters` mapea pinId → propiedades de ese pin para el click handler.
+  // Agrupa propiedades por COORDENADA redondeada a 4 decimales (~11m).
+  // Honra el contrato (paso 7): pin por ubicación, no por nombre de zona.
+  // Mezcla venta+alquiler que caen en el mismo punto. Pin con count>1 es
+  // un cluster; count=1 es una propiedad sola. `clusters` mapea pinId →
+  // propiedades de ese pin para el click handler.
   const { pins, clusters } = useMemo(() => {
     const byKey = new Map<string, Propiedad[]>();
     for (const p of propiedades) {
-      const zona = p.ubicacion.corregimiento ?? `_solo:${p.id}`;
-      const key = `${zona}__${p.tipoOperacion}`;
+      const key = `${p.ubicacion.lat.toFixed(4)}__${p.ubicacion.lng.toFixed(4)}`;
       const existing = byKey.get(key);
       if (existing) existing.push(p);
       else byKey.set(key, [p]);
