@@ -17,6 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    # issues: write necesario para que `gh issue create` pueda abrir
+    # tickets cuando el scraper falla o reporta errores blandos.
+    permissions:
+      contents: read
+      issues: write
+
     steps:
       - uses: actions/checkout@v4
 
@@ -35,8 +41,20 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Scrape + upsert a Supabase
+        id: scrape
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: npm run scrape:prod
+
+      # Siempre corre: si el scrape petó duro, abre issue con link al log;
+      # si pasó pero scraper_runs reporta errors>0, abre issue con detalles.
+      - name: Alertar (GitHub Issue) si hubo errores
+        if: always()
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SCRAPE_STATUS: ${{ steps.scrape.outcome }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx tsx scripts/scrapers/check-last-run.ts
