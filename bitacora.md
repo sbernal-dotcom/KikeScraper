@@ -25,7 +25,7 @@ A futuro, podría incluir una sección de análisis de rentabilidad para compara
 | Scraping | Node.js + Playwright |
 | Geocoding | Nominatim (OpenStreetMap) — free, 1 req/s |
 | IA | Gemini API (`gemini-flash-lite-latest`, free tier) |
-| Tareas programadas | Railway Cron Jobs |
+| Tareas programadas | GitHub Actions cron (1×/día @ 03am Panamá) |
 | Hosting | Vercel |
 | Código | GitHub + Visual Studio Code + Claude Code |
 
@@ -43,16 +43,20 @@ A futuro, podría incluir una sección de análisis de rentabilidad para compara
 | Uso | Color | Hex | RGB |
 |-----|-------|-----|-----|
 | Venta (pin + cards + acentos) | Lime | `#D6FF00` | 214, 255, 0 |
-| Alquiler (pin + cards + acentos) | Ámbar | `#FFBB00` | 255, 187, 0 |
-| Cluster (grupo de pines en el mapa) | Amarillo | `#FFEC00` | 255, 236, 0 |
+| Alquiler (pin + cards + acentos) | Azul | `#002FFF` | 0, 47, 255 |
+| Cluster / grupo (pines en el mapa) | Magenta | `#DD00FF` | 221, 0, 255 |
+| Eliminar (X de quitar / clear) | Rojo | `#FF1F17` | 255, 31, 23 |
 | Background | Negro casi puro | `#0a0a0a` | 10, 10, 10 |
-| Texto sobre acento | Casi negro | `#0a0a0a` | 10, 10, 10 |
+| Texto sobre acento — venta | Casi negro | `#0a0a0a` | 10, 10, 10 |
+| Texto sobre acento — alquiler/cluster | Blanco | `#FFFFFF` | 255, 255, 255 |
 
 **Reglas:**
-- El color de **cluster sobreescribe** el de operación (un cluster de venta o alquiler siempre se ve amarillo `#FFEC00`).
+- El color de **cluster sobreescribe** el de operación (un cluster de venta o alquiler siempre se ve magenta `#DD00FF`).
 - Cards e indicadores derivan tints suaves del acento vía `accentVars()` en `src/features/propiedades/format.ts`:
   - `--accent-soft` = `rgba(R, G, B, 0.10)`
   - `--accent-medium` = `rgba(R, G, B, 0.14)`
+  - `--accent-text-on` = derivado de la operación (negro para venta, blanco para alquiler) — necesario porque el azul oscuro y el magenta no toleran texto negro.
+- El **rojo de eliminar** solo se aplica a acciones destructivas (quitar de la lista de comparación, clear-all). NO se usa para errores ni para badges informativos.
 - Definición canónica: `src/lib/mapbox/config.ts` (`MARKER_COLOR`, `MARKER_COLOR_ALQUILER`, `MARKER_COLOR_CLUSTER`) + `src/features/propiedades/format.ts` (`operationAccent()`).
 
 ## Decisiones y Cambios
@@ -169,17 +173,86 @@ A futuro, podría incluir una sección de análisis de rentabilidad para compara
 
 - **Paridad mapa ↔ análisis**: `fetchPropiedades` ahora filtra `precio not null AND area_m2 > 0` igual que `vw_oportunidades`. Antes el mapa traía propiedades sin precio/área que /analisis descartaba → conteos diferentes.
 
+### Cierre del ciclo Scraper → Supabase → Mapa (2026-05-26 → 2026-05-30)
+
+Pin grouping (paso 7 del contrato), enrichments + base lista para el cron diario.
+
+- **Modo Supabase del scraper** (`npm run scrape:prod` con flag `--supabase`):
+  - Upsert por `url_original` (unique index agregado en `0003_scraper_fields.sql`).
+  - Audita cada corrida en tabla `scraper_runs` (`status`, `found`, `inserted`, `updated`, `errors`, `notes`).
+  - Cliente admin en `scripts/scrapers/supabase-admin.ts` (sin `"server-only"` para que tsx puro lo importe; usa `service_role` y bypasea RLS).
+  - **Migración `0003_scraper_fields.sql`**: rename `resumen_ia → resumen_ia_es`, add `resumen_ia_en`, `tags_caracteristicas text[]`, `tags_extra text[]`, `ai_source_flag text`, `banos → numeric(3,1)` (medios baños), unique(url_original), `scraper_runs` con RLS.
+
+- **Resumen IA bilingüe + tags** (extraído a `scripts/scrapers/ia.ts`):
+  - `enriquecerConIA` se usa desde el scrape inicial y desde el backfill. Lazy-init del cliente Gemini (necesario para que `loadEnv()` del caller corra antes — antes el módulo evaluaba `process.env.GEMINI_API_KEY` al importar y caía a `null` aunque la key existiera).
+  - Tags: lista cerrada de 26 kebab-case + máximo 3 "extras" libres (`tags-caracteristicas.ts`).
+  - **Anti-copia 3-gram**: si el resumen comparte >20% de tri-gramas con la descripción → descartado. Aplica a `es` y `en` por igual.
+  - Regla durable ToS: la descripción es **input temporal en memoria** — no toca disco, ni Supabase, ni logs, ni JSON. Solo viaja del scraper a Gemini y se descarta.
+
+- **Pin grouping por lat/lng redondeado** — paso 7 del contrato (`src/app/home-content.tsx`):
+  - Antes agrupaba por `zona + tipoOperacion`, lo que separaba propiedades del mismo edificio en pines distintos si una era venta y otra alquiler.
+  - Ahora: clave `${lat.toFixed(4)}__${lng.toFixed(4)}` (~11 m de grilla). Mezcla venta+alquiler en mismo pin si caen al mismo punto.
+  - Cluster (count>1) muestra el número en el chip del pin (magenta, ver paleta).
+
+- **Geocoding endurecido** (`scripts/scrapers/zonas-panama.ts`):
+  - `normalizeKey` colapsa espacios múltiples (antes `"via españa "` no matchaba con `"via españa"`).
+  - 30+ zonas agregadas con centroides verificados a mano contra landmarks de Google Maps. Esta tabla es la **fuente primaria** del geocoding; Nominatim queda como fallback. Ejemplos clave de zonas donde Nominatim caía mal:
+    - Vía España y Vía Porras (son avenidas, no corregimientos).
+    - El Dorado (Nominatim → Chiriquí), Llano Bonito (→ Coclé), La Locería.
+    - Antón (Coclé) — Nominatim caía en el área del Canal por un homónimo.
+    - Cerro Azul (corregimiento residencial E de Ciudad de Panamá — Nominatim caía en Cerro Azul de Chiriquí, 400 km al oeste).
+    - Veracruz (Arraiján, costero).
+  - `scripts/scrapers/recalcular-coords.ts` extendido con flag `--supabase` para `UPDATE propiedades SET lat/lng` en DB cuando la tabla cambia. Corrida del 30/5 movió 15 filas a sus nuevas coords.
+
+- **Backfill IA** (`scripts/scrapers/backfill-ia.ts`, `npm run scrape:backfill-ia`):
+  - Re-enriquece filas con `resumen_ia_es IS NULL AND ai_source_flag IS NULL` (típicamente porque la key Gemini estaba expirada en la corrida original o se agregó la columna después).
+  - Visita la URL, extrae descripción, llama Gemini, hace `UPDATE` solo de los campos IA (no toca precio/lat/etc).
+  - Audita en `scraper_runs` con `notes='backfill-ia'`.
+
+- **Web por default lee de Supabase** (`src/features/propiedades/preview.ts`):
+  - `isPreviewEnabled()` flippeado a **opt-in**: por default `false`, se activa con `?preview=1` en la URL. Antes era al revés (default true, `?preview=0` para Supabase). El badge "Preview · N" en el sidebar solo aparece cuando el modo está activo.
+
+- **Comparación de propiedades** (`src/features/comparacion/`):
+  - `ComparisonContext` con `add`/`remove`/`toggle`/`clear`. Máx 6, mín 2.
+  - `ComparisonList` panel derecho de 300 px. Click en pin **dentro** del modo comparación abre la card a la izquierda pero NO agrega automáticamente — el usuario debe pulsar "Agregar a comparación" en la card. Esto evita agregados accidentales al explorar el mapa.
+  - `PropertyCard` con prop `compact` (300 px en vez de 380) y `FittedTitle` que auto-shrinkea el título para que entre en 2 líneas (`useLayoutEffect` + `ResizeObserver`).
+
+- **Sidebar narrow** (`SIDEBAR_WIDTH=12rem` en vez de 16): brand `py-2`, items `size="sm"`, ícono `size-3.5`, badge "Preview · N" debajo de "Acerca de" (solo si modo preview activo).
+
+### Automatización del scraper (2026-05-30)
+
+- **GitHub Actions cron** (`.github/workflows/scraper.yml`): corre `npm run scrape:prod` 1×/día a las 08:00 UTC (= 03:00 hora Panamá). Off-peak para encuentra24, bajo riesgo de coincidir con anti-bot heuristics. Trigger manual disponible via `workflow_dispatch`. `concurrency: { group: scraper, cancel-in-progress: false }` evita pisarse si una corrida se pasa de duración.
+- **Node 22** (LTS): obligatorio porque `@supabase/supabase-js` v2 inicializa Realtime al `createClient` y necesita `WebSocket` nativo (sin flag desde Node 22). Node 20 tiraba `"Node.js 20 detected without native WebSocket support."`
+- **Secrets del repo**: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`.
+- **Alertas vía GitHub Issue** (`scripts/scrapers/check-last-run.ts`):
+  - Si el step de scrape falla (exit ≠ 0): abre issue con link al run log. No consulta Supabase porque el error puede ser pre-DB (env, WebSocket, captcha).
+  - Si pasa pero la última fila de `scraper_runs` tiene `status='error'` o `errors > 0`: abre issue con tabla de detalles (found/inserted/errors/notes).
+  - Si todo OK: no abre nada.
+  - Usa `gh issue create` con `GH_TOKEN` del workflow + permiso `issues: write`. Sin dedupe — un issue por corrida con error; si se vuelve ruidoso, se puede mover a "buscar issue abierto y comentar" en vez de abrir nuevo.
+
+### Paleta nueva (2026-05-30)
+
+- Alquiler `#FFBB00` → **`#002FFF`** (azul). `accent-text-on` en cards de alquiler pasa a blanco para mantener contraste sobre azul oscuro.
+- Cluster `#FFEC00` → **`#DD00FF`** (magenta). Badge text del chip del pin pasa a blanco para alquiler y cluster (negro no se leía).
+- **Eliminar**: nuevo color `#FF1F17` aplicado en X de clear-all + X per-item de `ComparisonList`, y en el botón "Quitar" del `PropertyCard` cuando ya está en comparación (rol destructivo inequívoco).
+- Venta sin cambios (`#D6FF00`).
+
 ### Pendientes
 
 - **Env vars en Vercel** — agregar `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` (Production, Preview, Development) y redeploy. Sin esto el deploy de prod no puede leer la DB.
 - **Token restrictions en Mapbox** — agregar `http://localhost:3000/*` a la URL allowlist del token. Cuando exista dominio de Vercel, agregarlo también.
 - **Tipos de Supabase** — regenerar `src/lib/supabase/types.ts` con `supabase gen types typescript --project-id lbvboqoyvuxuanwvtypf > src/lib/supabase/types.ts` (requiere `supabase` CLI o usar el dashboard).
-- **Rotar claves Supabase y Gemini** — `anon`, `service_role` y `GEMINI_API_KEY` quedaron expuestas en el chat de desarrollo. Rotar en cada proveedor cuando termine la fase de prueba (Gemini: aistudio.google.com → API keys → revoke + create new).
-- **Consolidar el prompt de Gemini** en `scripts/scrapers/resumen-ia.ts` para no mantenerlo en 2 lugares (`fuente-prueba.ts` + `enriquecer-resumenes.ts`).
-- **Resumen IA bilingüe** — actualmente solo en español. Cuando se promueva a producción habrá que generar/almacenar en ambos idiomas o traducir dinámicamente.
-- **Más fuentes de scraping** — agregar compreoalquile e inmuebles24 cuando se resuelva el bloqueo anti-bot, y/o probar `MercadoLibre Inmuebles`. Estructura JSON-LD/HTML cambia por sitio → un módulo por fuente.
-- **Modo producción del scraper** — pasar de "modo prueba" (escribe a JSON, no toca DB) a `npm run scrape:prod` que use el admin client de Supabase para upsert en `propiedades` + `anuncios`. Requiere lógica de deduplicación por `url_original`.
-- **Migrar `?preview=0` → flag de runtime/admin** cuando empecemos a escribir scrapes reales a Supabase.
+- **Rotar claves Supabase** — `anon` y `service_role` quedaron expuestas en el chat de desarrollo. Rotar cuando termine la fase de prueba. (Gemini ya rotado el 30/5.)
+- **Más fuentes de scraping** — agregar compreoalquile (403 Cloudflare-like en el primer intento), inmuebles24 y/o MercadoLibre Inmuebles. Estructura JSON-LD/HTML cambia por sitio → un módulo por fuente. Validado earlier: MercadoLibre es la opción más limpia.
+- **Zonas que siguen cayendo a Nominatim** — agregar a `zonas-panama.ts` con coords verificadas: Carrasquilla, Volcán, El Bosque, Las Cumbres, Ciudad de Panamá (genérico). Los logs del cron las marcan en cada corrida.
+
+#### Resueltos en esta sesión (no quitar — historial)
+
+- ✅ **Modo producción del scraper**: `npm run scrape:prod` con flag `--supabase` ya escribe en Supabase + audita en `scraper_runs`.
+- ✅ **Migrar `?preview` → opt-in**: hecho. Default ahora es leer de Supabase; preview activable con `?preview=1`.
+- ✅ **Resumen IA bilingüe**: dos columnas `resumen_ia_es` + `resumen_ia_en`, generadas por Gemini en la misma llamada.
+- ✅ **Consolidar prompt Gemini**: extraído a `scripts/scrapers/ia.ts` y reusado desde `fuente-prueba.ts` y `backfill-ia.ts`.
+- ✅ **Automatizar el scraper**: GitHub Actions cron diario @ 03am Panamá + alertas vía GitHub Issue.
 
 ## Notas Pendientes
 
