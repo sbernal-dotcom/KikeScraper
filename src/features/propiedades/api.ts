@@ -203,10 +203,14 @@ export async function fetchOportunidades(): Promise<Oportunidad[]> {
 
 export async function fetchPropiedades(): Promise<Propiedad[]> {
   const supabase = createClient();
-  // Mismo filtro que vw_oportunidades para mantener paridad mapa ↔ análisis.
+  // Mismo filtro que vw_oportunidades para mantener paridad mapa ↔ análisis,
+  // + estado_anuncio='activo' (lifecycle, 0004_lifecycle.sql): las que
+  // están como posible_inactivo / error_verificacion / archivado se
+  // ocultan del mapa pero quedan en DB como historial.
   const { data, error } = await supabase
     .from("propiedades")
     .select(SELECT)
+    .eq("estado_anuncio", "activo")
     .not("precio", "is", null)
     .not("area_m2", "is", null)
     .gt("area_m2", 0)

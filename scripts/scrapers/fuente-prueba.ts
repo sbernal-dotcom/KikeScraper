@@ -550,7 +550,14 @@ function toDbRow(a: AnuncioRaw): Record<string, unknown> | null {
     titulo: a.titulo ?? "(sin título)",
     tipo_operacion: tipoOperacionFromUrl(a.url_original),
     categoria: categoriaFromUrl(a.url_original),
+    // Vista en este scrape → resetea el lifecycle. Si era posible_inactivo
+    // o error_verificacion, vuelve a activo. Si era archivado, también
+    // resucita — significa que la fuente la volvió a publicar.
     estado_anuncio: "activo",
+    veces_no_encontrado: 0,
+    fecha_ultima_vista: a.fecha_actualizacion,
+    fecha_ultima_revision: a.fecha_actualizacion,
+    motivo_estado: "visto en scrape",
     lat: a.lat,
     lng: a.lng,
     corregimiento: a.zona,

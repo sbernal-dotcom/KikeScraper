@@ -48,6 +48,19 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: npm run scrape:prod
 
+      # Pase 2 del lifecycle: verifica las URLs que el scrape NO vio
+      # (probablemente porque están en páginas profundas del listado).
+      # Marca como activo / posible_inactivo / archivado / error_verificacion
+      # según GET + JSON-LD Product. Solo corre si el scrape pasó —
+      # si el scrape petó duro la DB no se tocó y no hay nada que reconciliar.
+      - name: Verificar estado (pase 2 del lifecycle)
+        id: verify
+        if: steps.scrape.outcome == 'success'
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run scrape:verify
+
       # Siempre corre: si el scrape petó duro, abre issue con link al log;
       # si pasó pero scraper_runs reporta errors>0, abre issue con detalles.
       - name: Alertar (GitHub Issue) si hubo errores
