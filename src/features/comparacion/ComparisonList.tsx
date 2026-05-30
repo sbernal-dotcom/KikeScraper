@@ -73,7 +73,7 @@ export function ComparisonList({
           size="icon"
           aria-label={dict.common.clear}
           title={dict.common.clear}
-          className="-mr-1 size-7 shrink-0"
+          className="-mr-1 size-7 shrink-0 text-[#FF1F17] hover:bg-[#FF1F17]/10 hover:text-[#FF1F17]"
           onClick={() => comparison.clear()}
         >
           <X className="size-4" />
@@ -133,7 +133,7 @@ export function ComparisonList({
                         e.stopPropagation();
                         comparison.remove(p.id);
                       }}
-                      className="-mr-0.5 -mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
+                      className="-mr-0.5 -mt-0.5 shrink-0 rounded p-0.5 text-[#FF1F17] transition-colors hover:bg-[#FF1F17]/15 hover:text-[#FF1F17]"
                     >
                       <X className="size-3.5" />
                     </button>

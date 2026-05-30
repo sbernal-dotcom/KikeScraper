@@ -404,6 +404,11 @@ export function PropertyCard({
           variant={inCompare ? "default" : "outline"}
           size="sm"
           className={cn("w-full", compact && "h-7 text-[11px]")}
+          // Cuando ya está en comparación, el botón cumple rol de "eliminar":
+          // pasa a rojo para que sea inequívocamente una acción destructiva.
+          style={
+            inCompare ? { background: "#FF1F17", color: "#fff" } : undefined
+          }
           disabled={cantAdd}
           title={cantAdd ? `Máx ${MAX_COMPARACION}` : undefined}
           onClick={() => comparison.toggle(propiedad)}

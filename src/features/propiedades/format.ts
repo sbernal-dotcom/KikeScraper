@@ -6,7 +6,7 @@ export function precioPorM2(p: Propiedad): number | null {
 }
 
 /**
- * Accent color per operation type. Venta = lime, alquiler = amarillo.
+ * Accent color per operation type. Venta = lime, alquiler = azul.
  * Returns the hex + the comma-separated RGB triple for use in rgba() tints.
  */
 export function operationAccent(op: TipoOperacion): {
@@ -14,13 +14,17 @@ export function operationAccent(op: TipoOperacion): {
   rgb: string;
 } {
   return op === "alquiler"
-    ? { color: "#FFBB00", rgb: "255, 187, 0" }
+    ? { color: "#002FFF", rgb: "0, 47, 255" }
     : { color: "#D6FF00", rgb: "214, 255, 0" };
 }
 
 /**
- * Inline CSS variables to apply on the root of a property card so that
- * inner elements can reference `var(--accent)`, `var(--accent-soft)`, etc.
+ * Inline CSS variables to apply on the root of a property card so que
+ * los elementos hijos puedan referenciar `var(--accent)`, `var(--accent-soft)`, etc.
+ *
+ * `--accent-text-on` debe contrastar contra `--accent`. Lime → texto
+ * negro; azul → texto blanco. Mantenerlo derivado del color de operación
+ * evita botones primarios ilegibles (texto negro sobre azul oscuro).
  */
 export function accentVars(op: TipoOperacion): React.CSSProperties {
   const { color, rgb } = operationAccent(op);
@@ -29,6 +33,6 @@ export function accentVars(op: TipoOperacion): React.CSSProperties {
     ["--accent-rgb" as never]: rgb,
     ["--accent-soft" as never]: `rgba(${rgb}, 0.10)`,
     ["--accent-medium" as never]: `rgba(${rgb}, 0.14)`,
-    ["--accent-text-on" as never]: "#0a0a0a",
+    ["--accent-text-on" as never]: op === "alquiler" ? "#fff" : "#0a0a0a",
   };
 }

@@ -253,12 +253,12 @@ export function MapView({
         }
         .mii-marker--alquiler {
           --mii-fill: ${MARKER_COLOR_ALQUILER};
-          --mii-glow: 255, 187, 0;
+          --mii-glow: 0, 47, 255;
         }
-        /* Pin cluster: amarillo distintivo (sobreescribe color de operación). */
+        /* Pin cluster: magenta distintivo (sobreescribe color de operación). */
         .mii-marker--cluster {
           --mii-fill: ${MARKER_COLOR_CLUSTER};
-          --mii-glow: 255, 236, 0;
+          --mii-glow: 221, 0, 255;
         }
         /* Pines preview ("NUEVO"): el badge va DENTRO del SVG, así que
            necesitan más altura. Mantenemos el ancho/aspecto para que el
@@ -273,6 +273,12 @@ export function MapView({
         .mii-marker svg .mii-badge-text {
           fill: #0a0a0a;
           font-family: var(--font-geist-sans), system-ui, sans-serif;
+        }
+        /* Sobre fondos oscuros (alquiler azul, cluster magenta) el texto
+           del chip pasa a blanco para mantener contraste legible. */
+        .mii-marker--alquiler svg .mii-badge-text,
+        .mii-marker--cluster svg .mii-badge-text {
+          fill: #fff;
         }
         /* Pines fuera del filtro: visibles pero apagados y no interactuables. */
         .mii-marker--dimmed {
