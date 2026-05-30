@@ -253,7 +253,7 @@ export function MapView({
         }
         .mii-marker--alquiler {
           --mii-fill: ${MARKER_COLOR_ALQUILER};
-          --mii-glow: 0, 47, 255;
+          --mii-glow: 0, 98, 255;
         }
         /* Pin cluster: magenta distintivo (sobreescribe color de operación). */
         .mii-marker--cluster {

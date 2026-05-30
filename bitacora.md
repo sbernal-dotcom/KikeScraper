@@ -43,7 +43,7 @@ A futuro, podría incluir una sección de análisis de rentabilidad para compara
 | Uso | Color | Hex | RGB |
 |-----|-------|-----|-----|
 | Venta (pin + cards + acentos) | Lime | `#D6FF00` | 214, 255, 0 |
-| Alquiler (pin + cards + acentos) | Azul | `#002FFF` | 0, 47, 255 |
+| Alquiler (pin + cards + acentos) | Azul | `#0062FF` | 0, 98, 255 |
 | Cluster / grupo (pines en el mapa) | Magenta | `#DD00FF` | 221, 0, 255 |
 | Eliminar (X de quitar / clear) | Rojo | `#FF1F17` | 255, 31, 23 |
 | Background | Negro casi puro | `#0a0a0a` | 10, 10, 10 |
@@ -232,7 +232,7 @@ Pin grouping (paso 7 del contrato), enrichments + base lista para el cron diario
 
 ### Paleta nueva (2026-05-30)
 
-- Alquiler `#FFBB00` → **`#002FFF`** (azul). `accent-text-on` en cards de alquiler pasa a blanco para mantener contraste sobre azul oscuro.
+- Alquiler `#FFBB00` → **`#0062FF`** (azul). `accent-text-on` en cards de alquiler pasa a blanco para mantener contraste sobre azul oscuro.
 - Cluster `#FFEC00` → **`#DD00FF`** (magenta). Badge text del chip del pin pasa a blanco para alquiler y cluster (negro no se leía).
 - **Eliminar**: nuevo color `#FF1F17` aplicado en X de clear-all + X per-item de `ComparisonList`, y en el botón "Quitar" del `PropertyCard` cuando ya está en comparación (rol destructivo inequívoco).
 - Venta sin cambios (`#D6FF00`).
