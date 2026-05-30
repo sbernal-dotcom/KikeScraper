@@ -77,6 +77,15 @@ export const ZONAS_PANAMA: Record<string, ZonaCentro> = {
   "panamá pacífico": { lat: 8.9248, lng: -79.6049 },
   "panama pacifico": { lat: 8.9248, lng: -79.6049 },
 
+  // "Cerro Azul" (corregimiento E de Ciudad de Panamá, urbanización
+  // residencial en la cordillera) — Nominatim cae en Cerro Azul de
+  // Chiriquí (~8.79, -82.40), 400 km al oeste.
+  "cerro azul": { lat: 9.1989, lng: -79.4127 },
+  // "Veracruz" (corregimiento costero de Arraiján) — Nominatim a veces
+  // acertaba con el área pero el hit era impreciso. Anclamos al centro
+  // de la playa.
+  veracruz: { lat: 8.8917, lng: -79.6250 },
+
   // Fuera de Ciudad de Panamá (interior y costa)
   // Antón (cabecera del distrito en Coclé) — Nominatim cae en zona
   // del Canal por un Antón homónimo.

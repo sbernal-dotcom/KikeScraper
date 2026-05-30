@@ -1,0 +1,39 @@
+name: scraper
+
+on:
+  schedule:
+    # 1×/día a las 08:00 UTC = 03:00 hora Panamá. Off-peak para
+    # encuentra24 y bajo riesgo de coincidir con anti-bot heuristics.
+    - cron: "0 8 * * *"
+  workflow_dispatch: # botón manual en la UI de Actions
+
+# Evita que dos corridas se pisen si una se pasa de duración.
+concurrency:
+  group: scraper
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Install Playwright (chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: Scrape + upsert a Supabase
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: npm run scrape:prod
