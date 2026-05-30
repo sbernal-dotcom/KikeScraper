@@ -9,7 +9,8 @@
     "lint": "eslint",
     "scrape:test": "tsx scripts/scrapers/fuente-prueba.ts",
     "scrape:prod": "tsx scripts/scrapers/fuente-prueba.ts --supabase",
-    "scrape:coords": "tsx scripts/scrapers/recalcular-coords.ts"
+    "scrape:coords": "tsx scripts/scrapers/recalcular-coords.ts",
+    "scrape:backfill-ia": "tsx scripts/scrapers/backfill-ia.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

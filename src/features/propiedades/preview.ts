@@ -10,16 +10,14 @@ import type {
 } from "./types";
 
 /**
- * Modo preview activo POR DEFAULT mientras estamos demostrando con
- * datos scrapeados (public/scrape-preview.json). Las 3 vistas
- * (mapa / propiedades / análisis) leen de la misma fuente.
- * Para volver a Supabase: usar ?preview=0 explícitamente.
+ * Modo preview (lectura desde public/scrape-preview.json) es OPT-IN.
+ * Por default todas las vistas leen de Supabase. Para ver el preview
+ * scrapeado: agregar ?preview=1 a la URL.
  */
 export function isPreviewEnabled(): boolean {
-  if (typeof window === "undefined") return true;
+  if (typeof window === "undefined") return false;
   const param = new URLSearchParams(window.location.search).get("preview");
-  if (param === "0") return false;
-  return true;
+  return param === "1";
 }
 
 type ScrapedRow = {
