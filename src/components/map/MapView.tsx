@@ -35,14 +35,13 @@ import { cn } from "@/lib/utils";
 function applyStyleExtras(map: mapboxgl.Map, mode: "2d" | "3d") {
   if (mode === "3d") {
     // Mapbox Standard expone propiedades de config via setConfigProperty.
-    // Combinación "faded day, low POI density":
-    //   - theme=faded → colores suaves desaturados.
-    //   - lightPreset=day → iluminación diurna brillante.
+    // Combinación "faded night, low POI density":
+    //   - theme=faded → colores suaves desaturados (parques verde
+    //     apagado, agua azul tenue) que igual resaltan los pines.
+    //   - lightPreset=night → modo oscuro, edificios iluminados.
     //   - showPointOfInterestLabels=true + densityPointOfInterestLabels=1 →
-    //     Mapbox Standard NO permite filtrar por categoría (locales vs
-    //     edificios), pero al bajar la densidad prioriza los POIs "más
-    //     importantes" — en Ciudad de Panamá eso favorece torres/landmarks
-    //     reconocidos sobre comercios chicos.
+    //     prioriza torres/landmarks sobre comercios chicos (Mapbox
+    //     Standard no permite filtrar POIs por categoría).
     //   - showPlaceLabels=true (default) → barrios/zonas.
     //   - showRoadLabels=true (default) → nombres de calles.
     //   - showTransitLabels=false (default) → metro/bus.
@@ -50,7 +49,7 @@ function applyStyleExtras(map: mapboxgl.Map, mode: "2d" | "3d") {
     const m = map as any;
     try {
       m.setConfigProperty("basemap", "theme", "faded");
-      m.setConfigProperty("basemap", "lightPreset", "day");
+      m.setConfigProperty("basemap", "lightPreset", "night");
       m.setConfigProperty("basemap", "showPointOfInterestLabels", true);
       m.setConfigProperty("basemap", "densityPointOfInterestLabels", 1);
     } catch {
