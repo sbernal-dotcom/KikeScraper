@@ -34,13 +34,24 @@ import { cn } from "@/lib/utils";
  */
 function applyStyleExtras(map: mapboxgl.Map, mode: "2d" | "3d") {
   if (mode === "3d") {
+    // Mapbox Standard expone propiedades de config via setConfigProperty.
+    // Combinación "mono nocturno":
+    //   - theme=monochrome → negro/gris uniforme, edificios y calles en blanco.
+    //   - lightPreset=night → ilumina como noche cerrada.
+    //   - showPointOfInterestLabels=false → oculta locales/restaurantes
+    //     (POIs comerciales). Queremos solo el contexto urbano.
+    //   - showPlaceLabels=true (default) → mantiene barrios/zonas.
+    //   - showRoadLabels=true (default) → mantiene nombres de calles.
+    //   - showTransitLabels=false (default) → oculta paradas de metro/bus.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const m = map as any;
     try {
-      // Mapbox Standard expone propiedades de config via setConfigProperty.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (map as any).setConfigProperty("basemap", "lightPreset", "night");
+      m.setConfigProperty("basemap", "theme", "monochrome");
+      m.setConfigProperty("basemap", "lightPreset", "night");
+      m.setConfigProperty("basemap", "showPointOfInterestLabels", false);
     } catch {
-      // No-op: si el estilo no soporta config (ej. cambiamos de vuelta a 2D)
-      // simplemente seguimos.
+      // No-op si el estilo activo no soporta esa config (ej. acabamos de
+      // setStyle a dark-v11 y este apply quedó encolado).
     }
     return;
   }
