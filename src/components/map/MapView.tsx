@@ -36,26 +36,30 @@ function applyStyleExtras(map: mapboxgl.Map, mode: "2d" | "3d") {
   if (mode === "3d") {
     // Mapbox Standard expone propiedades de config via setConfigProperty.
     // Combinación "faded night, low POI density":
-    //   - theme=faded → colores suaves desaturados (parques verde
-    //     apagado, agua azul tenue) que igual resaltan los pines.
-    //   - lightPreset=night → modo oscuro, edificios iluminados.
-    //   - showPointOfInterestLabels=true + densityPointOfInterestLabels=1 →
-    //     prioriza torres/landmarks sobre comercios chicos (Mapbox
-    //     Standard no permite filtrar POIs por categoría).
-    //   - showPlaceLabels=true (default) → barrios/zonas.
-    //   - showRoadLabels=true (default) → nombres de calles.
-    //   - showTransitLabels=false (default) → metro/bus.
+    //   - theme=faded → colores suaves desaturados.
+    //   - lightPreset=night → modo oscuro.
+    //   - showPointOfInterestLabels=true + densityPointOfInterestLabels=1
+    //     → solo landmarks importantes.
+    //   - showPlaceLabels (default true), showRoadLabels (default true),
+    //     showTransitLabels (default false) — no se tocan.
+    //
+    // Cada call envuelta en try/catch INDIVIDUAL: si una falla
+    // (ej. timing — basemap aún no terminó de inicializar) no debe
+    // tumbar las otras. Antes una falla en `theme` se tragaba también
+    // `lightPreset=night` y el mapa quedaba en daytime default.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const m = map as any;
-    try {
-      m.setConfigProperty("basemap", "theme", "faded");
-      m.setConfigProperty("basemap", "lightPreset", "night");
-      m.setConfigProperty("basemap", "showPointOfInterestLabels", true);
-      m.setConfigProperty("basemap", "densityPointOfInterestLabels", 1);
-    } catch {
-      // No-op si el estilo activo no soporta esa config (ej. acabamos de
-      // setStyle a dark-v11 y este apply quedó encolado).
-    }
+    const set = (k: string, v: unknown) => {
+      try {
+        m.setConfigProperty("basemap", k, v);
+      } catch (err) {
+        console.warn(`[MapView] setConfigProperty ${k}=${v}:`, err);
+      }
+    };
+    set("theme", "faded");
+    set("lightPreset", "night");
+    set("showPointOfInterestLabels", true);
+    set("densityPointOfInterestLabels", 1);
     return;
   }
 
@@ -265,16 +269,18 @@ export function MapView({
     }
 
     const apply = () => applyStyleExtras(map, mode);
+    // Apply DOS VECES: una al cargar el estilo (lo más pronto posible
+    // para evitar flash de daytime default) y otra en `idle` (cuando
+    // el mapa terminó de renderizar TODO). El segundo apply repara
+    // cualquier intento previo que se haya perdido por timing/race.
     if (isFirstApply) {
-      // load fires cuando el estilo + sources + tiles iniciales están
-      // listos. Si llegamos tarde (mount muy rápido) y ya cargó, llamamos
-      // de una.
       if (map.loaded()) apply();
       else map.once("load", apply);
     } else {
       if (map.isStyleLoaded()) apply();
       else map.once("style.load", apply);
     }
+    map.once("idle", apply);
   }, [mode]);
 
   useEffect(() => {
