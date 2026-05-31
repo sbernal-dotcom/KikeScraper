@@ -618,6 +618,11 @@ async function fetchExistingUrls(
   return new Set((data ?? []).map((r) => r.url_original as string));
 }
 
+// Tope de páginas a recorrer por listado. encuentra24 pagina con el
+// formato `{listado}.{N}` (ej. `...apartamentos.2`). Cap defensivo
+// para no quedar en loop si una categoría tiene cientos de páginas.
+const MAX_PAGES_PER_LISTADO = 8;
+
 async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
   const browser = await chromium.launch({ headless: true });
   const ctx = await browser.newContext({
@@ -635,32 +640,49 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
         console.warn(`robots.txt prohíbe ${parsed.pathname} — saltando.`);
         continue;
       }
-      console.log(`\n▶ Listado: ${listadoUrl}`);
+      console.log(`\n▶ Listado: ${listadoUrl} (target: ${limit})`);
 
-      const res = await page.goto(listadoUrl, {
-        waitUntil: "domcontentloaded",
-        timeout: 25_000,
-      });
-      if (!res || res.status() >= 400) {
-        console.warn(`  Listado respondió ${res?.status() ?? "??"} — saltando.`);
-        continue;
+      let collected = 0;
+      for (
+        let pageNum = 1;
+        pageNum <= MAX_PAGES_PER_LISTADO && collected < limit;
+        pageNum++
+      ) {
+        // Página 1 es la URL base; 2+ se construye como `{base}.{N}`.
+        const pagedUrl = pageNum === 1 ? listadoUrl : `${listadoUrl}.${pageNum}`;
+        if (pageNum > 1) console.log(`  → página ${pageNum}: ${pagedUrl}`);
+
+        const res = await page.goto(pagedUrl, {
+          waitUntil: "domcontentloaded",
+          timeout: 25_000,
+        });
+        if (!res || res.status() >= 400) {
+          console.warn(`  Listado respondió ${res?.status() ?? "??"} — corto este listado.`);
+          break;
+        }
+        await page
+          .waitForLoadState("networkidle", { timeout: 10_000 })
+          .catch(() => null);
+        await page
+          .locator('a[href*="/panama-es/bienes-raices"]')
+          .first()
+          .waitFor({ state: "attached", timeout: 10_000 })
+          .catch(() => null);
+        await jitter(1000, 2000);
+
+        const remaining = limit - collected;
+        const data = await scrape(page, remaining, skipUrls);
+        if (data.length === 0) {
+          // Página vacía o todo era duplicado/inservible → asumimos que
+          // no hay más anuncios nuevos en este listado y cortamos.
+          console.log(`  (sin nuevos en esta página — corto el listado)`);
+          break;
+        }
+        for (const d of data) skipUrls.add(d.url_original);
+        allNew.push(...data);
+        collected += data.length;
       }
-      // Espera que React hidrate las tarjetas. networkidle solo no basta
-      // en alquiler — explícitamente esperamos a que aparezca al menos
-      // un link a un anuncio individual.
-      await page
-        .waitForLoadState("networkidle", { timeout: 10_000 })
-        .catch(() => null);
-      await page
-        .locator('a[href*="/panama-es/bienes-raices"]')
-        .first()
-        .waitFor({ state: "attached", timeout: 10_000 })
-        .catch(() => null);
-      await jitter(1000, 2000);
-
-      const data = await scrape(page, limit, skipUrls);
-      for (const d of data) skipUrls.add(d.url_original);
-      allNew.push(...data);
+      console.log(`  ▣ ${collected}/${limit} nuevos en este listado`);
     }
   } finally {
     await browser.close();

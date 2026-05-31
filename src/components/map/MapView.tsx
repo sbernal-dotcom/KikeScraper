@@ -7,10 +7,12 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-geocoder/lib/mapbox-gl-geocoder.css";
 
 import type { TipoOperacion } from "@/features/propiedades/types";
+import { useMapMode } from "@/features/map/MapModeProvider";
 import { useDict, useLocale } from "@/i18n/LocaleProvider";
 import {
   DEFAULT_ZOOM,
   MAPBOX_STYLE,
+  MAPBOX_STYLE_3D,
   MAPBOX_TOKEN,
   MARKER_COLOR,
   MARKER_COLOR_ALQUILER,
@@ -18,6 +20,75 @@ import {
   PANAMA_CITY_CENTER,
 } from "@/lib/mapbox/config";
 import { cn } from "@/lib/utils";
+
+/**
+ * Aplica los extras de cada estilo después de que la base cargó:
+ *   - 2D dark: agrega capa fill-extrusion `3d-buildings` (edificios
+ *     extruidos planos sobre el dark base — útiles cuando el usuario
+ *     inclina la cámara aunque siga en modo 2D).
+ *   - 3D Standard: setea el preset de luz a "night" para que matchee
+ *     el feel oscuro del proyecto.
+ *
+ * Se llama en init y en cada `style.load` (que dispara al hacer
+ * `setStyle()` al togglear). Es no-op si la capa/source ya existe.
+ */
+function applyStyleExtras(map: mapboxgl.Map, mode: "2d" | "3d") {
+  if (mode === "3d") {
+    try {
+      // Mapbox Standard expone propiedades de config via setConfigProperty.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (map as any).setConfigProperty("basemap", "lightPreset", "night");
+    } catch {
+      // No-op: si el estilo no soporta config (ej. cambiamos de vuelta a 2D)
+      // simplemente seguimos.
+    }
+    return;
+  }
+
+  // 2D: agregamos edificios extruidos sobre el dark base.
+  if (map.getLayer("3d-buildings")) return;
+  const layers = map.getStyle()?.layers ?? [];
+  const labelLayerId = layers.find(
+    (l) => l.type === "symbol" && l.layout && "text-field" in l.layout,
+  )?.id;
+
+  if (!map.getSource("composite")) return; // estilo sin source composite
+
+  map.addLayer(
+    {
+      id: "3d-buildings",
+      source: "composite",
+      "source-layer": "building",
+      filter: ["==", "extrude", "true"],
+      type: "fill-extrusion",
+      minzoom: 13,
+      paint: {
+        "fill-extrusion-color": "#2c2c30",
+        "fill-extrusion-height": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          13,
+          0,
+          15,
+          ["get", "height"],
+        ],
+        "fill-extrusion-base": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          13,
+          0,
+          15,
+          ["get", "min_height"],
+        ],
+        "fill-extrusion-opacity": 1,
+        "fill-extrusion-vertical-gradient": false,
+      },
+    },
+    labelLayerId,
+  );
+}
 
 /**
  * Pin del mapa. Puede representar una sola propiedad (count=1) o un
@@ -63,6 +134,7 @@ export function MapView({
 }: MapViewProps) {
   const dict = useDict();
   const { locale } = useLocale();
+  const { mode } = useMapMode();
   const containerRef = useRef<HTMLDivElement>(null);
   const geocoderRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -75,65 +147,34 @@ export function MapView({
     mapboxgl.accessToken = MAPBOX_TOKEN;
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: MAPBOX_STYLE,
+      style: mode === "3d" ? MAPBOX_STYLE_3D : MAPBOX_STYLE,
       center,
       zoom,
-      pitch: 32,
+      // 2D plano: ligera inclinación para perspectiva. 3D: pitch más
+      // pronunciado para que los edificios y landmarks se vean.
+      pitch: mode === "3d" ? 55 : 32,
       bearing: 0,
-      dragRotate: false,
-      pitchWithRotate: false,
-      touchPitch: false,
+      // En 3D habilitamos drag-rotate / pitch-with-rotate para que el
+      // usuario pueda orbitar y mirar edificios desde otros ángulos.
+      // En 2D mantenemos rotación bloqueada (más calmo).
+      dragRotate: mode === "3d",
+      pitchWithRotate: mode === "3d",
+      touchPitch: mode === "3d",
     });
-    map.touchZoomRotate.disableRotation();
-    map.keyboard.disableRotation();
+    if (mode !== "3d") {
+      map.touchZoomRotate.disableRotation();
+      map.keyboard.disableRotation();
+    }
     mapRef.current = map;
 
     map.addControl(
-      new mapboxgl.NavigationControl({ showCompass: false }),
+      new mapboxgl.NavigationControl({ showCompass: mode === "3d" }),
       "bottom-left",
     );
 
-    map.on("load", () => {
-      const layers = map.getStyle()?.layers ?? [];
-      const labelLayerId = layers.find(
-        (l) => l.type === "symbol" && l.layout && "text-field" in l.layout,
-      )?.id;
-
-      map.addLayer(
-        {
-          id: "3d-buildings",
-          source: "composite",
-          "source-layer": "building",
-          filter: ["==", "extrude", "true"],
-          type: "fill-extrusion",
-          minzoom: 13,
-          paint: {
-            "fill-extrusion-color": "#2c2c30",
-            "fill-extrusion-height": [
-              "interpolate",
-              ["linear"],
-              ["zoom"],
-              13,
-              0,
-              15,
-              ["get", "height"],
-            ],
-            "fill-extrusion-base": [
-              "interpolate",
-              ["linear"],
-              ["zoom"],
-              13,
-              0,
-              15,
-              ["get", "min_height"],
-            ],
-            "fill-extrusion-opacity": 1,
-            "fill-extrusion-vertical-gradient": false,
-          },
-        },
-        labelLayerId,
-      );
-    });
+    applyStyleExtras(map, mode);
+    // En 3D el setConfigProperty solo aplica después de style.load.
+    map.on("style.load", () => applyStyleExtras(map, mode));
 
     const geocoder = new MapboxGeocoder({
       accessToken: MAPBOX_TOKEN,
@@ -175,6 +216,28 @@ export function MapView({
     g.setLanguage(locale);
     g.setPlaceholder(dict.geocoder.placeholder);
   }, [locale, dict.geocoder.placeholder]);
+
+  // Switch de estilo cuando el toggle 2D/3D cambia. setStyle preserva
+  // posición/zoom/markers (los markers son DOM externo). El listener
+  // `style.load` reaplica los extras (capa 3d-buildings en dark, light
+  // preset en standard).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const targetStyle = mode === "3d" ? MAPBOX_STYLE_3D : MAPBOX_STYLE;
+    map.setStyle(targetStyle);
+    map.easeTo({ pitch: mode === "3d" ? 55 : 32, duration: 600 });
+    if (mode === "3d") {
+      map.dragRotate.enable();
+      map.touchZoomRotate.enableRotation();
+      map.keyboard.enable();
+    } else {
+      map.dragRotate.disable();
+      map.touchZoomRotate.disableRotation();
+      // Vuelve el bearing a 0 si el usuario había rotado en 3D.
+      map.easeTo({ bearing: 0, duration: 400 });
+    }
+  }, [mode]);
 
   useEffect(() => {
     const map = mapRef.current;

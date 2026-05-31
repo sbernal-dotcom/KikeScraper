@@ -23,6 +23,9 @@ export type Dictionary = {
     soon: string;
     open_nav: string;
     language: string;
+    map_view: string;
+    map_view_2d: string;
+    map_view_3d: string;
   };
   common: {
     of: string;
@@ -144,6 +147,9 @@ const es: Dictionary = {
     soon: "Pronto",
     open_nav: "Abrir navegación",
     language: "Idioma",
+    map_view: "Vista del mapa",
+    map_view_2d: "2D",
+    map_view_3d: "3D",
   },
   common: {
     of: "de",
@@ -297,6 +303,9 @@ const en: Dictionary = {
     soon: "Soon",
     open_nav: "Open navigation",
     language: "Language",
+    map_view: "Map view",
+    map_view_2d: "2D",
+    map_view_3d: "3D",
   },
   common: {
     of: "of",
