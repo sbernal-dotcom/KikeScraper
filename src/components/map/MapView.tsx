@@ -35,11 +35,12 @@ import { cn } from "@/lib/utils";
 function applyStyleExtras(map: mapboxgl.Map, mode: "2d" | "3d") {
   if (mode === "3d") {
     // Mapbox Standard expone propiedades de config via setConfigProperty.
-    // Combinación "mono nocturno":
-    //   - theme=monochrome → negro/gris uniforme, edificios y calles en blanco.
-    //   - lightPreset=night → ilumina como noche cerrada.
-    //   - showPointOfInterestLabels=false → oculta locales/restaurantes
-    //     (POIs comerciales). Queremos solo el contexto urbano.
+    // Combinación "mono day" (Apple-style):
+    //   - theme=monochrome → gris uniforme con edificios y calles en blanco.
+    //   - lightPreset=day → iluminación diurna brillante, sombras suaves.
+    //     Máxima legibilidad y conserva el contraste perfecto de los pines
+    //     (lime, azul, magenta sobre gris claro).
+    //   - showPointOfInterestLabels=false → oculta locales/restaurantes.
     //   - showPlaceLabels=true (default) → mantiene barrios/zonas.
     //   - showRoadLabels=true (default) → mantiene nombres de calles.
     //   - showTransitLabels=false (default) → oculta paradas de metro/bus.
@@ -47,7 +48,7 @@ function applyStyleExtras(map: mapboxgl.Map, mode: "2d" | "3d") {
     const m = map as any;
     try {
       m.setConfigProperty("basemap", "theme", "monochrome");
-      m.setConfigProperty("basemap", "lightPreset", "night");
+      m.setConfigProperty("basemap", "lightPreset", "day");
       m.setConfigProperty("basemap", "showPointOfInterestLabels", false);
     } catch {
       // No-op si el estilo activo no soporta esa config (ej. acabamos de
