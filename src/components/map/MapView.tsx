@@ -205,6 +205,13 @@ export function MapView({
       placeholder: dict.geocoder.placeholder,
       marker: false,
       flyTo: { speed: 1.4 },
+      // Ahorro de requests de Geocoding (free tier 100k/mes):
+      //   - minLength=3: pide a partir de 3 chars (default 2). Evita
+      //     la búsqueda muy temprana cuando el usuario apenas empezó.
+      //   - limit=3: pide hasta 3 sugerencias por request en vez de 5.
+      //     Mismo conteo de requests pero menor payload/compute.
+      minLength: 3,
+      limit: 3,
     });
     geocoderInstanceRef.current = geocoder;
 
