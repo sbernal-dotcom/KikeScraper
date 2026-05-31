@@ -29,6 +29,7 @@ import {
   type FichaIA,
   type ResumenBilingue,
 } from "./ia";
+import { validarConMapbox } from "./mapbox-validate";
 import { createScraperClient } from "./supabase-admin";
 import { type TagCerrado } from "./tags-caracteristicas";
 import { centroFromTable, jitterCoords } from "./zonas-panama";
@@ -492,6 +493,9 @@ async function scrape(
             `    ⚠ Considerar agregar "${zona}" a scripts/scrapers/zonas-panama.ts`,
           );
         }
+        // Validación cruzada Mapbox (estrategia A): solo loguea si
+        // discrepa >2km. Cachea por zona, no repite dentro de la corrida.
+        if (zona) await validarConMapbox(zona, coords);
       } else if (zona) {
         console.log(`  geocode → sin resultado confiable para "${zona}"`);
       }
