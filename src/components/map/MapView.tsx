@@ -35,21 +35,24 @@ import { cn } from "@/lib/utils";
 function applyStyleExtras(map: mapboxgl.Map, mode: "2d" | "3d") {
   if (mode === "3d") {
     // Mapbox Standard expone propiedades de config via setConfigProperty.
-    // Combinación "faded day":
-    //   - theme=faded → colores suaves desaturados (verde apagado, azul
-    //     cielo claro). Coloridos sin saturar y sin perder contraste de
-    //     los pines (lime/azul/magenta resaltan sobre tonos pastel).
-    //   - lightPreset=day → iluminación diurna brillante, sombras suaves.
-    //   - showPointOfInterestLabels=false → oculta locales/restaurantes.
-    //   - showPlaceLabels=true (default) → mantiene barrios/zonas.
-    //   - showRoadLabels=true (default) → mantiene nombres de calles.
-    //   - showTransitLabels=false (default) → oculta paradas de metro/bus.
+    // Combinación "faded day, low POI density":
+    //   - theme=faded → colores suaves desaturados.
+    //   - lightPreset=day → iluminación diurna brillante.
+    //   - showPointOfInterestLabels=true + densityPointOfInterestLabels=1 →
+    //     Mapbox Standard NO permite filtrar por categoría (locales vs
+    //     edificios), pero al bajar la densidad prioriza los POIs "más
+    //     importantes" — en Ciudad de Panamá eso favorece torres/landmarks
+    //     reconocidos sobre comercios chicos.
+    //   - showPlaceLabels=true (default) → barrios/zonas.
+    //   - showRoadLabels=true (default) → nombres de calles.
+    //   - showTransitLabels=false (default) → metro/bus.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const m = map as any;
     try {
       m.setConfigProperty("basemap", "theme", "faded");
       m.setConfigProperty("basemap", "lightPreset", "day");
-      m.setConfigProperty("basemap", "showPointOfInterestLabels", false);
+      m.setConfigProperty("basemap", "showPointOfInterestLabels", true);
+      m.setConfigProperty("basemap", "densityPointOfInterestLabels", 1);
     } catch {
       // No-op si el estilo activo no soporta esa config (ej. acabamos de
       // setStyle a dark-v11 y este apply quedó encolado).
