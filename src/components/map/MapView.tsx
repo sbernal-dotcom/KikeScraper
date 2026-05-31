@@ -234,11 +234,13 @@ export function MapView({
   }, [locale, dict.geocoder.placeholder]);
 
   // Switch de estilo + extras cuando el toggle 2D/3D cambia. Corre
-  // también en el mount inicial (apply de extras tras el primer
-  // style.load). En cambios reales hace setStyle (preserva
-  // posición/zoom/markers) + transición de pitch/bearing + habilita o
-  // deshabilita pitch/rotación. Usa `once('style.load', ...)` para
-  // capturar el `mode` actual sin closures stale.
+  // también en el mount inicial (apply de extras tras la carga). En
+  // cambios reales hace setStyle (preserva posición/zoom/markers) +
+  // transición de pitch/bearing + habilita o deshabilita rotación.
+  // Para la PRIMERA carga usamos `load` (espera estilo + sources +
+  // tiles iniciales — necesario para que `composite` esté listo y la
+  // capa 3d-buildings se inserte). Para switches posteriores usamos
+  // `style.load` que dispara una vez que setStyle terminó de parsear.
   const appliedModeRef = useRef<MapMode | null>(null);
   useEffect(() => {
     const map = mapRef.current;
@@ -263,8 +265,16 @@ export function MapView({
     }
 
     const apply = () => applyStyleExtras(map, mode);
-    if (map.isStyleLoaded()) apply();
-    else map.once("style.load", apply);
+    if (isFirstApply) {
+      // load fires cuando el estilo + sources + tiles iniciales están
+      // listos. Si llegamos tarde (mount muy rápido) y ya cargó, llamamos
+      // de una.
+      if (map.loaded()) apply();
+      else map.once("load", apply);
+    } else {
+      if (map.isStyleLoaded()) apply();
+      else map.once("style.load", apply);
+    }
   }, [mode]);
 
   useEffect(() => {
