@@ -7,7 +7,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-geocoder/lib/mapbox-gl-geocoder.css";
 
 import type { TipoOperacion } from "@/features/propiedades/types";
-import { useMapMode } from "@/features/map/MapModeProvider";
+import { useMapMode, type MapMode } from "@/features/map/MapModeProvider";
 import { useDict, useLocale } from "@/i18n/LocaleProvider";
 import {
   DEFAULT_ZOOM,
@@ -172,9 +172,11 @@ export function MapView({
       "bottom-left",
     );
 
-    applyStyleExtras(map, mode);
-    // En 3D el setConfigProperty solo aplica después de style.load.
-    map.on("style.load", () => applyStyleExtras(map, mode));
+    // Los extras del estilo (capa 3d-buildings en 2D / lightPreset
+    // en 3D) los aplica el effect de `mode` más abajo — éste usa
+    // `map.once('style.load', ...)` para cada switch y captura el
+    // `mode` actual sin closures stale. Llamarlo sincrónicamente acá
+    // tiraba "Style is not done loading".
 
     const geocoder = new MapboxGeocoder({
       accessToken: MAPBOX_TOKEN,
@@ -217,26 +219,38 @@ export function MapView({
     g.setPlaceholder(dict.geocoder.placeholder);
   }, [locale, dict.geocoder.placeholder]);
 
-  // Switch de estilo cuando el toggle 2D/3D cambia. setStyle preserva
-  // posición/zoom/markers (los markers son DOM externo). El listener
-  // `style.load` reaplica los extras (capa 3d-buildings en dark, light
-  // preset en standard).
+  // Switch de estilo + extras cuando el toggle 2D/3D cambia. Corre
+  // también en el mount inicial (apply de extras tras el primer
+  // style.load). En cambios reales hace setStyle (preserva
+  // posición/zoom/markers) + transición de pitch/bearing + habilita o
+  // deshabilita pitch/rotación. Usa `once('style.load', ...)` para
+  // capturar el `mode` actual sin closures stale.
+  const appliedModeRef = useRef<MapMode | null>(null);
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const targetStyle = mode === "3d" ? MAPBOX_STYLE_3D : MAPBOX_STYLE;
-    map.setStyle(targetStyle);
-    map.easeTo({ pitch: mode === "3d" ? 55 : 32, duration: 600 });
-    if (mode === "3d") {
-      map.dragRotate.enable();
-      map.touchZoomRotate.enableRotation();
-      map.keyboard.enable();
-    } else {
-      map.dragRotate.disable();
-      map.touchZoomRotate.disableRotation();
-      // Vuelve el bearing a 0 si el usuario había rotado en 3D.
-      map.easeTo({ bearing: 0, duration: 400 });
+    const isFirstApply = appliedModeRef.current === null;
+    const modeChanged = appliedModeRef.current !== mode;
+    appliedModeRef.current = mode;
+
+    if (!isFirstApply && modeChanged) {
+      const targetStyle = mode === "3d" ? MAPBOX_STYLE_3D : MAPBOX_STYLE;
+      map.setStyle(targetStyle);
+      map.easeTo({ pitch: mode === "3d" ? 55 : 32, duration: 600 });
+      if (mode === "3d") {
+        map.dragRotate.enable();
+        map.touchZoomRotate.enableRotation();
+        map.keyboard.enable();
+      } else {
+        map.dragRotate.disable();
+        map.touchZoomRotate.disableRotation();
+        map.easeTo({ bearing: 0, duration: 400 });
+      }
     }
+
+    const apply = () => applyStyleExtras(map, mode);
+    if (map.isStyleLoaded()) apply();
+    else map.once("style.load", apply);
   }, [mode]);
 
   useEffect(() => {
