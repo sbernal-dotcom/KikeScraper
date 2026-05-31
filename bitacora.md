@@ -237,6 +237,48 @@ Pin grouping (paso 7 del contrato), enrichments + base lista para el cron diario
 - **Eliminar**: nuevo color `#FF1F17` aplicado en X de clear-all + X per-item de `ComparisonList`, y en el botón "Quitar" del `PropertyCard` cuando ya está en comparación (rol destructivo inequívoco).
 - Venta sin cambios (`#D6FF00`).
 
+### Lifecycle de anuncios + 100/run + Mapa 2D/3D (2026-05-30 → 2026-05-31)
+
+Sesión grande con varios hitos. Más detalle por commit en `git log`.
+
+**Lifecycle "vivo mientras la fuente lo siga mostrando"** (`supabase/migrations/0004_lifecycle.sql` + `scripts/scrapers/verificar-estado.ts`):
+- Pase 1 (`scrape:prod`): cada upsert deja `estado_anuncio='activo'`, `veces_no_encontrado=0`, `fecha_ultima_vista=now`, `motivo_estado='visto en scrape'`.
+- Pase 2 (`scrape:verify`, agregado al workflow después del scrape): para cada propiedad no-archivada con `fecha_ultima_revision` >6h vieja, hace GET ligero a la URL.
+  - 200 con JSON-LD `"@type":"Product"` → reset, `activo`.
+  - 404 / 410 / redirect que pierde el ID / 200 sin Product → incrementa `veces_no_encontrado`.
+  - timeout / 5xx → `error_verificacion`, **no** suma al contador.
+  - Umbrales: ≥3 fallos → `posible_inactivo`, ≥7 → `archivado`.
+- Bug encontrado en la primera corrida: la regex `/captcha|verify|robot|access/i` matcheaba la string `"recaptchaSiteKey":"..."` (config del form de contacto presente en TODA página legítima de encuentra24) → 48/60 falsos positivos. Quitada — Product como única señal positiva.
+- Flag `--force` para bypass del cooldown (útil para recuperar de bugs del verificador).
+- Enum `estado_anuncio` extendido con `posible_inactivo`, `archivado`, `error_verificacion`. Columnas nuevas: `veces_no_encontrado`, `fecha_ultima_vista`, `fecha_ultima_revision`, `motivo_estado`. Índice `propiedades_lifecycle_idx`.
+- `fetchPropiedades()` ahora filtra `estado_anuncio='activo'` — las archivadas quedan en DB pero ocultas del mapa (historial).
+
+**Scraper 100/run** (paginación + diversidad por categoría):
+- `DEFAULT_LISTADOS` pasa de 2 listados genéricos a **7 por categoría** (apartamentos/casas/terrenos venta + apartamentos/casas/oficinas/locales alquiler) sumando ~100 anuncios objetivo por corrida. Diversifica el dataset — los listados genéricos `bienes-raices-venta-de-propiedades` y `bienes-raices-alquiler` se sesgan a apartamentos en Ciudad de Panamá.
+- `scrapeAll` ahora **pagina cada listado** hasta llegar al `limit` o `MAX_PAGES_PER_LISTADO=8`. encuentra24 pagina con `{listado}.{N}` (ej. `bienes-raices-venta-de-propiedades-apartamentos.2`). Antes solo leía página 1, así que cuando la DB se saturaba el scrape sumaba pocos nuevos. Ahora cumple "100 de 100" incluso con DB poblada.
+
+**Toggle 2D/3D del mapa** (`src/features/map/MapModeProvider.tsx` + `src/components/layout/MapModeToggle.tsx`):
+- Segmented control "Vista del mapa | 2D | 3D" arriba del LanguageToggle en el sidebar.
+- 2D = `mapbox://styles/mapbox/dark-v11` con capa `fill-extrusion` `3d-buildings` (edificios extruidos planos sobre el dark base — visibles al hacer zoom). Pitch 32, rotación bloqueada.
+- 3D = `mapbox://styles/mapbox/standard` con config aplicada vía `setConfigProperty('basemap', ...)`:
+  - `theme=faded` (colores suaves desaturados que no chocan con los pines).
+  - `lightPreset=night` (modo oscuro).
+  - `showPointOfInterestLabels=true` + `densityPointOfInterestLabels=1` (Mapbox Standard no filtra POIs por categoría — densidad baja prioriza torres/landmarks sobre comercios chicos).
+  - `showPlaceLabels` y `showRoadLabels` default true (barrios y calles visibles).
+  - Pitch 55, drag-rotate y compass habilitados.
+- Switch en runtime con `map.setStyle()` — markers persisten (DOM externo).
+- **Siempre arranca en 2D** al entrar a la página (no se persiste en localStorage por decisión de producto).
+- Bugs encontrados y arreglados en el camino:
+  1. Llamar `applyStyleExtras` síncrono después de `new Map()` tira `Style is not done loading` y blanquea la home. Fix: aplicar SOLO tras `load`/`style.load`.
+  2. La capa `3d-buildings` en 2D no aparecía porque `style.load` fire antes de que `composite` source tenga sus tiles. Fix: para el mount inicial usar `load` (espera estilo + sources + tiles).
+  3. Un solo `try/catch` envolvía las 4 `setConfigProperty` calls — si una fallaba, las otras (incluida `lightPreset=night`) se saltaban en silencio y el 3D quedaba en daytime default. Fix: try/catch INDIVIDUAL + `console.warn` por falla + segundo apply en `idle` como red de seguridad.
+
+**Validación cruzada Mapbox Geocoding** (estrategia A, `scripts/scrapers/mapbox-validate.ts`):
+- Tabla `zonas-panama` sigue siendo PRIMARIA. Después de cada `geocodeZona` exitoso, llama a Mapbox Geocoding API con `{zona}, Panamá` y compara con haversine. Si difieren más de 2 km loguea warning; **nunca sobreescribe** las coords.
+- Cachea por zona (1 request por zona por corrida, no por anuncio).
+- Free tier Mapbox Geocoding: 100k/mes. Volumen actual ~10-20 requests/día con cache → bien dentro del límite.
+- Nuevo secret en workflow: `NEXT_PUBLIC_MAPBOX_TOKEN`.
+
 ### Pendientes
 
 - **Env vars en Vercel** — agregar `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` (Production, Preview, Development) y redeploy. Sin esto el deploy de prod no puede leer la DB.
@@ -246,13 +288,17 @@ Pin grouping (paso 7 del contrato), enrichments + base lista para el cron diario
 - **Más fuentes de scraping** — agregar compreoalquile (403 Cloudflare-like en el primer intento), inmuebles24 y/o MercadoLibre Inmuebles. Estructura JSON-LD/HTML cambia por sitio → un módulo por fuente. Validado earlier: MercadoLibre es la opción más limpia.
 - **Zonas que siguen cayendo a Nominatim** — agregar a `zonas-panama.ts` con coords verificadas: Carrasquilla, Volcán, El Bosque, Las Cumbres, Ciudad de Panamá (genérico). Los logs del cron las marcan en cada corrida.
 
-#### Resueltos en esta sesión (no quitar — historial)
+#### Resueltos (no quitar — historial)
 
 - ✅ **Modo producción del scraper**: `npm run scrape:prod` con flag `--supabase` ya escribe en Supabase + audita en `scraper_runs`.
 - ✅ **Migrar `?preview` → opt-in**: hecho. Default ahora es leer de Supabase; preview activable con `?preview=1`.
 - ✅ **Resumen IA bilingüe**: dos columnas `resumen_ia_es` + `resumen_ia_en`, generadas por Gemini en la misma llamada.
 - ✅ **Consolidar prompt Gemini**: extraído a `scripts/scrapers/ia.ts` y reusado desde `fuente-prueba.ts` y `backfill-ia.ts`.
 - ✅ **Automatizar el scraper**: GitHub Actions cron diario @ 03am Panamá + alertas vía GitHub Issue.
+- ✅ **Lifecycle de anuncios**: pase 2 verifica URLs no vistas y archiva tras 7 fallos. Mapa filtra solo `activo`.
+- ✅ **Scraper llega a 100/run**: paginación + 7 listados por categoría.
+- ✅ **Mapa con vista 3D opcional**: toggle 2D/3D en sidebar (Mapbox Standard faded night).
+- ✅ **Validación de coords con Mapbox Geocoding**: cross-check vs tabla, warning si diverge >2 km.
 
 ## Notas Pendientes
 
