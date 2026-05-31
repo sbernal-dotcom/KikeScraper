@@ -47,6 +47,11 @@ const FUENTE_ID = "encuentra24";
 // chequear en el mismo cron (ya quedó actualizado).
 const REVERIFY_MIN_AGE_HOURS = 6;
 
+// --force: ignora el cooldown y re-verifica TODO lo no archivado.
+// Útil para recuperar de un bug del verificador (ej. heurística rota
+// que dejó filas en error_verificacion erróneamente).
+const FORCE = process.argv.includes("--force");
+
 // Si llevamos N corridas sin verla, escala el estado.
 const THRESH_POSIBLE_INACTIVO = 3;
 const THRESH_ARCHIVADO = 7;
@@ -122,15 +127,20 @@ async function verificar(url: string): Promise<Resultado> {
     }
 
     const html = await res.text();
-    // Heurística captcha/bloqueo.
-    if (/captcha|verify\s+you|are you a robot|access denied/i.test(html)) {
-      return { tipo: "error", motivo: "captcha o bloqueo" };
-    }
     // JSON-LD Product presente → vivo. Buscamos el patrón sin parsear
     // todo el HTML — más rápido y robusto a variaciones de whitespace.
+    // NO usamos heurísticas de "captcha" en el body: el HTML legítimo
+    // de encuentra24 contiene "recaptchaSiteKey" (config del form de
+    // contacto), lo que generaba falsos positivos en el 100% de las
+    // páginas reales. Si hay un challenge real, vendrá con 403/503 o
+    // sin Product — ambos casos ya quedan cubiertos.
     if (/"@type"\s*:\s*"Product"/.test(html)) {
       return { tipo: "viva", motivo: "JSON-LD Product OK" };
     }
+    // 200 sin Product: posibles causas legítimas (anuncio borrado por
+    // el publicador, página de error custom del sitio). El contador
+    // tolera 2 misses antes de cambiar el estado, así que un falso
+    // negativo aislado no archiva una propiedad viva.
     return { tipo: "no_encontrada", motivo: "200 sin JSON-LD Product" };
   } catch (err) {
     const msg = (err as Error).name === "AbortError" ? "timeout" : (err as Error).message;
@@ -151,13 +161,18 @@ async function main() {
   const ahora = new Date();
   const cutoff = new Date(ahora.getTime() - REVERIFY_MIN_AGE_HOURS * 3600_000);
 
-  // Trae las que no son archivadas Y no fueron revisadas recién.
-  // Los archivadas se dejan en paz para no martillar URLs muertas.
-  const { data, error } = await supa
+  // Trae las que no son archivadas Y no fueron revisadas recién (a menos
+  // que pasen --force). Los archivadas se dejan en paz para no martillar
+  // URLs muertas.
+  const baseQuery = supa
     .from("propiedades")
     .select("id, url_original, estado_anuncio, veces_no_encontrado")
-    .neq("estado_anuncio", "archivado")
-    .or(`fecha_ultima_revision.is.null,fecha_ultima_revision.lt.${cutoff.toISOString()}`);
+    .neq("estado_anuncio", "archivado");
+  const { data, error } = FORCE
+    ? await baseQuery
+    : await baseQuery.or(
+        `fecha_ultima_revision.is.null,fecha_ultima_revision.lt.${cutoff.toISOString()}`,
+      );
 
   if (error) {
     console.error("Error leyendo propiedades:", error.message);

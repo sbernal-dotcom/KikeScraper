@@ -39,17 +39,42 @@ loadEnv();
 
 const FUENTE_ID = "encuentra24";
 // Si SCRAPE_URL está definido, se respeta como única fuente.
-// Si no, se corre la lista por default (mezcla venta + alquiler).
+// Si no, se corre la lista por default. Distribuida por categoría
+// (no en los listados genéricos `bienes-raices-venta-de-propiedades` y
+// `bienes-raices-alquiler`, que se sesgan a apartamentos en Ciudad de
+// Panamá). Total objetivo: ~100 anuncios por corrida.
 const DEFAULT_LISTADOS: Array<{ url: string; limit: number }> = [
-  // El slug correcto de alquiler es "bienes-raices-alquiler" — sin "-de-propiedades".
-  // La variante con "-de-propiedades" devuelve 200 OK pero NO renderiza listados
-  // (probable misconfig de Next.js en encuentra24). Verificado vía debug.
+  // ── VENTA ──
   {
-    url: "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades",
+    url: "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-apartamentos",
+    limit: 20,
+  },
+  {
+    url: "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-casas",
+    limit: 15,
+  },
+  {
+    url: "https://www.encuentra24.com/panama-es/bienes-raices-venta-de-propiedades-lotes-y-terrenos",
+    limit: 10,
+  },
+  // ── ALQUILER ──
+  // Slug correcto: `bienes-raices-alquiler-*` (sin `-de-propiedades`).
+  // La variante con `-de-propiedades` devuelve 200 pero no renderiza
+  // listados (misconfig Next.js de encuentra24). Verificado vía probe.
+  {
+    url: "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-apartamentos",
+    limit: 20,
+  },
+  {
+    url: "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-casas",
+    limit: 15,
+  },
+  {
+    url: "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-alquiler-de-oficinas",
     limit: 10,
   },
   {
-    url: "https://www.encuentra24.com/panama-es/bienes-raices-alquiler",
+    url: "https://www.encuentra24.com/panama-es/bienes-raices-alquiler-comercios",
     limit: 10,
   },
 ];
