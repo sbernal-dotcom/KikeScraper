@@ -625,7 +625,32 @@ async function fetchExistingUrls(
 // Tope de páginas a recorrer por listado. encuentra24 pagina con el
 // formato `{listado}.{N}` (ej. `...apartamentos.2`). Cap defensivo
 // para no quedar en loop si una categoría tiene cientos de páginas.
-const MAX_PAGES_PER_LISTADO = 8;
+// Subimos a 20 (era 8) porque la DB ya empezó a saturarse y necesitamos
+// más profundidad para conseguir URLs frescas.
+const MAX_PAGES_PER_LISTADO = 20;
+
+// Razón por la que el loop de un listado terminó. Se usa en el summary.
+type StopReason =
+  | "limit alcanzado"
+  | "listado agotado"
+  | "max páginas"
+  | "robots.txt"
+  | "HTTP error";
+
+type ListadoSummary = {
+  url: string;
+  target: number;
+  collected: number;
+  pages: number;
+  reason: StopReason;
+};
+
+function slugFromUrl(url: string): string {
+  // Corta tras `bienes-raices-` para que el resumen sea legible:
+  // "alquiler-apartamentos" en vez del URL completo.
+  const m = url.match(/bienes-raices-(.+)$/);
+  return m?.[1] ?? url;
+}
 
 async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
   const browser = await chromium.launch({ headless: true });
@@ -636,17 +661,27 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
   });
   const page = await ctx.newPage();
   const allNew: AnuncioRaw[] = [];
+  const summary: ListadoSummary[] = [];
   try {
     for (const { url: listadoUrl, limit } of LISTADOS) {
       const parsed = new URL(listadoUrl);
       const allowed = await checkRobotsTxt(parsed.origin, parsed.pathname);
       if (!allowed) {
         console.warn(`robots.txt prohíbe ${parsed.pathname} — saltando.`);
+        summary.push({
+          url: listadoUrl,
+          target: limit,
+          collected: 0,
+          pages: 0,
+          reason: "robots.txt",
+        });
         continue;
       }
       console.log(`\n▶ Listado: ${listadoUrl} (target: ${limit})`);
 
       let collected = 0;
+      let pagesVisited = 0;
+      let reason: StopReason = "max páginas";
       for (
         let pageNum = 1;
         pageNum <= MAX_PAGES_PER_LISTADO && collected < limit;
@@ -661,7 +696,8 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
           timeout: 25_000,
         });
         if (!res || res.status() >= 400) {
-          console.warn(`  Listado respondió ${res?.status() ?? "??"} — corto este listado.`);
+          console.warn(`  Listado respondió ${res?.status() ?? "??"} — corto.`);
+          reason = "HTTP error";
           break;
         }
         await page
@@ -674,19 +710,52 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
           .catch(() => null);
         await jitter(1000, 2000);
 
+        pagesVisited++;
         const remaining = limit - collected;
         const data = await scrape(page, remaining, skipUrls);
         if (data.length === 0) {
-          // Página vacía o todo era duplicado/inservible → asumimos que
-          // no hay más anuncios nuevos en este listado y cortamos.
           console.log(`  (sin nuevos en esta página — corto el listado)`);
+          reason = "listado agotado";
           break;
         }
         for (const d of data) skipUrls.add(d.url_original);
         allNew.push(...data);
         collected += data.length;
+        if (collected >= limit) {
+          reason = "limit alcanzado";
+        }
       }
-      console.log(`  ▣ ${collected}/${limit} nuevos en este listado`);
+      console.log(
+        `  ▣ ${collected}/${limit} nuevos · ${pagesVisited} pág${pagesVisited !== 1 ? "s" : ""} · ${reason}`,
+      );
+      summary.push({
+        url: listadoUrl,
+        target: limit,
+        collected,
+        pages: pagesVisited,
+        reason,
+      });
+    }
+
+    // Resumen final por listado: tabla compacta para ver de un vistazo
+    // qué categorías llenaron su target y cuáles se quedaron cortas
+    // (y por qué). Útil en los logs del cron y para decidir si hay que
+    // subir MAX_PAGES_PER_LISTADO o agregar categorías.
+    if (summary.length > 0) {
+      const totalCollected = summary.reduce((a, s) => a + s.collected, 0);
+      const totalTarget = summary.reduce((a, s) => a + s.target, 0);
+      const slugWidth = Math.max(
+        ...summary.map((s) => slugFromUrl(s.url).length),
+      );
+      console.log(
+        `\n┌─ Resumen scrape (total: ${totalCollected}/${totalTarget})`,
+      );
+      for (const s of summary) {
+        const slug = slugFromUrl(s.url).padEnd(slugWidth);
+        const ratio = `${s.collected}/${s.target}`.padStart(7);
+        console.log(`│ ${slug}  ${ratio}  ${s.pages} pág  ${s.reason}`);
+      }
+      console.log(`└─`);
     }
   } finally {
     await browser.close();
