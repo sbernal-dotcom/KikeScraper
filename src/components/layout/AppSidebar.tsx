@@ -26,6 +26,7 @@ import { usePreviewMeta } from "@/features/propiedades/preview";
 import { useDict } from "@/i18n/LocaleProvider";
 
 import { LanguageToggle } from "./LanguageToggle";
+import { LastScrapeBadge } from "./LastScrapeBadge";
 import { MapModeToggle } from "./MapModeToggle";
 
 type NavItem = {
@@ -113,6 +114,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t">
+        <LastScrapeBadge />
         <MapModeToggle />
         <LanguageToggle />
         <div className="space-y-0.5 px-2 pb-2 text-[10px] text-muted-foreground">

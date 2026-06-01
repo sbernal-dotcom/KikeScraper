@@ -26,6 +26,9 @@ export type Dictionary = {
     map_view: string;
     map_view_2d: string;
     map_view_3d: string;
+    last_scrape: string;
+    last_scrape_new: string;
+    last_scrape_never: string;
   };
   common: {
     of: string;
@@ -150,6 +153,9 @@ const es: Dictionary = {
     map_view: "Vista del mapa",
     map_view_2d: "2D",
     map_view_3d: "3D",
+    last_scrape: "Último scrape",
+    last_scrape_new: "nuevas",
+    last_scrape_never: "Sin corridas aún",
   },
   common: {
     of: "de",
@@ -306,6 +312,9 @@ const en: Dictionary = {
     map_view: "Map view",
     map_view_2d: "2D",
     map_view_3d: "3D",
+    last_scrape: "Last scrape",
+    last_scrape_new: "new",
+    last_scrape_never: "No runs yet",
   },
   common: {
     of: "of",
