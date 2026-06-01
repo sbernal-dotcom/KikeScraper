@@ -279,13 +279,45 @@ Sesión grande con varios hitos. Más detalle por commit en `git log`.
 - Free tier Mapbox Geocoding: 100k/mes. Volumen actual ~10-20 requests/día con cache → bien dentro del límite.
 - Nuevo secret en workflow: `NEXT_PUBLIC_MAPBOX_TOKEN`.
 
+### Observabilidad + ajustes finos (2026-06-01)
+
+- **Badge "Último scrape" en el sidebar** (`src/components/layout/LastScrapeBadge.tsx` + `src/features/scraper/useLastScraperRun.ts`):
+  - Muestra fecha relativa (ej. "hace 4 h") y cantidad insertada en la última corrida del scraper.
+  - Lee de `scraper_runs` filtrando `notes ILIKE 'listados%'` para excluir las corridas del pase 2 (`verificar-estado`) y backfill IA.
+  - Aprovecha la policy `anon read scraper_runs` de la migration 0003 — no necesita auth.
+  - Ubicado en `SidebarFooter` arriba del `MapModeToggle`.
+
+- **Tuning del Mapbox Geocoder** en `MapView.tsx` (search bar):
+  - `minLength` 2 → 3 (no busca con apenas 2 letras).
+  - `limit` 5 → 3 (3 sugerencias por request alcanzan).
+  - El plugin ya debounceaba 200ms internamente vía `lodash.debounce`; el ahorro real son estos dos knobs. Free tier Mapbox Geocoding: 100k req/mes.
+
+- **MAX_PAGES_PER_LISTADO 8 → 20** + **resumen tabular por listado** al final de cada `scrape:prod`:
+  ```
+  ┌─ Resumen scrape (total: 67/100)
+  │ venta-apartamentos      19/20  4 pág  listado agotado
+  │ alquiler-apartamentos    2/20  2 pág  listado agotado   ← saturado
+  │ alquiler-comercios       0/10  1 pág  listado agotado   ← saturado
+  └─
+  ```
+  - Cada listado registra `target`, `collected`, `pages`, `reason` (limit alcanzado / listado agotado / max páginas / HTTP error / robots.txt).
+  - Confirmado: con DB ya con ~280 propiedades, encuentra24 está **saturado** (todos los listados cortan por "listado agotado" antes de las 20 páginas). 100/run no es realista solo con encuentra24 — hay que agregar otra fuente o nuevas categorías.
+
+- **Probe de MercadoLibre Panamá** (NO implementado):
+  - API oficial `api.mercadolibre.com/sites/MPA/...` ahora exige OAuth (devuelve 403 sin auth). Antes era libre.
+  - Scraping HTML: requiere JS rendering + anti-bot agresivo (Akamai/policies).
+  - Decisión: postergar hasta probar **inmuebles24.com.pa** u otra fuente con menos fricción.
+
 ### Pendientes
 
 - **Env vars en Vercel** — agregar `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` (Production, Preview, Development) y redeploy. Sin esto el deploy de prod no puede leer la DB.
 - **Token restrictions en Mapbox** — agregar `http://localhost:3000/*` a la URL allowlist del token. Cuando exista dominio de Vercel, agregarlo también.
 - **Tipos de Supabase** — regenerar `src/lib/supabase/types.ts` con `supabase gen types typescript --project-id lbvboqoyvuxuanwvtypf > src/lib/supabase/types.ts` (requiere `supabase` CLI o usar el dashboard).
 - **Rotar claves Supabase** — `anon` y `service_role` quedaron expuestas en el chat de desarrollo. Rotar cuando termine la fase de prueba. (Gemini ya rotado el 30/5.)
-- **Más fuentes de scraping** — agregar compreoalquile (403 Cloudflare-like en el primer intento), inmuebles24 y/o MercadoLibre Inmuebles. Estructura JSON-LD/HTML cambia por sitio → un módulo por fuente. Validado earlier: MercadoLibre es la opción más limpia.
+- **Más fuentes de scraping** — encuentra24 está saturado en DB (~280 props). Siguientes candidatos:
+  - **inmuebles24.com.pa** — próxima a probar (5 min de verificación).
+  - **MercadoLibre Panamá** — requiere OAuth developer registration (API libre cerrada).
+  - **compreoalquile.com** — 403 Cloudflare en el primer intento, retry pendiente.
 - **Zonas que siguen cayendo a Nominatim** — agregar a `zonas-panama.ts` con coords verificadas: Carrasquilla, Volcán, El Bosque, Las Cumbres, Ciudad de Panamá (genérico). Los logs del cron las marcan en cada corrida.
 
 #### Resueltos (no quitar — historial)
