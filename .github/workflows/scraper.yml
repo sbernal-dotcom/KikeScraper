@@ -15,7 +15,10 @@ concurrency:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 45 min: cubre npm ci + playwright install + scrape:prod (8-12 min)
+    # + scrape:verify (3-5 min) con margen para cold starts en GH Actions.
+    # Antes era 20 → los runs se cancelaban a los ~20 min sin escribir a DB.
+    timeout-minutes: 45
 
     # issues: write necesario para que `gh issue create` pueda abrir
     # tickets cuando el scraper falla o reporta errores blandos.

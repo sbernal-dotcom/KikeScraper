@@ -142,8 +142,29 @@ type AnuncioRaw = {
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const jitter = (min = 800, max = 2000) =>
+const jitter = (min = 800, max = 1500) =>
   sleep(min + Math.floor(Math.random() * (max - min)));
+
+// Concurrencia para detail-scrape (pool de Pages de Playwright).
+const DETAIL_CONCURRENCY = 3;
+const UPSERT_CONCURRENCY = 5;
+
+/** Procesa items en chunks paralelos. */
+async function chunkedParallel<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T, idx: number) => Promise<R | null>,
+): Promise<R[]> {
+  const out: R[] = [];
+  for (let i = 0; i < items.length; i += concurrency) {
+    const chunk = items.slice(i, i + concurrency);
+    const settled = await Promise.allSettled(chunk.map((it, j) => fn(it, j)));
+    for (const r of settled) {
+      if (r.status === "fulfilled" && r.value != null) out.push(r.value);
+    }
+  }
+  return out;
+}
 
 // Nominatim (OpenStreetMap) — geocoding gratis.
 // Reglas: máx 1 req/seg, User-Agent identificable, atribución a OSM en la UI.
@@ -381,8 +402,118 @@ function parseFromDescription(desc: string): {
   return { area_m2, habitaciones, banos, estacionamientos };
 }
 
+/**
+ * Scrape de UN anuncio de detalle. Usa el `page` asignado del pool.
+ * Devuelve null si el anuncio no tiene JSON-LD Product o falla.
+ */
+async function scrapeOne(
+  page: Page,
+  item: { url: string; titulo: string | null },
+): Promise<AnuncioRaw | null> {
+  await jitter(500, 1100);
+  console.log(`→ ${item.url}`);
+  const res = await page.goto(item.url, {
+    waitUntil: "domcontentloaded",
+    timeout: 20_000,
+  });
+  if (!res || res.status() >= 400) {
+    console.warn(`  HTTP ${res?.status() ?? "??"} — saltando`);
+    return null;
+  }
+  await page
+    .waitForLoadState("networkidle", { timeout: 8000 })
+    .catch(() => null);
+
+  const products = (await page.$$eval(
+    'script[type="application/ld+json"]',
+    (nodes) =>
+      nodes
+        .map((n) => {
+          try {
+            return JSON.parse(n.textContent || "");
+          } catch {
+            return null;
+          }
+        })
+        .filter(Boolean),
+  )) as LdProduct[];
+  const product = products.find((p) => p?.["@type"] === "Product");
+
+  if (!product) {
+    console.warn("  Sin JSON-LD Product — saltando");
+    return null;
+  }
+
+  const titulo = product.name?.trim() ?? item.titulo ?? null;
+  const precio = toNumber(String(product.offers?.price ?? ""));
+  const addr = product.offers?.availableAtOrFrom?.address;
+  const zona = addr?.addressLocality ?? addr?.streetAddress ?? null;
+  const fromHtml = await parseFromHtml(page);
+  const fromDesc = parseFromDescription(product.description ?? "");
+  const area_m2 = fromHtml.area_m2 ?? fromDesc.area_m2;
+  const habitaciones = fromHtml.habitaciones ?? fromDesc.habitaciones;
+  const banos = fromHtml.banos ?? fromDesc.banos;
+  const estacionamientos =
+    fromHtml.estacionamientos ?? fromDesc.estacionamientos;
+
+  const coords = await geocodeZona(zona);
+  const finalCoords = coords ? jitterCoords(coords, item.url) : null;
+  if (finalCoords && coords) {
+    const tag = coords.source === "nominatim" ? " (Nominatim fallback)" : "";
+    console.log(
+      `  geocode → ${finalCoords.lat.toFixed(4)}, ${finalCoords.lng.toFixed(4)}${tag}`,
+    );
+    if (zona) await validarConMapbox(zona, coords);
+  }
+
+  const descripcionTemp = trimDescripcion(product.description);
+  const ahora = new Date().toISOString();
+  const anuncioBase: AnuncioRaw = {
+    titulo,
+    precio,
+    moneda: normalizeMoneda(product.offers?.priceCurrency),
+    area_m2,
+    habitaciones,
+    banos,
+    estacionamientos,
+    zona,
+    lat: finalCoords?.lat ?? null,
+    lng: finalCoords?.lng ?? null,
+    url_original: item.url,
+    fuente: FUENTE_ID,
+    fecha_deteccion: ahora,
+    fecha_actualizacion: ahora,
+    resumen_ia: null,
+    tags_caracteristicas: [],
+    tags_extra: [],
+    ai_source_flag: null,
+  };
+  const ficha: FichaIA = {
+    titulo: anuncioBase.titulo,
+    tipoOperacion: tipoOperacionFromUrl(anuncioBase.url_original),
+    precio: anuncioBase.precio,
+    moneda: anuncioBase.moneda,
+    area_m2: anuncioBase.area_m2,
+    habitaciones: anuncioBase.habitaciones,
+    banos: anuncioBase.banos,
+    estacionamientos: anuncioBase.estacionamientos,
+    zona: anuncioBase.zona,
+  };
+  const enriq = await enriquecerConIA(ficha, descripcionTemp);
+  if (enriq.resumen_ia)
+    console.log(
+      `  resumen-ia ✓ (es:${enriq.resumen_ia.es.length} en:${enriq.resumen_ia.en.length})`,
+    );
+  return { ...anuncioBase, ...enriq };
+}
+
+/**
+ * Procesa los candidatos de UNA página de listado en paralelo usando un
+ * pool de Pages. Devuelve los anuncios scrapeados exitosos.
+ */
 async function scrape(
   page: Page,
+  pagePool: Page[],
   limit: number,
   skipUrls: Set<string>,
 ): Promise<AnuncioRaw[]> {
@@ -404,7 +535,13 @@ async function scrape(
         if (!url || seen.has(url)) continue;
         if (/[?&]page=|#/.test(url)) continue;
         if (url.includes("/bienes-raices-proyectos-nuevos/")) continue;
-        if (url.split("/").filter(Boolean).length < 5) continue;
+        // El anuncio real termina en `/{slug}/{ID_numérico}`. Las páginas
+        // estructurales (`/map`, `/panama-oeste`, `/prov-chiriqui`,
+        // `/ciudad-de-panama`) NO tienen ID y comparten el mismo prefijo
+        // del listado — sin este filtro se procesarían como candidatos.
+        const segs = url.split("/").filter(Boolean);
+        const last = segs[segs.length - 1] ?? "";
+        if (!/^\d{5,}$/.test(last)) continue;
         seen.add(url);
         out.push({ url, titulo: a.textContent?.trim() ?? null });
       }
@@ -417,142 +554,18 @@ async function scrape(
     `Encontrados ${allCandidates.length} candidatos (${skippedDupes} ya en JSON) → procesaré ${found.length}.`,
   );
 
-  const results: AnuncioRaw[] = [];
-  for (const item of found) {
-    await jitter(1500, 3000);
-    console.log(`→ ${item.url}`);
-    try {
-      const res = await page.goto(item.url, {
-        waitUntil: "domcontentloaded",
-        timeout: 20_000,
-      });
-      if (!res || res.status() >= 400) {
-        console.warn(`  HTTP ${res?.status() ?? "??"} — saltando`);
-        continue;
-      }
-      // Espera a que React hidrate el bloque de características.
-      // SPA con hidratación lenta — networkidle es más confiable que DOM ready.
-      await page
-        .waitForLoadState("networkidle", { timeout: 8000 })
-        .catch(() => null);
-      if (
-        await page.locator('text=/captcha|verify|robot/i').first().isVisible().catch(() => false)
-      ) {
-        console.error("  Captcha/bloqueo detectado. Abortando.");
-        break;
-      }
-
-      // Fuente primaria: JSON-LD (schema.org/Product) que encuentra24 publica oficialmente.
-      const products = (await page.$$eval(
-        'script[type="application/ld+json"]',
-        (nodes) =>
-          nodes
-            .map((n) => {
-              try {
-                return JSON.parse(n.textContent || "");
-              } catch {
-                return null;
-              }
-            })
-            .filter(Boolean),
-      )) as LdProduct[];
-      const product = products.find((p) => p?.["@type"] === "Product");
-
-      if (!product) {
-        console.warn("  Sin JSON-LD Product — saltando");
-        continue;
-      }
-
-      const titulo = product.name?.trim() ?? item.titulo ?? null;
-      const precio = toNumber(String(product.offers?.price ?? ""));
-      const addr = product.offers?.availableAtOrFrom?.address;
-      const zona = addr?.addressLocality ?? addr?.streetAddress ?? null;
-      // Fuente primaria: HTML estructurado. Fallback: parseo de la descripción.
-      const fromHtml = await parseFromHtml(page);
-      const fromDesc = parseFromDescription(product.description ?? "");
-      const area_m2 = fromHtml.area_m2 ?? fromDesc.area_m2;
-      const habitaciones = fromHtml.habitaciones ?? fromDesc.habitaciones;
-      const banos = fromHtml.banos ?? fromDesc.banos;
-      const estacionamientos =
-        fromHtml.estacionamientos ?? fromDesc.estacionamientos;
-
-      const coords = await geocodeZona(zona);
-      // Jitter determinístico para que múltiples anuncios en la misma zona
-      // no caigan exactamente sobre el mismo pin. La posición del mismo
-      // anuncio (mismo URL) NO cambia entre corridas.
-      const finalCoords = coords
-        ? jitterCoords(coords, item.url)
-        : null;
-      if (finalCoords && coords) {
-        const tag = coords.source === "nominatim" ? " (Nominatim fallback)" : "";
-        console.log(
-          `  geocode → ${finalCoords.lat.toFixed(4)}, ${finalCoords.lng.toFixed(4)}${tag}`,
-        );
-        if (coords.source === "nominatim") {
-          console.log(
-            `    ⚠ Considerar agregar "${zona}" a scripts/scrapers/zonas-panama.ts`,
-          );
-        }
-        // Validación cruzada Mapbox (estrategia A): solo loguea si
-        // discrepa >2km. Cachea por zona, no repite dentro de la corrida.
-        if (zona) await validarConMapbox(zona, coords);
-      } else if (zona) {
-        console.log(`  geocode → sin resultado confiable para "${zona}"`);
-      }
-
-      // Descripción SOLO como variable local. Se pasa a Gemini y se descarta.
-      // Nunca se persiste a JSON ni a Supabase ni se loguea (ToS encuentra24).
-      const descripcionTemp = trimDescripcion(product.description);
-      const ahora = new Date().toISOString();
-
-      const anuncioBase: AnuncioRaw = {
-        titulo,
-        precio,
-        moneda: normalizeMoneda(product.offers?.priceCurrency),
-        area_m2,
-        habitaciones,
-        banos,
-        estacionamientos,
-        zona,
-        lat: finalCoords?.lat ?? null,
-        lng: finalCoords?.lng ?? null,
-        url_original: item.url,
-        fuente: FUENTE_ID,
-        fecha_deteccion: ahora,
-        fecha_actualizacion: ahora,
-        resumen_ia: null,
-        tags_caracteristicas: [],
-        tags_extra: [],
-        ai_source_flag: null,
-      };
-
-      const ficha: FichaIA = {
-        titulo: anuncioBase.titulo,
-        tipoOperacion: tipoOperacionFromUrl(anuncioBase.url_original),
-        precio: anuncioBase.precio,
-        moneda: anuncioBase.moneda,
-        area_m2: anuncioBase.area_m2,
-        habitaciones: anuncioBase.habitaciones,
-        banos: anuncioBase.banos,
-        estacionamientos: anuncioBase.estacionamientos,
-        zona: anuncioBase.zona,
-      };
-      const enriq = await enriquecerConIA(ficha, descripcionTemp);
-      if (enriq.resumen_ia)
-        console.log(
-          `  resumen-ia ✓ (es:${enriq.resumen_ia.es.length} en:${enriq.resumen_ia.en.length} chars)`,
-        );
-      if (enriq.tags_caracteristicas.length || enriq.tags_extra.length)
-        console.log(
-          `  tags ✓ ${enriq.tags_caracteristicas.length} cerrados + ${enriq.tags_extra.length} extras`,
-        );
-
-      results.push({ ...anuncioBase, ...enriq });
-    } catch (err) {
-      console.warn(`  Error procesando ${item.url}:`, (err as Error).message);
-    }
-  }
-
+  // Procesa los `found` candidatos en paralelo usando el pool de Pages.
+  // Cada chunk asigna 1 Page por item del pool.
+  const results = await chunkedParallel<
+    { url: string; titulo: string | null },
+    AnuncioRaw
+  >(found, Math.min(DETAIL_CONCURRENCY, pagePool.length), (item, j) => {
+    const detailPage = pagePool[j];
+    return scrapeOne(detailPage, item).catch((err) => {
+      console.warn(`  Error procesando ${item.url}: ${(err as Error).message}`);
+      return null;
+    });
+  });
   return results;
 }
 
@@ -659,7 +672,12 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
     viewport: { width: 1280, height: 800 },
     locale: "es-PA",
   });
+  // Page principal: navega listados. Pool: páginas para detalles en paralelo.
   const page = await ctx.newPage();
+  const pagePool: Page[] = [];
+  for (let i = 0; i < DETAIL_CONCURRENCY; i++) {
+    pagePool.push(await ctx.newPage());
+  }
   const allNew: AnuncioRaw[] = [];
   const summary: ListadoSummary[] = [];
   try {
@@ -708,11 +726,11 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
           .first()
           .waitFor({ state: "attached", timeout: 10_000 })
           .catch(() => null);
-        await jitter(1000, 2000);
+        await jitter(400, 800);
 
         pagesVisited++;
         const remaining = limit - collected;
-        const data = await scrape(page, remaining, skipUrls);
+        const data = await scrape(page, pagePool, remaining, skipUrls);
         if (data.length === 0) {
           console.log(`  (sin nuevos en esta página — corto el listado)`);
           reason = "listado agotado";
@@ -805,6 +823,7 @@ async function runSupabaseMode() {
 
   let inserted = 0;
   let errors = 0;
+  const rows: Array<{ a: AnuncioRaw; row: Record<string, unknown> }> = [];
   for (const a of allNew) {
     const row = toDbRow(a);
     if (!row) {
@@ -812,16 +831,21 @@ async function runSupabaseMode() {
       errors++;
       continue;
     }
+    rows.push({ a, row });
+  }
+
+  await chunkedParallel(rows, UPSERT_CONCURRENCY, async ({ a, row }) => {
     const { error } = await supa
       .from("propiedades")
       .upsert(row, { onConflict: "url_original" });
     if (error) {
-      console.warn(`  ✗ upsert falló: ${error.message}`);
+      console.warn(`  ✗ upsert falló (${a.url_original}): ${error.message}`);
       errors++;
     } else {
       inserted++;
     }
-  }
+    return null;
+  });
 
   // Como scrapeAll salta los url_original ya presentes, todos los escritos
   // son nuevos (updated=0). El refresco de existentes se hará en otra corrida.

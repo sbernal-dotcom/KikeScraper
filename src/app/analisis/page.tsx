@@ -35,6 +35,12 @@ export default function AnalisisPage() {
     [data],
   );
 
+  const fuentesDisponibles = useMemo(
+    () =>
+      Array.from(new Set(data.map((o) => o.fuenteNombre).filter(Boolean))).sort(),
+    [data],
+  );
+
   const filtradas = useMemo(
     () => applyAnalyticsFilters(data, filters),
     [data, filters],
@@ -159,6 +165,7 @@ export default function AnalisisPage() {
             filters={filters}
             onChange={setFilters}
             zonasDisponibles={zonasDisponibles}
+            fuentesDisponibles={fuentesDisponibles}
           />
         </SheetContent>
       </Sheet>

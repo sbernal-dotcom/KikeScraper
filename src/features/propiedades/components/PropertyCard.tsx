@@ -420,6 +420,7 @@ export function PropertyCard({
           size={compact ? "sm" : "lg"}
           className={cn("w-full font-medium", compact && "text-[11px]")}
           style={{ background: "var(--accent)", color: "var(--accent-text-on)" }}
+          nativeButton={false}
           render={
             <a
               href={propiedad.urlOriginal}

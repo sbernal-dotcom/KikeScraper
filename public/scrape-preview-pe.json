@@ -1,0 +1,674 @@
+{
+  "generated_at": "2026-06-12T22:55:21.614Z",
+  "fuente": "panamaequity",
+  "results": [
+    {
+      "titulo": "Exclusivo Apartamento de 3 Recámaras con Vista al Mar en Venta en Punta Caelo",
+      "precio": 380000,
+      "moneda": "USD",
+      "area_m2": 143,
+      "habitaciones": 3,
+      "banos": 3,
+      "estacionamientos": 2,
+      "zona": "Punta Caelo",
+      "lat": 8.4616768,
+      "lng": -79.9637234,
+      "url_original": "https://www.panamaequity.com/es/listings/exclusivo-apartamento-de-3-recamaras-con-vista-al-mar-en-venta-en-punta-caelo/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:50:58.992Z",
+      "fecha_actualizacion": "2026-06-12T22:50:58.992Z",
+      "resumen_ia": {
+        "es": "Amplio apartamento de tres habitaciones ubicado en Punta Caelo. Destaca por su acceso privado independiente y un entorno natural con vistas al océano.",
+        "en": "Spacious three-bedroom apartment located in Punta Caelo. It features a private independent hallway entrance and a natural setting with ocean views."
+      },
+      "tags_caracteristicas": [
+        "vista-al-mar",
+        "ascensor"
+      ],
+      "tags_extra": [
+        "pasillo-privado"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "Casa Familiar Elegante en Alquiler en Antigua, Costa del Este",
+      "precio": 6000,
+      "moneda": "USD",
+      "area_m2": 400,
+      "habitaciones": 4,
+      "banos": 4,
+      "estacionamientos": 2,
+      "zona": "Costa del Este",
+      "lat": 9.01318,
+      "lng": -79.4680717,
+      "url_original": "https://www.panamaequity.com/es/listings/casa-familiar-elegante-en-alquiler-en-antigua-costa-del-este/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:51:03.371Z",
+      "fecha_actualizacion": "2026-06-12T22:51:03.371Z",
+      "resumen_ia": {
+        "es": "Cómoda residencia de dos niveles disponible para alquilar en el exclusivo sector de Costa del Este. Propiedad privada en excelente estado, rodeada de zonas verdes.",
+        "en": "Comfortable two-level residence available for rent in the exclusive Costa del Este area. Well-maintained private property surrounded by green spaces."
+      },
+      "tags_caracteristicas": [
+        "urbanizacion-cerrada"
+      ],
+      "tags_extra": [
+        "casa-independiente"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "Apartamento en Ensenada con Vista al Mar en Venta en San Carlos",
+      "precio": 250000,
+      "moneda": "USD",
+      "area_m2": 97,
+      "habitaciones": 2,
+      "banos": 2,
+      "estacionamientos": 1,
+      "zona": "Ensenada",
+      "lat": 8.49720298227,
+      "lng": -79.9407784995,
+      "url_original": "https://www.panamaequity.com/es/listings/apartamento-en-ensenada-con-vista-al-mar-en-venta-en-san-carlos/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:51:06.635Z",
+      "fecha_actualizacion": "2026-06-12T22:51:06.635Z",
+      "resumen_ia": {
+        "es": "Cómodo apartamento en San Carlos con 97 m² y vista al mar. Esta propiedad cuenta con dos habitaciones y dos baños en una ubicación costera privilegiada.",
+        "en": "Comfortable 97 m² apartment in San Carlos featuring ocean views. This property offers two bedrooms and two bathrooms in a prime coastal location."
+      },
+      "tags_caracteristicas": [
+        "vista-al-mar"
+      ],
+      "tags_extra": [
+        "playa",
+        "condominio"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "Villa Frente al Mar en Venta en Malibu Gorgona",
+      "precio": 860000,
+      "moneda": "USD",
+      "area_m2": 338,
+      "habitaciones": 5,
+      "banos": 5,
+      "estacionamientos": 2,
+      "zona": "Chame",
+      "lat": 8.5569635,
+      "lng": -79.8507469,
+      "url_original": "https://www.panamaequity.com/es/listings/villa-frente-al-mar-en-venta-en-malibu-gorgona/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:51:09.914Z",
+      "fecha_actualizacion": "2026-06-12T22:51:09.914Z",
+      "resumen_ia": {
+        "es": "Espaciosa propiedad ubicada frente a la costa en Gorgona. Sus estancias principales se sitúan en el nivel superior para optimizar la contemplación del entorno marino.",
+        "en": "Spacious beachfront property located in Gorgona. The main living areas are positioned on the upper level to maximize views of the surrounding ocean."
+      },
+      "tags_caracteristicas": [
+        "frente-al-mar"
+      ],
+      "tags_extra": [
+        "villa",
+        "chame"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "Penthouse en Venta en la Ciudad de Panamá: Ubicación Privilegiada en Amador con vistas a la bahía y al horizonte",
+      "precio": 550000,
+      "moneda": "USD",
+      "area_m2": 220,
+      "habitaciones": 2,
+      "banos": 2,
+      "estacionamientos": 2,
+      "zona": "Avenida Amador",
+      "lat": 8.9145357,
+      "lng": -79.5258118,
+      "url_original": "https://www.panamaequity.com/es/listings/penthouse-en-venta-en-la-ciudad-de-panama-ubicacion-privilegiada-en-amador-con-vistas-a-la-bahia-y-al-horizonte/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:51:13.516Z",
+      "fecha_actualizacion": "2026-06-12T22:51:13.516Z",
+      "resumen_ia": {
+        "es": "Exclusivo penthouse en la Calzada de Amador con dos recámaras. Ofrece panorámicas ininterrumpidas hacia la bahía y el skyline de la ciudad.",
+        "en": "Exclusive penthouse located in the Amador Causeway with two bedrooms. It features uninterrupted panoramic views of the bay and the city skyline."
+      },
+      "tags_caracteristicas": [
+        "penthouse"
+      ],
+      "tags_extra": [
+        "vista-a-la-bahia",
+        "ubicacion-privilegiada"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "Villa Llave En Mano En Misión Española Coronado En Venta",
+      "precio": 780000,
+      "moneda": "USD",
+      "area_m2": 400,
+      "habitaciones": 4,
+      "banos": 4,
+      "estacionamientos": 3,
+      "zona": "Coronado Golf",
+      "lat": 8.53900955,
+      "lng": -79.891029538086,
+      "url_original": "https://www.panamaequity.com/es/listings/villa-llave-en-mano-en-mision-espanola-coronado-en-venta/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:51:16.161Z",
+      "fecha_actualizacion": "2026-06-12T22:51:16.161Z",
+      "resumen_ia": {
+        "es": "Amplia residencia familiar situada en Coronado Golf. Goza de una ubicación privilegiada cercana al club de playa y un entorno privado.",
+        "en": "Spacious family residence located in Coronado Golf. It enjoys a privileged location near the beach club and a private setting."
+      },
+      "tags_caracteristicas": [],
+      "tags_extra": [
+        "coronado-golf",
+        "cerca-playa",
+        "amplio-terreno"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "El Lujo Se Encuentra Con La Comodidad &#8211; Apartamento En Planta Baja En Venta en Buenaventura",
+      "precio": 1200000,
+      "moneda": "USD",
+      "area_m2": 350,
+      "habitaciones": 3,
+      "banos": 3,
+      "estacionamientos": 2,
+      "zona": "Distrito Antón",
+      "lat": 8.3398844,
+      "lng": -80.1645219,
+      "url_original": "https://www.panamaequity.com/es/listings/el-lujo-se-encuentra-con-la-comodidad-apartamento-en-planta-baja-en-venta-en-buenaventura/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:51:23.960Z",
+      "fecha_actualizacion": "2026-06-12T22:51:23.960Z",
+      "resumen_ia": {
+        "es": "Amplia propiedad de 350 m² situada en Buenaventura que ofrece un estilo de vida exclusivo. La unidad se entrega totalmente equipada con mobiliario incluido.",
+        "en": "Spacious 350 sqm property located in Buenaventura offering an exclusive lifestyle. The unit is delivered fully equipped with furniture included."
+      },
+      "tags_caracteristicas": [
+        "amoblado"
+      ],
+      "tags_extra": [
+        "buenaventura",
+        "planta-baja"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "NEXT Preventa de Apartamento de 2 Habitaciones Vistas al Mar/Ciudad en Coco del Mar",
+      "precio": 419500,
+      "moneda": "USD",
+      "area_m2": 119,
+      "habitaciones": 2,
+      "banos": 2,
+      "estacionamientos": 2,
+      "zona": "Calle Miguel Ángel Paredes",
+      "lat": 8.99926648775,
+      "lng": -79.497747826,
+      "url_original": "https://www.panamaequity.com/es/listings/proyecto-next-preventa-de-condominio-de-2-habitaciones-vistas-al-mar-ciudad-en-coco-del-mar/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:51:28.710Z",
+      "fecha_actualizacion": "2026-06-12T22:51:28.710Z",
+      "resumen_ia": {
+        "es": "Moderno apartamento en preventa ubicado en Coco del Mar. El inmueble cuenta con acabados de lujo y vistas panorámicas.",
+        "en": "Modern apartment in pre-construction located in Coco del Mar. The property features luxury finishes and panoramic views."
+      },
+      "tags_caracteristicas": [
+        "vista-al-mar",
+        "vista-a-la-ciudad"
+      ],
+      "tags_extra": [
+        "preventa",
+        "cocina-italiana",
+        "acabados-lujo"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "NEXT Preventa de Apartamento de 2 Habitaciones Vistas al Mar/Ciudad en Coco del Mar",
+      "precio": 377500,
+      "moneda": "USD",
+      "area_m2": 107,
+      "habitaciones": 2,
+      "banos": 2,
+      "estacionamientos": 2,
+      "zona": "Calle Miguel Ángel Paredes",
+      "lat": 8.99924902061,
+      "lng": -79.4977120199,
+      "url_original": "https://www.panamaequity.com/es/listings/proyecto-next-preventa-de-penthouse-de-3-habitaciones-vistas-al-mar-ciudad-en-coco-del-mar/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:51:33.432Z",
+      "fecha_actualizacion": "2026-06-12T22:51:33.432Z",
+      "resumen_ia": {
+        "es": "Unidad en preconstrucción situada en Coco del Mar con dos recámaras y den. El proyecto destaca por sus espacios amplios, terminaciones de lujo y panorámicas vistas.",
+        "en": "Pre-construction unit located in Coco del Mar featuring two bedrooms and a den. The project stands out for its spacious layouts, luxury finishes, and panoramic views."
+      },
+      "tags_caracteristicas": [
+        "vista-al-mar",
+        "vista-a-la-ciudad"
+      ],
+      "tags_extra": [
+        "preventa"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "Proyecto NEXT Preventa de Apartamento de 2 Habitaciones en Coco del Mar",
+      "precio": 357850,
+      "moneda": "USD",
+      "area_m2": 90,
+      "habitaciones": 2,
+      "banos": 2,
+      "estacionamientos": 1,
+      "zona": "Calle Miguel Ángel Paredes",
+      "lat": 8.99906335451,
+      "lng": -79.4977707002,
+      "url_original": "https://www.panamaequity.com/es/listings/proyecto-next-preventa-de-apartamento-de-2-habitaciones-en-coco-del-mar/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:51:37.500Z",
+      "fecha_actualizacion": "2026-06-12T22:51:37.500Z",
+      "resumen_ia": {
+        "es": "Nueva oportunidad de inversión en Coco del Mar. Residencias modernas con acabados de alta gama y diseño funcional.",
+        "en": "New investment opportunity in Coco del Mar. Modern residences featuring high-end finishes and functional design."
+      },
+      "tags_caracteristicas": [],
+      "tags_extra": [
+        "preventa",
+        "acabados-italianos",
+        "coco-del-mar"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "Preventa de Condos en Generation Tower, Costa del Este",
+      "precio": 280200,
+      "moneda": "USD",
+      "area_m2": 58,
+      "habitaciones": 1,
+      "banos": 1,
+      "estacionamientos": null,
+      "zona": "Avenida Costa Del Mar",
+      "lat": 9.01170043103,
+      "lng": -79.4644062114,
+      "url_original": "https://www.panamaequity.com/es/listings/generation-tower-pre-venta-de-apartamentos-con-licencia-condo-hotel-en-costa-del-este/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:51:43.357Z",
+      "fecha_actualizacion": "2026-06-12T22:51:43.357Z",
+      "resumen_ia": {
+        "es": "Oportunidad de inversión en Costa del Este con unidades de una recámara. El proyecto cuenta con licencia para gestionar alquileres temporales tipo Airbnb.",
+        "en": "Investment opportunity in Costa del Este featuring one-bedroom units. The project is officially licensed to manage short-term rentals such as Airbnb."
+      },
+      "tags_caracteristicas": [],
+      "tags_extra": [
+        "preventa",
+        "alquiler-corto-plazo",
+        "inversion"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "THE IVY Apartamento de Lujo de Tres Recámaras en Santa María",
+      "precio": 655000,
+      "moneda": "USD",
+      "area_m2": 160,
+      "habitaciones": 3,
+      "banos": 3,
+      "estacionamientos": 2,
+      "zona": "PH The Ivy",
+      "lat": 9.0258125,
+      "lng": -79.4444219,
+      "url_original": "https://www.panamaequity.com/es/listings/the-ivy-pre-venta-apartamento-de-lujo-de-tres-recamaras-en-santa-maria/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:51:48.474Z",
+      "fecha_actualizacion": "2026-06-12T22:51:48.474Z",
+      "resumen_ia": {
+        "es": "Exclusiva residencia de tres alcobas en Santa María. Ofrece un ambiente sereno y moderno integrado con la naturaleza.",
+        "en": "Exclusive three-bedroom residence in Santa Maria. It offers a serene and modern atmosphere integrated with nature."
+      },
+      "tags_caracteristicas": [],
+      "tags_extra": [
+        "santa-maria",
+        "lujo"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "THE IVY Apartamento de Lujo de 3 Recamaras con Vistas al Mar y la Cancha de Golf en Santa Maria",
+      "precio": 737400,
+      "moneda": "USD",
+      "area_m2": 188,
+      "habitaciones": 3,
+      "banos": 3,
+      "estacionamientos": 2,
+      "zona": "PH The Ivy",
+      "lat": 9.0258125,
+      "lng": -79.4444219,
+      "url_original": "https://www.panamaequity.com/es/listings/the-ivy-pre-venta-apartamento-de-lujo-de-3-recamaras-con-vistas-al-mar-y-la-cancha-de-golf-en-santa-maria/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:52:28.404Z",
+      "fecha_actualizacion": "2026-06-12T22:52:28.404Z",
+      "resumen_ia": {
+        "es": "Lujoso apartamento de tres habitaciones ubicado en Santa María. La propiedad destaca por sus vistas panorámicas al mar y al campo de golf.",
+        "en": "Luxury three-bedroom apartment located in Santa Maria. The property stands out for its panoramic views of the ocean and the golf course."
+      },
+      "tags_caracteristicas": [
+        "vista-al-mar"
+      ],
+      "tags_extra": [
+        "vista-a-golf",
+        "santa-maria"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "Apartamento amoblado de 2 recámaras para alquiler Serenity San Francisco",
+      "precio": 1300,
+      "moneda": "USD",
+      "area_m2": 123,
+      "habitaciones": 2,
+      "banos": 2,
+      "estacionamientos": 1,
+      "zona": "Calle Manuel De Jesus Quijano",
+      "lat": 8.9904427,
+      "lng": -79.5004447,
+      "url_original": "https://www.panamaequity.com/es/listings/apartamento-amoblado-de-2-recamaras-para-alquiler-serenity-san-francisco/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:52:47.608Z",
+      "fecha_actualizacion": "2026-06-12T22:52:47.608Z",
+      "resumen_ia": {
+        "es": "Cómodo apartamento en alquiler en San Francisco con dos habitaciones. Disfrute de una cocina espaciosa y un balcón privado con vistas al mar.",
+        "en": "Cozy apartment for rent in San Francisco featuring two bedrooms. Enjoy a spacious kitchen and a private balcony with ocean views."
+      },
+      "tags_caracteristicas": [
+        "amoblado",
+        "balcon",
+        "vista-al-mar"
+      ],
+      "tags_extra": [
+        "san-francisco"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "Ocean Pearl Penthouse de Dos Pisos en Venta en Islas Ocean Reef",
+      "precio": 4200040,
+      "moneda": "USD",
+      "area_m2": 807.7,
+      "habitaciones": 4,
+      "banos": 4,
+      "estacionamientos": null,
+      "zona": "Ocean Reef Islands",
+      "lat": 8.9687531,
+      "lng": -79.5021886138,
+      "url_original": "https://www.panamaequity.com/es/listings/ocean-pearl-penthouse-de-dos-pisos-en-venta-en-islas-ocean-reef/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:52:52.419Z",
+      "fecha_actualizacion": "2026-06-12T22:52:52.419Z",
+      "resumen_ia": {
+        "es": "Exclusivo penthouse de dos niveles en Islas Ocean Reef con acabados de alta gama. La propiedad destaca por sus amplios espacios y cuatro habitaciones con baño privado.",
+        "en": "Exclusive two-level penthouse in Ocean Reef Islands featuring high-end finishes. This property stands out for its spacious layout and four bedrooms with private bathrooms."
+      },
+      "tags_caracteristicas": [
+        "penthouse"
+      ],
+      "tags_extra": [
+        "lujo",
+        "islas-ocean-reef"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "Espectacular Apartamento de 3 Recámaras para Alquiler en Avenida Balboa",
+      "precio": 3000,
+      "moneda": "USD",
+      "area_m2": 256,
+      "habitaciones": 3,
+      "banos": 3,
+      "estacionamientos": null,
+      "zona": "PH Waters on the Bay",
+      "lat": 8.9763313,
+      "lng": -79.5231089717,
+      "url_original": "https://www.panamaequity.com/es/listings/espectacular-apartamento-de-3-recamaras-para-alquiler-en-avenida-balboa/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:52:57.321Z",
+      "fecha_actualizacion": "2026-06-12T22:52:57.321Z",
+      "resumen_ia": {
+        "es": "Cómoda residencia de tres habitaciones disponible en Avenida Balboa. El inmueble cuenta con amplios espacios sociales y balcones con vista panorámica a la bahía.",
+        "en": "Comfortable three-bedroom residence available on Balboa Avenue. The property features spacious living areas and balconies with panoramic views of the bay."
+      },
+      "tags_caracteristicas": [
+        "balcon",
+        "vista-al-mar"
+      ],
+      "tags_extra": [
+        "avenida-balboa"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "En Venta Condominio De 3 Recámaras En Costanera Avenida Balboa",
+      "precio": 585000,
+      "moneda": "USD",
+      "area_m2": 203,
+      "habitaciones": 3,
+      "banos": 3,
+      "estacionamientos": 3,
+      "zona": "Cafe Balear",
+      "lat": 8.9765898668167,
+      "lng": -79.52846288681,
+      "url_original": "https://www.panamaequity.com/es/listings/en-venta-apartamento-de-3-recamaras-en-costanera-avenida-balboa/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:53:01.865Z",
+      "fecha_actualizacion": "2026-06-12T22:53:01.865Z",
+      "resumen_ia": {
+        "es": "Espacioso apartamento esquinero con diseño funcional y cocina cerrada. Dispone de una terraza amplia que permite disfrutar de vistas panorámicas al mar y al parque.",
+        "en": "Spacious corner unit featuring a functional layout and an enclosed kitchen. It includes a large terrace perfect for enjoying scenic views of the ocean and the park."
+      },
+      "tags_caracteristicas": [
+        "balcon",
+        "terraza",
+        "vista-al-mar"
+      ],
+      "tags_extra": [
+        "avenida-balboa",
+        "tres-estacionamientos"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "Casa Familiar en Venta en Ciudad de Panamá, Panamá Copy",
+      "precio": 900000,
+      "moneda": "USD",
+      "area_m2": 371,
+      "habitaciones": 3,
+      "banos": 3,
+      "estacionamientos": 4,
+      "zona": "Ancón",
+      "lat": 9.0397521,
+      "lng": -79.586422521745,
+      "url_original": "https://www.panamaequity.com/es/listings/family-home-for-sale-in-panama-city-panama-copy/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:53:04.884Z",
+      "fecha_actualizacion": "2026-06-12T22:53:04.884Z",
+      "resumen_ia": {
+        "es": "Amplia residencia familiar situada en una zona residencial tranquila de Ancón. La propiedad cuenta con 371 m² de construcción sobre un terreno generoso rodeado de naturaleza.",
+        "en": "Spacious family residence located in a quiet residential area of Ancon. The property features 371 sqm of construction on a generous lot surrounded by nature."
+      },
+      "tags_caracteristicas": [],
+      "tags_extra": [
+        "casa-independiente",
+        "terreno-amplio"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "Casa Familiar en Venta en Ciudad de Panamá, Panamá",
+      "precio": 900000,
+      "moneda": "USD",
+      "area_m2": 371,
+      "habitaciones": 3,
+      "banos": 3,
+      "estacionamientos": 4,
+      "zona": "Ancón",
+      "lat": 9.0397521,
+      "lng": -79.5864225217,
+      "url_original": "https://www.panamaequity.com/es/listings/family-home-for-sale-in-panama-city-panama/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:53:57.360Z",
+      "fecha_actualizacion": "2026-06-12T22:53:57.360Z",
+      "resumen_ia": {
+        "es": "Espaciosa residencia unifamiliar ubicada en la zona residencial de Ancón. Cuenta con tres habitaciones y un amplio terreno rodeado de vegetación.",
+        "en": "Spacious single-family home located in the residential area of Ancon. It features three bedrooms and a large lot surrounded by greenery."
+      },
+      "tags_caracteristicas": [],
+      "tags_extra": [
+        "casa-unifamiliar",
+        "amplio-terreno"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "Penthouse Único en Venta en Gorgona",
+      "precio": 1500000,
+      "moneda": "USD",
+      "area_m2": 253,
+      "habitaciones": 2,
+      "banos": 2,
+      "estacionamientos": 2,
+      "zona": "Avenida Nueva Gorgona",
+      "lat": 8.5589624,
+      "lng": -79.867896,
+      "url_original": "https://www.panamaequity.com/es/listings/penthouse-unico-en-venta-en-gorgona/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:54:02.920Z",
+      "fecha_actualizacion": "2026-06-12T22:54:02.920Z",
+      "resumen_ia": {
+        "es": "Exclusivo penthouse de dos niveles situado en Gorgona con acabados de lujo personalizados. La propiedad destaca por sus vistas panorámicas y una terraza privada en la parte superior.",
+        "en": "Exclusive two-level penthouse located in Gorgona featuring custom high-end finishes. The property stands out for its panoramic views and a private rooftop terrace."
+      },
+      "tags_caracteristicas": [
+        "penthouse"
+      ],
+      "tags_extra": [
+        "terraza-privada",
+        "acabados-de-lujo"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "Impresionante villa de playa en venta en Playa Blanca",
+      "precio": 699000,
+      "moneda": "USD",
+      "area_m2": 431,
+      "habitaciones": 6,
+      "banos": 6,
+      "estacionamientos": 6,
+      "zona": "Playa Blanca",
+      "lat": 8.3443893,
+      "lng": -80.153976050291,
+      "url_original": "https://www.panamaequity.com/es/listings/impresionante-villa-de-playa-en-venta-en-playa-blanca/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:54:08.742Z",
+      "fecha_actualizacion": "2026-06-12T22:54:08.742Z",
+      "resumen_ia": {
+        "es": "Amplia propiedad de tres niveles ubicada dentro del reconocido complejo residencial Playa Blanca. La residencia destaca por su gran terreno privado y su piscina particular.",
+        "en": "Spacious three-level property situated within the renowned Playa Blanca residential complex. The residence stands out for its large private lot and custom swimming pool."
+      },
+      "tags_caracteristicas": [
+        "piscina"
+      ],
+      "tags_extra": [
+        "villa-de-playa"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "Espectaculares vistas al mar en Playa Serena",
+      "precio": 280000,
+      "moneda": "USD",
+      "area_m2": 120,
+      "habitaciones": 2,
+      "banos": 2,
+      "estacionamientos": 1,
+      "zona": "G4XH+78M Ph Bahia Playa Serena",
+      "lat": 25.7308309,
+      "lng": -80.444149,
+      "url_original": "https://www.panamaequity.com/es/listings/espectaculares-vistas-al-mar-desde-un-apartamento-de-2-habitaciones-en-playa-serena/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:54:14.688Z",
+      "fecha_actualizacion": "2026-06-12T22:54:14.688Z",
+      "resumen_ia": {
+        "es": "Cómodo apartamento frente al océano con dos recámaras en Playa Serena. La cocina y armarios han sido actualizados recientemente con acabados de madera de teca.",
+        "en": "Comfortable two-bedroom beachfront apartment located in Playa Serena. The kitchen and closets have been recently updated with teak wood finishes."
+      },
+      "tags_caracteristicas": [
+        "vista-al-mar",
+        "remodelado"
+      ],
+      "tags_extra": [
+        "frente-a-la-playa"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "Amplio Duplex de Tres Pisos en Venta en Albrook",
+      "precio": 444000,
+      "moneda": "USD",
+      "area_m2": 219,
+      "habitaciones": 3,
+      "banos": 3,
+      "estacionamientos": null,
+      "zona": "146A",
+      "lat": 8.9810397,
+      "lng": -79.557249069922,
+      "url_original": "https://www.panamaequity.com/es/listings/amplio-duplex-de-tres-pisos-en-venta-en-albrook/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:54:20.033Z",
+      "fecha_actualizacion": "2026-06-12T22:54:20.033Z",
+      "resumen_ia": {
+        "es": "Cómoda casa de tres niveles situada en una zona serena de Albrook. La propiedad destaca por su amplio terreno y un cuidado diseño interior.",
+        "en": "Comfortable three-level house located in a serene area of Albrook. The property stands out for its spacious lot and well-maintained interior design."
+      },
+      "tags_caracteristicas": [
+        "jardin"
+      ],
+      "tags_extra": [
+        "duplex",
+        "amplio-lote"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    },
+    {
+      "titulo": "Vistas Panorámicas Desde Este Amplio Condominio En Venta En Vista Mar San Carlos",
+      "precio": 495000,
+      "moneda": "USD",
+      "area_m2": 313,
+      "habitaciones": 3,
+      "banos": 3,
+      "estacionamientos": 2,
+      "zona": "Vista Mar",
+      "lat": 8.49409566729,
+      "lng": -79.9561568513,
+      "url_original": "https://www.panamaequity.com/es/listings/vistas-panoramicas-desde-este-amplio-condominio-en-venta-en-vista-mar-san-carlos/",
+      "fuente": "panamaequity",
+      "fecha_deteccion": "2026-06-12T22:54:24.108Z",
+      "fecha_actualizacion": "2026-06-12T22:54:24.108Z",
+      "resumen_ia": {
+        "es": "Amplio condominio de 313m2 disponible en San Carlos con excelentes panorámicas. La propiedad se entrega totalmente equipada y cuenta con acceso privado mediante ascensor.",
+        "en": "Spacious 313sqm condo for sale in San Carlos featuring great views. This unit comes fully furnished and includes private elevator access."
+      },
+      "tags_caracteristicas": [
+        "amoblado",
+        "ascensor"
+      ],
+      "tags_extra": [
+        "vista-panoramica",
+        "entrada-privada",
+        "las-olas-tower"
+      ],
+      "ai_source_flag": "generated_from_external_description"
+    }
+  ]
+}

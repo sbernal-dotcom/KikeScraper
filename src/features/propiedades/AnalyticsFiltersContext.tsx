@@ -63,7 +63,8 @@ export function applyMapFilters(
   if (
     !f.operacion.length &&
     !f.categoria.length &&
-    !f.zonas.length
+    !f.zonas.length &&
+    !f.fuentes.length
   )
     return items;
   return items.filter((p) => {
@@ -74,6 +75,7 @@ export function applyMapFilters(
       const z = p.ubicacion.corregimiento;
       if (!z || !f.zonas.includes(z)) return false;
     }
+    if (f.fuentes.length && !f.fuentes.includes(p.fuenteNombre)) return false;
     return true;
   });
 }

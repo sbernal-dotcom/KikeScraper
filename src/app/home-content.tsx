@@ -102,6 +102,14 @@ export function HomeContent() {
     [propiedades],
   );
 
+  const fuentesDisponibles = useMemo(
+    () =>
+      Array.from(
+        new Set(propiedades.map((p) => p.fuenteNombre).filter(Boolean)),
+      ).sort(),
+    [propiedades],
+  );
+
   return (
     <>
       <SidebarTrigger
@@ -285,6 +293,7 @@ export function HomeContent() {
             filters={filters}
             onChange={setFilters}
             zonasDisponibles={zonasDisponibles}
+            fuentesDisponibles={fuentesDisponibles}
           />
         </SheetContent>
       </Sheet>

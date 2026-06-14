@@ -5,22 +5,24 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 /**
- * Última corrida del scraper (pase 1 = `scrape:prod`).
+ * Última corrida de cualquiera de los 3 scrapers de pase 1 (los que ingestan
+ * propiedades nuevas: encuentra24, acobir, panamaequity). Excluye verificar-
+ * estado y backfill-ia porque no traen anuncios nuevos.
  *
- * Filtramos por `notes ILIKE 'listados%'` para excluir las corridas
- * del pase 2 (`verificar-estado`) y del backfill IA — esas no
- * "scrapean", solo verifican/enriquecen. El usuario quiere ver
- * cuántos anuncios nuevos entraron, no cuántos URLs se revisaron.
+ * Filtro por fuente_id (más robusto que matchear notes — antes el hook
+ * solo veía encuentra24 y se quedaba viejo si solo se corría ACOBIR o PE).
  *
- * RLS: la policy "anon read scraper_runs" de la migration 0003
- * permite leer desde el cliente público sin auth.
+ * RLS: la policy "anon read scraper_runs" permite leer desde anon.
  */
+
+const SCRAPE_FUENTES = ["encuentra24", "acobir", "panamaequity"];
 
 export type LastScraperRun = {
   finishedAt: string;
   inserted: number;
   found: number;
   errors: number;
+  fuenteId: string;
 };
 
 export function useLastScraperRun(): LastScraperRun | null {
@@ -31,20 +33,19 @@ export function useLastScraperRun(): LastScraperRun | null {
     let cancelled = false;
     supabase
       .from("scraper_runs")
-      .select("finished_at, inserted, found, errors")
-      .ilike("notes", "listados%")
+      .select("finished_at, inserted, found, errors, fuente_id")
+      .in("fuente_id", SCRAPE_FUENTES)
       .not("finished_at", "is", null)
       .order("started_at", { ascending: false })
       .limit(1)
       .then(({ data }) => {
         if (cancelled) return;
-        // El stub de tipos Database está vacío (regenerar pendiente),
-        // así que el row viene como `never`. Casteamos explícito.
         type Row = {
           finished_at: string | null;
           inserted: number | null;
           found: number | null;
           errors: number | null;
+          fuente_id: string | null;
         };
         const row = (data?.[0] ?? null) as Row | null;
         if (!row?.finished_at) return;
@@ -53,6 +54,7 @@ export function useLastScraperRun(): LastScraperRun | null {
           inserted: row.inserted ?? 0,
           found: row.found ?? 0,
           errors: row.errors ?? 0,
+          fuenteId: row.fuente_id ?? "",
         });
       });
     return () => {

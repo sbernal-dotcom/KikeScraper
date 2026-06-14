@@ -38,6 +38,64 @@ A futuro, podría incluir una sección de análisis de rentabilidad para compara
 - Detección de cambios en propiedades
 - (Futuro) Análisis de rentabilidad compra vs alquiler
 
+## Cómo funciona el proyecto
+
+Resumen estable del sistema. Para el detalle cronológico ver "Decisiones y Cambios".
+
+### Flujo de datos
+
+```
+┌──────────────┐   ┌─────────┐   ┌──────────┐   ┌──────────┐   ┌─────────┐
+│ Fuente web   │ → │ Scraper │ → │  Gemini  │ → │ Supabase │ → │ Next.js │ → Mapbox
+│ (encuentra24,│   │Playwright│   │(resumen +│   │(Postgres │   │  (App   │
+│  acobir)     │   │  + JSON- │   │  tags    │   │  + RLS)  │   │  Router)│
+│              │   │   LD)    │   │bilingües)│   │          │   │         │
+└──────────────┘   └─────────┘   └──────────┘   └──────────┘   └─────────┘
+                                                      ↑
+                                                Pase 2: verifica
+                                                URLs (lifecycle)
+```
+
+1. **Scraper** lee listados de la fuente, extrae JSON-LD `schema.org/Product`, parsea precio/área/recámaras del HTML estructurado.
+2. **Gemini** genera resumen bilingüe (ES/EN) + tags. Anti-copia 3-gram descarta resúmenes que copian frases literales.
+3. **Geocoding** — tabla manual `zonas-panama.ts` primero, Nominatim como fallback, Mapbox solo para validar (warnings >2 km).
+4. **Supabase** recibe el upsert por `url_original`. Audita corridas en `scraper_runs`.
+5. **Lifecycle** — pase 2 (`verificar-estado.ts`) revisa URLs no vistas en pase 1. 3 fallos → `posible_inactivo`, 7 fallos → `archivado`. El mapa solo muestra `estado_anuncio='activo'`.
+6. **Frontend** lee de Supabase con RLS de lectura pública. Mapa agrupa pines por `lat.toFixed(4)__lng.toFixed(4)` (grilla ~11 m).
+
+### Componentes clave
+
+| Capa | Ubicación | Qué hace |
+|------|-----------|---------|
+| Scraper principal | [scripts/scrapers/fuente-prueba.ts](scripts/scrapers/fuente-prueba.ts) | encuentra24 — 7 listados por categoría, paginación `{base}.{N}`. |
+| Scraper ACOBIR | [scripts/scrapers/scraper-acobir.ts](scripts/scrapers/scraper-acobir.ts) | Proyectos nuevos curados, paginación `/page2..N`. Semanal, independiente. |
+| Verificación URLs | [scripts/scrapers/verificar-estado.ts](scripts/scrapers/verificar-estado.ts) | Pase 2 — fetch + JSON-LD, marca lifecycle. |
+| Enriquecimiento IA | [scripts/scrapers/ia.ts](scripts/scrapers/ia.ts) | Gemini bilingüe + anti-copia + tags. |
+| Geocoding tabla | [scripts/scrapers/zonas-panama.ts](scripts/scrapers/zonas-panama.ts) | Centroides verificados a mano. Fuente primaria. |
+| Validación coords | [scripts/scrapers/mapbox-validate.ts](scripts/scrapers/mapbox-validate.ts) | Cross-check con Mapbox geocoding. |
+| Admin Supabase | [scripts/scrapers/supabase-admin.ts](scripts/scrapers/supabase-admin.ts) | `service_role` para writes server-side. |
+| Mapa | [src/components/map/MapView.tsx](src/components/map/MapView.tsx) | Mapbox GL, 2D dark + 3D Standard con `setConfigProperty`. |
+| Datos en cliente | [src/features/propiedades/](src/features/propiedades/) | `api.ts`, `usePropiedades`, `format.ts`, `PropertyCard`. |
+| Cron | [.github/workflows/scraper.yml](.github/workflows/scraper.yml) | GitHub Actions, 08:00 UTC = 03:00 Panamá. |
+
+### Cron y lifecycle
+
+- **Scraper principal**: 1 vez al día (03:00 hora Panamá) via GitHub Actions. Sube ~80–90 propiedades nuevas por corrida cuando hay inventario fresco.
+- **Pase 2 (verificar)**: corre tras el scraper. Marca lifecycle de las URLs que NO aparecieron.
+- **Scraper ACOBIR**: semanal (inventario pequeño y estable, ~30–80 proyectos).
+- **Alertas**: si `scraper_runs.errors > 0` o el job falla, abre GitHub Issue automáticamente.
+
+### Reglas no negociables
+
+- **Descripción NO se persiste**. Solo vive en memoria mientras Gemini la procesa. Nunca a disco, Supabase, logs ni JSON.
+- **NO se guardan** fotos, teléfono, email, vendedor, contacto.
+- **Anti-copia 3-gram**: si el resumen IA comparte >20% de tri-gramas con la descripción original, se descarta.
+- **UA honesto**: `MapaInteractivoInteligente/0.1 (+contacto: abilendesign@gmail.com)`.
+- **robots.txt antes de cada listado**. Si bloquea, aborta.
+- **Rate limit**: jitter 1.5–3 s entre anuncios; Nominatim 1 req/seg.
+- **Feature flag** `AI_SUMMARY_ENABLED=false` corta toda llamada a Gemini si hay disputa de derechos.
+- **Email del proyecto**: `abilendesign@gmail.com` (NO el del usuario logueado).
+
 ## Paleta de Colores
 
 | Uso | Color | Hex | RGB |

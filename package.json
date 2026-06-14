@@ -9,6 +9,10 @@
     "lint": "eslint",
     "scrape:test": "tsx scripts/scrapers/fuente-prueba.ts",
     "scrape:prod": "tsx scripts/scrapers/fuente-prueba.ts --supabase",
+    "scrape:acobir": "tsx scripts/scrapers/scraper-acobir.ts",
+    "scrape:acobir:prod": "tsx scripts/scrapers/scraper-acobir.ts --supabase",
+    "scrape:pe": "tsx scripts/scrapers/scraper-panamaequity.ts",
+    "scrape:pe:prod": "tsx scripts/scrapers/scraper-panamaequity.ts --supabase",
     "scrape:coords": "tsx scripts/scrapers/recalcular-coords.ts",
     "scrape:backfill-ia": "tsx scripts/scrapers/backfill-ia.ts",
     "scrape:verify": "tsx scripts/scrapers/verificar-estado.ts"

@@ -10,6 +10,7 @@ export type AnalyticsFilters = {
   categoria: CategoriaPropiedad[];
   confianza: ConfianzaScore[];
   zonas: string[];
+  fuentes: string[];
   scoreMin?: number;
 };
 
@@ -18,6 +19,7 @@ export const emptyAnalyticsFilters: AnalyticsFilters = {
   categoria: [],
   confianza: [],
   zonas: [],
+  fuentes: [],
 };
 
 export function countActiveAnalyticsFilters(f: AnalyticsFilters): number {
@@ -26,6 +28,7 @@ export function countActiveAnalyticsFilters(f: AnalyticsFilters): number {
   if (f.categoria.length) n++;
   if (f.confianza.length) n++;
   if (f.zonas.length) n++;
+  if (f.fuentes.length) n++;
   if (f.scoreMin !== undefined) n++;
   return n;
 }
@@ -42,6 +45,7 @@ export function applyAnalyticsFilters(
     if (f.zonas.length) {
       if (!o.corregimiento || !f.zonas.includes(o.corregimiento)) return false;
     }
+    if (f.fuentes.length && !f.fuentes.includes(o.fuenteNombre)) return false;
     if (
       f.scoreMin !== undefined &&
       (o.opportunityScore ?? 0) < f.scoreMin

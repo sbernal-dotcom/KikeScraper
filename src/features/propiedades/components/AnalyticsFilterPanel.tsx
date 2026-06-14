@@ -21,6 +21,7 @@ type Props = {
   filters: AnalyticsFilters;
   onChange: (next: AnalyticsFilters) => void;
   zonasDisponibles: string[];
+  fuentesDisponibles: string[];
   className?: string;
 };
 
@@ -39,6 +40,7 @@ export function AnalyticsFilterPanel({
   filters,
   onChange,
   zonasDisponibles,
+  fuentesDisponibles,
   className,
 }: Props) {
   const dict = useDict();
@@ -46,7 +48,7 @@ export function AnalyticsFilterPanel({
   const activos = countActiveAnalyticsFilters(filters);
 
   const toggleArray = <
-    K extends "operacion" | "categoria" | "confianza" | "zonas",
+    K extends "operacion" | "categoria" | "confianza" | "zonas" | "fuentes",
   >(
     key: K,
     value: AnalyticsFilters[K][number],
@@ -157,6 +159,25 @@ export function AnalyticsFilterPanel({
             ))}
           </div>
         </Group>
+
+        {fuentesDisponibles.length > 0 ? (
+          <>
+            <Separator />
+            <Group label={dict.filters.source}>
+              <div className="flex flex-wrap gap-1.5">
+                {fuentesDisponibles.map((f) => (
+                  <Pill
+                    key={f}
+                    active={filters.fuentes.includes(f)}
+                    onClick={() => toggleArray("fuentes", f)}
+                  >
+                    {f}
+                  </Pill>
+                ))}
+              </div>
+            </Group>
+          </>
+        ) : null}
 
         {zonasDisponibles.length > 0 ? (
           <>

@@ -207,6 +207,7 @@ export function PropertyGridCard({ propiedad, className }: Props) {
             size="sm"
             className="w-full font-medium"
             style={{ background: "var(--accent)", color: "var(--accent-text-on)" }}
+            nativeButton={false}
             render={
               <a
                 href={propiedad.urlOriginal}
