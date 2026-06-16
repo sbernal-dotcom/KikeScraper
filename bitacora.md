@@ -366,16 +366,74 @@ Sesión grande con varios hitos. Más detalle por commit en `git log`.
   - Scraping HTML: requiere JS rendering + anti-bot agresivo (Akamai/policies).
   - Decisión: postergar hasta probar **inmuebles24.com.pa** u otra fuente con menos fricción.
 
+### Nuevas fuentes + filtro por fuente + speedup (2026-06-02 → 2026-06-15)
+
+- **Nueva fuente: ACOBIR Proyectos** (`scripts/scrapers/scraper-acobir.ts`, `scrape:acobir` + `scrape:acobir:prod`):
+  - Buscador oficial de la gremial — proyectos nuevos curados, JSON-LD `Product`.
+  - Categoría `proyecto_nuevo` (nuevo valor del enum) + `estado_datos='parcial_verificado'` (porque los datos son "desde X", no por unidad).
+  - Migration **`0005_acobir_proyectos.sql`**: nueva fuente, nuevo enum `estado_datos`, columna `estado_datos` en `propiedades` (default `completo_verificado` → no afecta filas existentes).
+  - Paginación `/proyectos/list/pageN` cicla con solapamiento — para tras 2 págs sin slugs nuevos.
+  - Filtra slugs `^(se-alquila|alquiler|se-vende|venta)-` porque ACOBIR mete anuncios individuales mezclados en `/proyectos/list/`.
+  - Inicialmente con Playwright; **migrado a `fetch()` puro** porque el JSON-LD viene server-rendered — ahorra el chromium launch (~3-5 s).
+
+- **Nueva fuente: Panama Equity** (`scripts/scrapers/scraper-panamaequity.ts`, `scrape:pe` + `scrape:pe:prod`):
+  - Bróker boutique con JSON-LD `RealEstateListing` perfecto: `geo.latitude` + `geo.longitude` exactos, `additionalProperty[]` con Bedrooms/Bathrooms/Garages/Area Size/Year Built.
+  - Migration **`0006_panamaequity.sql`**: seed de la fuente.
+  - Playwright detecta headless y hace tarpit (cuelga la respuesta) → cambiamos a `fetch()`, que devuelve sub-segundo.
+  - Bug clave del `toNumber`: el regex eliminaba el signo `-` → todas las coords salían positivas (Panamá caía en China). Fix: preservar `-` si está al inicio del raw.
+  - ~100 propiedades subidas a Supabase (42 + 58 en dos pases — el primero perdió 57 por "fetch failed" transient).
+
+- **Filtro por fuente en el mapa y /analisis** (campo `fuentes: string[]` en `AnalyticsFilters`):
+  - `AnalyticsFilterPanel` recibe `fuentesDisponibles` y muestra pills (solo si > 0).
+  - `applyMapFilters` + `applyAnalyticsFilters` filtran por `fuenteNombre`.
+  - Wiring en `home-content.tsx` y `analisis/page.tsx`: derivan `fuentesDisponibles` desde los datos cargados.
+  - Multi-select: combinable con operación/categoría/zona.
+
+- **Speedup masivo de los scrapers** (~10-15 min → 2-8 min):
+  - **Jitter reducido**: detail 1500–3000 ms → 400–900 ms; inter-página 1000–2000 ms → 300–700 ms.
+  - **Concurrencia detail = 3** vía `chunkedParallel<T,R>` (helper en cada scraper).
+  - **Concurrencia upsert Supabase = 5** (en lugar de uno por uno).
+  - **encuentra24**: pool de 3 `Page` de Playwright (cada chunk asigna 1 page por item). Se extrajo `scrapeOne(page, item)` del loop secuencial. Tiempo: ~12 min → **~8 min**.
+  - **ACOBIR**: migrado completo de Playwright a `fetch()`. Tiempo: ~10 min → **~2m 10s**.
+  - **panamaequity**: ya era fetch; mismo patrón. Tiempo: ~10 min → **~2 min**.
+  - Side effect conocido: Gemini free tier (15 req/min) se satura con concurrencia 3 → algunos items quedan sin `resumen_ia` (rellenable con `npm run scrape:backfill-ia`).
+
+- **Badge "Último scrape" ahora mira las 3 fuentes** (`useLastScraperRun.ts`):
+  - Antes filtraba `notes ILIKE 'listados%'` → solo veía encuentra24. Si solo corría ACOBIR o PE, el badge se quedaba viejo.
+  - Ahora filtra `fuente_id IN ('encuentra24', 'acobir', 'panamaequity')`.
+  - El badge muestra el `fuenteId` de la última corrida (`+58 nuevos · panamaequity`).
+
+- **Fix `nativeButton={false}` en Base UI Button** (PropertyCard + PropertyGridCard):
+  - Botones con `render={<a href=… target="_blank">}` disparaban warning de Base UI ("expected a native <button>"). Agregar `nativeButton={false}` lo silencia y conserva las semánticas correctas del `<a>`.
+  - `SidebarMenuButton` (shadcn wrapper) no expone la prop → queda intocado.
+
+- **Fix del cron de GitHub Actions** (`.github/workflows/scraper.yml`):
+  - `timeout-minutes: 20` → **45**. Los últimos 5 runs del cron (Jun 12–14) salieron `cancelled` a los 20m 20s exactos — el workflow completo (npm ci + playwright install + scrape:prod + scrape:verify) tomaba ~25-30 min. Nada se escribía a Supabase. Por eso encuentra24 no entraba data desde 2026-06-06 aunque el cron corría todos los días.
+
+- **Sección "Cómo funciona el proyecto"** agregada al inicio de la bitácora:
+  - Diagrama ASCII del flujo (Fuente → Scraper → Gemini → Supabase → Next.js → Mapbox).
+  - Tabla de componentes con paths clickables.
+  - Resumen de cron + lifecycle + reglas no negociables.
+  - Para mantenimiento estable; los cambios cronológicos siguen viviendo más abajo.
+
+- **Probes de fuentes que NO funcionaron** (todas auditadas; descartadas con razón documentada):
+  - **compreoalquile.com** — Cloudflare WAF "Just a moment…" no resuelve con Playwright (headless ni headed). robots permitía, pero el WAF dice otra cosa. Mismo Navent group: probar evadir entra en territorio de "evasión de detección".
+  - **inmuebles24.com** — mismo grupo Navent, mismo WAF, mismo `Just a moment…`. `inmuebles24.com.pa` no resuelve DNS.
+  - **century21panama.com / c21centralamerica.com** — robots permisivo (allow ClaudeBot, anthropic-ai), pero el WAF rate-limita después del primer batch (todos los siguientes detail fetches → 503). El UA honesto recibe 503 directo; el browser UA pasa la primera lista (100 URLs) pero los detalles caen al primer paralelo. Implementado, smoke-tested, **descartado y rollback**.
+  - **MIVIOT (Ministerio de Vivienda)** — robots OK, sitio responde OK, pero NO es inventario: páginas tipo `/techosdeesperanza-arraijan/` son comunicados de prensa sin precio, sin coords, sin specs. No encaja en el modelo de pines individuales.
+  - **lacasa.com.pa / mudafy.com.pa** — DNS no resuelve (no existen).
+
 ### Pendientes
 
 - **Env vars en Vercel** — agregar `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` (Production, Preview, Development) y redeploy. Sin esto el deploy de prod no puede leer la DB.
 - **Token restrictions en Mapbox** — agregar `http://localhost:3000/*` a la URL allowlist del token. Cuando exista dominio de Vercel, agregarlo también.
 - **Tipos de Supabase** — regenerar `src/lib/supabase/types.ts` con `supabase gen types typescript --project-id lbvboqoyvuxuanwvtypf > src/lib/supabase/types.ts` (requiere `supabase` CLI o usar el dashboard).
 - **Rotar claves Supabase** — `anon` y `service_role` quedaron expuestas en el chat de desarrollo. Rotar cuando termine la fase de prueba. (Gemini ya rotado el 30/5.)
-- **Más fuentes de scraping** — encuentra24 está saturado en DB (~280 props). Siguientes candidatos:
-  - **inmuebles24.com.pa** — próxima a probar (5 min de verificación).
-  - **MercadoLibre Panamá** — requiere OAuth developer registration (API libre cerrada).
-  - **compreoalquile.com** — 403 Cloudflare en el primer intento, retry pendiente.
+- **Más fuentes de scraping** — encuentra24 saturado (~280). ACOBIR + Panama Equity ya integrados (~100+80 más). Próximos candidatos honestos:
+  - **MEF / Catastro** — registros públicos. PDF-heavy, requiere más trabajo de parsing.
+  - **DGI valores referenciales** — como capa de "precio justo" (no per-property; heat-map).
+  - **Brokers individuales tipo PE** — `gilbertoroldan.com`, `panamacasas.com`, `kw-panama.com`. Probar uno a la vez.
+  - Descartados (ver bitácora): compreoalquile, inmuebles24, c21, miviot, MercadoLibre.
 - **Zonas que siguen cayendo a Nominatim** — agregar a `zonas-panama.ts` con coords verificadas: Carrasquilla, Volcán, El Bosque, Las Cumbres, Ciudad de Panamá (genérico). Los logs del cron las marcan en cada corrida.
 
 #### Resueltos (no quitar — historial)
