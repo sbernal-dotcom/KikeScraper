@@ -15,10 +15,10 @@ concurrency:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    # 45 min: cubre npm ci + playwright install + scrape:prod (8-12 min)
-    # + scrape:verify (3-5 min) con margen para cold starts en GH Actions.
-    # Antes era 20 → los runs se cancelaban a los ~20 min sin escribir a DB.
-    timeout-minutes: 45
+    # 60 min: cubre encuentra24 (8-12) + acobir (2-3) + panamaequity (2-3)
+    # + mlsacobir (15-20 primera vez, 2-3 después de la corrida inicial)
+    # + verify (3-5) + setup (~3). Total típico ~30 min, pico ~50.
+    timeout-minutes: 60
 
     # issues: write necesario para que `gh issue create` pueda abrir
     # tickets cuando el scraper falla o reporta errores blandos.
@@ -43,8 +43,11 @@ jobs:
       - name: Install Playwright (chromium)
         run: npx playwright install --with-deps chromium
 
-      - name: Scrape + upsert a Supabase
+      # Scraper principal (encuentra24). Si falla, los otros siguen igual
+      # gracias a continue-on-error: true en cada step de scrape.
+      - name: Scrape encuentra24
         id: scrape
+        continue-on-error: true
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -54,14 +57,47 @@ jobs:
           NEXT_PUBLIC_MAPBOX_TOKEN: ${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
         run: npm run scrape:prod
 
+      - name: Scrape ACOBIR (proyectos nuevos)
+        id: scrape-acobir
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          NEXT_PUBLIC_MAPBOX_TOKEN: ${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
+        run: npm run scrape:acobir:prod
+
+      - name: Scrape Panama Equity
+        id: scrape-pe
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: npm run scrape:pe:prod
+
+      - name: Scrape MLS Acobir
+        id: scrape-mls
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          NEXT_PUBLIC_MAPBOX_TOKEN: ${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
+        run: npm run scrape:mls:prod
+
       # Pase 2 del lifecycle: verifica las URLs que el scrape NO vio
       # (probablemente porque están en páginas profundas del listado).
       # Marca como activo / posible_inactivo / archivado / error_verificacion
-      # según GET + JSON-LD Product. Solo corre si el scrape pasó —
-      # si el scrape petó duro la DB no se tocó y no hay nada que reconciliar.
+      # según GET + JSON-LD Product. Corre si AL MENOS un scrape funcionó —
+      # si todos petaron duro, la DB no se tocó y no hay nada que reconciliar.
       - name: Verificar estado (pase 2 del lifecycle)
         id: verify
-        if: steps.scrape.outcome == 'success'
+        if: |
+          steps.scrape.outcome == 'success' ||
+          steps.scrape-acobir.outcome == 'success' ||
+          steps.scrape-pe.outcome == 'success' ||
+          steps.scrape-mls.outcome == 'success'
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

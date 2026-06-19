@@ -15,7 +15,7 @@ import { createClient } from "@/lib/supabase/client";
  * RLS: la policy "anon read scraper_runs" permite leer desde anon.
  */
 
-const SCRAPE_FUENTES = ["encuentra24", "acobir", "panamaequity"];
+const SCRAPE_FUENTES = ["encuentra24", "acobir", "panamaequity", "mlsacobir"];
 
 export type LastScraperRun = {
   finishedAt: string;

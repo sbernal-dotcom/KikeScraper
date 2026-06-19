@@ -13,6 +13,8 @@
     "scrape:acobir:prod": "tsx scripts/scrapers/scraper-acobir.ts --supabase",
     "scrape:pe": "tsx scripts/scrapers/scraper-panamaequity.ts",
     "scrape:pe:prod": "tsx scripts/scrapers/scraper-panamaequity.ts --supabase",
+    "scrape:mls": "tsx scripts/scrapers/scraper-mlsacobir.ts",
+    "scrape:mls:prod": "tsx scripts/scrapers/scraper-mlsacobir.ts --supabase",
     "scrape:coords": "tsx scripts/scrapers/recalcular-coords.ts",
     "scrape:backfill-ia": "tsx scripts/scrapers/backfill-ia.ts",
     "scrape:verify": "tsx scripts/scrapers/verificar-estado.ts"
