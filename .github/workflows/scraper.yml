@@ -86,6 +86,15 @@ jobs:
           NEXT_PUBLIC_MAPBOX_TOKEN: ${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
         run: npm run scrape:mls:prod
 
+      - name: Scrape InmoPanama
+        id: scrape-inmo
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: npm run scrape:inmo:prod
+
       # Pase 2 del lifecycle: verifica las URLs que el scrape NO vio
       # (probablemente porque están en páginas profundas del listado).
       # Marca como activo / posible_inactivo / archivado / error_verificacion
@@ -97,7 +106,8 @@ jobs:
           steps.scrape.outcome == 'success' ||
           steps.scrape-acobir.outcome == 'success' ||
           steps.scrape-pe.outcome == 'success' ||
-          steps.scrape-mls.outcome == 'success'
+          steps.scrape-mls.outcome == 'success' ||
+          steps.scrape-inmo.outcome == 'success'
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
