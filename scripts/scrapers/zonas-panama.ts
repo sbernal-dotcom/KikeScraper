@@ -67,6 +67,10 @@ export const ZONAS_PANAMA: Record<string, ZonaCentro> = {
   "via españa": { lat: 9.0014, lng: -79.5253 },
   "vía porras": { lat: 8.9844, lng: -79.5108 },
   "via porras": { lat: 8.9844, lng: -79.5108 },
+  // Dos Mares: zona/corregimiento al norte de El Dorado, cerca de
+  // Brisas del Golf. La Chevrolet referenciada en los anuncios queda
+  // sobre Tumba Muerto.
+  "dos mares": { lat: 9.0381, lng: -79.5247 },
   // "El Dorado" (centro comercial / barrio en Betania) — Nominatim cae
   // en Chiriquí por un caserío homónimo.
   "el dorado": { lat: 9.0034, lng: -79.5363 },

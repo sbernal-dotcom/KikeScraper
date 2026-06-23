@@ -29,10 +29,11 @@ import {
   type FichaIA,
   type ResumenBilingue,
 } from "./ia";
+import { geocodeConEdificio } from "./geocode-edificio";
 import { validarConMapbox } from "./mapbox-validate";
 import { createScraperClient } from "./supabase-admin";
 import { type TagCerrado } from "./tags-caracteristicas";
-import { centroFromTable, jitterCoords } from "./zonas-panama";
+import { centroFromTable } from "./zonas-panama";
 
 // Next.js usa .env.local — cargarlo explícitamente.
 loadEnv({ path: ".env.local" });
@@ -456,15 +457,20 @@ async function scrapeOne(
   const estacionamientos =
     fromHtml.estacionamientos ?? fromDesc.estacionamientos;
 
-  const coords = await geocodeZona(zona);
-  const finalCoords = coords ? jitterCoords(coords, item.url) : null;
-  if (finalCoords && coords) {
-    const tag = coords.source === "nominatim" ? " (Nominatim fallback)" : "";
-    console.log(
-      `  geocode → ${finalCoords.lat.toFixed(4)}, ${finalCoords.lng.toFixed(4)}${tag}`,
-    );
-    if (zona) await validarConMapbox(zona, coords);
+  // Pipeline nuevo: prioridad EDIFICIO → PROYECTO → ZONA → null (descartar).
+  // El antiguo geocodeZona caía siempre al centroide del barrio + jitter,
+  // dando coords aproximadas (a veces en el mar). Este pipeline:
+  //  1. IA extrae nombre del edificio del titulo + descripción
+  //  2. Lookup en edificios_cache (DB)
+  //  3. Web search si miss (cachea positivo y negativo)
+  //  4. Si nada, fallback al zone-centroide
+  //  5. Si tampoco zona, descarta la propiedad
+  const geo = await geocodeConEdificio(titulo, product.description ?? null, item.url, zona);
+  if (!geo) {
+    console.warn("  Sin ubicación resoluble — saltando");
+    return null;
   }
+  if (zona) await validarConMapbox(zona, { lat: geo.lat, lng: geo.lng });
 
   const descripcionTemp = trimDescripcion(product.description);
   const ahora = new Date().toISOString();
@@ -477,8 +483,8 @@ async function scrapeOne(
     banos,
     estacionamientos,
     zona,
-    lat: finalCoords?.lat ?? null,
-    lng: finalCoords?.lng ?? null,
+    lat: geo.lat,
+    lng: geo.lng,
     url_original: item.url,
     fuente: FUENTE_ID,
     fecha_deteccion: ahora,
