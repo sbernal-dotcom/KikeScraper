@@ -31,7 +31,11 @@ export const ZONAS_PANAMA: Record<string, ZonaCentro> = {
   "punta paitilla": { lat: 8.9809, lng: -79.5189 },
   "punta pacífica": { lat: 8.975, lng: -79.5078 },
   "punta pacifica": { lat: 8.975, lng: -79.5078 },
-  "coco del mar": { lat: 8.9777, lng: -79.4900 },
+  // Coco del Mar: barrio residencial entre San Francisco y Costa del Este,
+  // al NORTE del Corredor Sur. El centroide anterior (8.9777, -79.49)
+  // caía en el mar, fuera de la línea costera. Verificado contra calle
+  // Coco del Mar y la urbanización del mismo nombre.
+  "coco del mar": { lat: 9.0028, lng: -79.4892 },
   // Costa del Este: el barrio residencial real está al NORTE del Corredor Sur.
   // El centroide 9.0017,-79.4778 caía cerca de la bahía. Verificado contra
   // landmarks (Town Center Costa del Este).
