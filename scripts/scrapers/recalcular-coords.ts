@@ -77,16 +77,26 @@ const COORD_EPSILON = 1e-6;
 
 async function recalcSupabase() {
   const supa = createScraperClient();
-  const { data, error } = await supa
-    .from("propiedades")
-    .select("id, corregimiento, lat, lng, url_original");
-
-  if (error) {
-    console.error("Error leyendo propiedades:", error.message);
-    process.exit(1);
+  // Supabase JS pagina a 1000 por defecto. Sin .range() loop, este script
+  // dejaba ~la mitad de la DB sin tocar (bug encontrado el 2026-06-23
+  // cuando Coco del Mar siguió en el mar después de fix del centroide).
+  const PAGE_SIZE = 1000;
+  const rows: DbRow[] = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await supa
+      .from("propiedades")
+      .select("id, corregimiento, lat, lng, url_original")
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) {
+      console.error("Error leyendo propiedades:", error.message);
+      process.exit(1);
+    }
+    const batch = (data ?? []) as DbRow[];
+    rows.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
   }
-
-  const rows = (data ?? []) as DbRow[];
   console.log(`Propiedades en DB: ${rows.length}.`);
 
   let updated = 0;
