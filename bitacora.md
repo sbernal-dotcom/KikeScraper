@@ -465,13 +465,99 @@ Sesión grande con varios hitos. Más detalle por commit en `git log`.
   - InmoPanama: 598
   - **Total: ~1,257 propiedades** distribuidas por todo Panamá (antes solo ~280).
 
+### Deduplicación + ubicaciones exactas (2026-06-23)
+
+Sesión enfocada en **calidad de datos del mapa**, no en sumar fuentes. Dos problemas grandes resueltos:
+
+#### 1. Deduplicación cross-source
+
+Misma propiedad publicada en varios portales (broker carga en E24 + MLS + InmoPanama) generaba N pines casi-superpuestos.
+
+- **Migration `0009_propiedades_duplicados.sql`** — tabla puente: `propiedad_id → canonica_id + score + motivo`. NO mutamos `propiedades`; queda reversible.
+- **Script `find-duplicates.ts`** — algoritmo fuzzy:
+  - Bucketing por celdas de ~111m + 8 vecinas (O(n·densidad) en vez de O(n²))
+  - Match si: dist ≤ 50m + misma categoria + misma operacion + área ±5% (si ambos no-null) + precio ±10% (si ambos no-null). Requiere al menos UNO de área o precio.
+  - Union-find para closure transitivo (A↔B + B↔C → grupo {A,B,C})
+  - Canónica = fuente con índice MÁS BAJO de: `encuentra24 > acobir > mlsacobir > panamaequity > inmopanama`. Empate → más vieja por `created_at`.
+- **Migration `0010_dedupe_views.sql`** — `vw_zona_benchmark` y `vw_oportunidades` excluyen duplicados (`not exists` contra la tabla). Sin esto el benchmark sale sesgado por contar el mismo inmueble N veces.
+- **`fetchPropiedades`** trae los IDs duplicados primero y los excluye con `.not("id", "in", ...)`. Dos roundtrips, lista pequeña, evita reemplazar la query principal por una vista (perderíamos los joins automáticos de Supabase JS).
+- **Step en cron** después de `verify`, `if: always() + continue-on-error`. Idempotente (wipe + rebuild cada noche).
+- **Resultado primer run:** 1854 props activas → 94 grupos / **161 duplicados** (~8.7% de la DB). La mayoría intra-encuentra24 (mismo broker re-publicando).
+- **Cast manual de tipos:** `types.ts` no se ha regenerado tras 0009/0010/0011 → `(rows as Array<{...}>)`. Pendiente proper regen (ver Pendientes).
+
+#### 2. Ubicaciones exactas — pipeline edificio → cache → web → zona
+
+**El problema:** todos los pines salían del centroide del corregimiento + jitter de 120m. Aproximado, no exacto. Caso emblemático: **47 props de "Coco del Mar" caían en el mar** porque el centroide era erróneo. Lo arreglé, pero el approach es fundamentalmente impreciso.
+
+**Fundamental check:** ningún portal panameño publica lat/lng exactas (lo protege al broker, evita que llamen directo). Excepción: **panamaequity** sí trae `geo` en el JSON-LD. Las otras 4 fuentes (encuentra24, mlsacobir, acobir, inmopanama): nada.
+
+**Solución (a propuesta del user):** flujo de 6 pasos:
+
+  1. **IA extrae** del título + descripción → `{edificio, proyecto, zona}` (Gemini Flash Lite)
+  2. **Lookup en `edificios_cache`** (tabla nueva — migration `0011`)
+  3. Si MISS → **búsqueda web automática** (DuckDuckGo HTML, sin API key)
+  4. Si encuentra coords → **cachear permanentemente** (positivo Y negativo, con TTL de 30 días para los negativos)
+  5. Si no encuentra edificio → **fallback a zona-centroide** (lo viejo)
+  6. Si tampoco zona → **descartar la propiedad** (no más pines en cualquier parte)
+
+  **Web search interna (`buscar-edificio-web.ts`):**
+  - DuckDuckGo HTML scrape → URLs candidatas
+  - Skip dominios de portales (encuentra24, FB, etc.) y buscadores
+  - Prioriza `realtor.com` + URLs con `/unit-` (single-listing pages, no de búsqueda)
+  - GET top 4 candidatos → busca coords con varios patrones: JSON-LD `geo`, Next.js `__NEXT_DATA__`, Google Maps embed (`!2d!3d`), `data-lat`, query params `?q=` y `@lat,lng`
+  - **Validación crítica:** la coord encontrada debe estar a ≤5km del centroide de la zona conocida. Esto evita pescar coords aleatorias de listings vecinos en páginas multi-listing (sin esta validación, "PH Dos Mares View" devolvía coord de OTRA prop a 22km).
+  - Validación adicional: bbox de Panamá (lat 7-9.7, lng -83 a -77)
+
+  **Pipeline (`geocode-edificio.ts`)** orquesta los 6 pasos y maneja error gracefully (try/catch en cache ops por si la migration no está aplicada todavía).
+
+  **Source-first para panamaequity:** si el JSON-LD del listing trae `geo`, se usa directo. Solo si falta, corre el pipeline. Cero llamadas IA cuando ya hay coord exacta servida en bandeja.
+
+  **Integración a los 5 scrapers:** `fuente-prueba`, `scraper-acobir`, `scraper-mlsacobir`, `scraper-inmopanama` (pipeline siempre) + `scraper-panamaequity` (source-first, pipeline fallback).
+
+  **Smoke tests:**
+  - Trump Ocean Club → `(8.9756, -79.5072)` desde Wikipedia ✓ exacto
+  - Allure at the Park → `null` (no encontrado dentro de 5km de Punta Pacífica) → fallback a zona ✓
+  - PH Dos Mares View → `null` (resultado web cae a 6.5km, rechazado) → fallback a zona ✓
+
+#### 3. Backfill de coords existentes
+
+- **Script `backfill-edificio-coords.ts`** + npm `backfill:edificios` / `backfill:edificios:prod`.
+- Pasa las ~1,834 props activas (skip panamaequity) por el mismo pipeline retroactivamente.
+- Solo `UPDATE` si el pipeline devuelve `precision: 'edificio'` (coord exacta). Las que solo resuelven a zona quedan iguales (mismas coords del scraper original con jitter determinístico).
+- Limitación: solo titulo disponible para IA (descripcion no se guarda por regla ToS). Aún así, para títulos tipo "PH X" o "Torre X" la extracción funciona bien.
+- Idempotente + reanudable: el cache de edificios persiste.
+- **Dry-run primer 10 props:** 6 upgraded a edificio, 4 unchanged (sin edificio identificable), 0 descartadas. Detectó y arregló bug: PH ISABELLA estaba en `(7.96, -80.45)` (en Coclé!) → ahora `(9.00, -79.51)`.
+- Full run (~1.5h) corriendo en background al cerrar la sesión.
+
+#### Bugs colaterales encontrados y arreglados
+
+- **Cap de 1000 rows en Supabase JS** sin paginación — bug en TRES scripts: `find-duplicates`, `recalcular-coords`, hubiera reaparecido en `backfill-edificio-coords`. Pattern fix: `.range(from, from + 1000 - 1)` en loop hasta que devuelve menos. Sin esto, ~850 props quedaban sin tocar silenciosamente.
+- **Coco del Mar en el mar:** centroide a `(8.9777, -79.49)` cayó en el agua. Real: `(9.0028, -79.4892)` entre San Francisco y Costa del Este. Arreglado en `zonas-panama.ts` + re-aplicado con `scrape:coords` → 47 props re-ubicadas correctamente.
+- **Dos Mares (corregimiento) no estaba en `zonas-panama.ts`** — agregado para que la validación de proximidad pudiera funcionar con PH Dos Mares View.
+
+#### Cómo funciona el sistema completo ahora
+
+Cuando el cron diario corre a las 03:00 PA:
+
+1. **Scrape de cada fuente** (5 en paralelo del cron, secuencial dentro):
+   - Para cada propiedad nueva, llama `geocodeConEdificio(titulo, descripcion, url, zona)`
+   - panamaequity: si JSON-LD trae `geo`, usa esa coord directo (saltea pipeline)
+   - Las otras 4: siempre pasa por el pipeline
+   - Si el pipeline devuelve null → la prop se DESCARTA, no se inserta
+2. **Verify (lifecycle pase 2)** — chequea URLs no vistas, marca activo/inactivo/archivado
+3. **Deduplicar cross-source** — recalcula `propiedades_duplicados` (wipe + rebuild)
+
+El **frontend** filtra `propiedades_duplicados` con NOT IN antes de pintar el mapa. Las views `vw_oportunidades` y `vw_zona_benchmark` también excluyen duplicados.
+
+**Cuándo se mete un edificio nuevo al cache:** automático en cada scrape. La primera vez que aparece "PH X" en cualquier listing, el pipeline lo googlea, valida la coord vs zona, y lo guarda en `edificios_cache`. Las próximas N props del mismo PH usan la coord del cache (instantáneo, sin Gemini ni web).
+
 ### Pendientes
 
 - **Env vars en Vercel** — agregar `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` (Production, Preview, Development) y redeploy. Sin esto el deploy de prod no puede leer la DB.
 - **Token restrictions en Mapbox** — agregar `http://localhost:3000/*` a la URL allowlist del token. Cuando exista dominio de Vercel, agregarlo también.
 - **Tipos de Supabase** — regenerar `src/lib/supabase/types.ts` con `supabase gen types typescript --project-id lbvboqoyvuxuanwvtypf > src/lib/supabase/types.ts` (requiere `supabase` CLI o usar el dashboard).
 - **Rotar claves Supabase** — `anon` y `service_role` quedaron expuestas en el chat de desarrollo. Rotar cuando termine la fase de prueba. (Gemini ya rotado el 30/5.)
-- **Más fuentes de scraping** — DB ya con ~1,257 props (5 fuentes en el cron). Próximos candidatos:
+- **Más fuentes de scraping** — DB ya con ~1,257 props (5 fuentes en el cron, dedupe automático). Próximos candidatos:
   - **MEF / Catastro** — registros públicos. PDF-heavy, requiere más trabajo de parsing.
   - **DGI valores referenciales** — como capa de "precio justo" (no per-property; heat-map).
   - **Brokers individuales tipo PE** — `gilbertoroldan.com`, `panamacasas.com`, `kw-panama.com`. Probar uno a la vez.
@@ -489,6 +575,10 @@ Sesión grande con varios hitos. Más detalle por commit en `git log`.
 - ✅ **Scraper llega a 100/run**: paginación + 7 listados por categoría.
 - ✅ **Mapa con vista 3D opcional**: toggle 2D/3D en sidebar (Mapbox Standard faded night).
 - ✅ **Validación de coords con Mapbox Geocoding**: cross-check vs tabla, warning si diverge >2 km.
+- ✅ **Deduplicación cross-source** (2026-06-23): tabla `propiedades_duplicados`, script idempotente en el cron, fuzzy geo + área + precio, source priority para elegir canónica. Mapa filtra automáticamente. 161 duplicados detectados en el primer run.
+- ✅ **Ubicaciones exactas via pipeline edificio→cache→web→zona** (2026-06-23): Gemini extract + DuckDuckGo + cache permanente en `edificios_cache`. Reemplaza el zone-centroid-only por coords de edificio cuando es posible. Las props sin ubicación resoluble se descartan en vez de pinearse en cualquier parte.
+- ✅ **Coco del Mar en el mar** (2026-06-23): centroide arreglado + 47 props re-ubicadas via `scrape:coords`.
+- ✅ **Bug del cap de 1000 rows en Supabase JS**: arreglado en `find-duplicates`, `recalcular-coords` y prevenido en `backfill-edificio-coords` (todos paginan con `.range()`).
 
 ## Notas Pendientes
 
