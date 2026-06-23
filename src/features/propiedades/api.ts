@@ -203,18 +203,36 @@ export async function fetchOportunidades(): Promise<Oportunidad[]> {
 
 export async function fetchPropiedades(): Promise<Propiedad[]> {
   const supabase = createClient();
+
+  // Dedupe (0009/0010): trae los IDs marcados como duplicado y excluye.
+  // Lista pequeña (~cientos); una roundtrip extra es aceptable y evita
+  // tener que reemplazar la query principal por una vista (perderíamos
+  // los joins automáticos a fuentes/anuncios).
+  const { data: dupRows, error: dupErr } = await supabase
+    .from("propiedades_duplicados")
+    .select("propiedad_id");
+  if (dupErr) throw dupErr;
+  const dupIds = (dupRows ?? []).map((r) => r.propiedad_id as string);
+
   // Mismo filtro que vw_oportunidades para mantener paridad mapa ↔ análisis,
   // + estado_anuncio='activo' (lifecycle, 0004_lifecycle.sql): las que
   // están como posible_inactivo / error_verificacion / archivado se
   // ocultan del mapa pero quedan en DB como historial.
-  const { data, error } = await supabase
+  let query = supabase
     .from("propiedades")
     .select(SELECT)
     .eq("estado_anuncio", "activo")
     .not("precio", "is", null)
     .not("area_m2", "is", null)
-    .gt("area_m2", 0)
-    .order("fecha_deteccion", { ascending: false });
+    .gt("area_m2", 0);
+
+  if (dupIds.length > 0) {
+    query = query.not("id", "in", `(${dupIds.join(",")})`);
+  }
+
+  const { data, error } = await query.order("fecha_deteccion", {
+    ascending: false,
+  });
 
   if (error) throw error;
   const rows = (data ?? []) as unknown as DbPropiedad[];

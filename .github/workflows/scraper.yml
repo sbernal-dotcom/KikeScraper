@@ -113,6 +113,20 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: npm run scrape:verify
 
+      # Pase 3: deduplicación cross-source. Wipe + rebuild de la tabla
+      # propiedades_duplicados. Idempotente; corre siempre (los duplicados
+      # pueden venir de runs anteriores aunque hoy no scrapeara nada nuevo).
+      # continue-on-error: un fallo aquí no debe tirar la corrida —
+      # el frontend simplemente verá duplicados de más un día.
+      - name: Deduplicar propiedades cross-source
+        id: dedupe
+        if: always()
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run dedupe:prod
+
       # Siempre corre: si el scrape petó duro, abre issue con link al log;
       # si pasó pero scraper_runs reporta errors>0, abre issue con detalles.
       - name: Alertar (GitHub Issue) si hubo errores

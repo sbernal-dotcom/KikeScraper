@@ -19,7 +19,9 @@
     "scrape:inmo:prod": "tsx scripts/scrapers/scraper-inmopanama.ts --supabase",
     "scrape:coords": "tsx scripts/scrapers/recalcular-coords.ts",
     "scrape:backfill-ia": "tsx scripts/scrapers/backfill-ia.ts",
-    "scrape:verify": "tsx scripts/scrapers/verificar-estado.ts"
+    "scrape:verify": "tsx scripts/scrapers/verificar-estado.ts",
+    "dedupe": "tsx scripts/scrapers/find-duplicates.ts",
+    "dedupe:prod": "tsx scripts/scrapers/find-duplicates.ts --supabase"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
