@@ -21,7 +21,9 @@
     "scrape:backfill-ia": "tsx scripts/scrapers/backfill-ia.ts",
     "scrape:verify": "tsx scripts/scrapers/verificar-estado.ts",
     "dedupe": "tsx scripts/scrapers/find-duplicates.ts",
-    "dedupe:prod": "tsx scripts/scrapers/find-duplicates.ts --supabase"
+    "dedupe:prod": "tsx scripts/scrapers/find-duplicates.ts --supabase",
+    "backfill:edificios": "tsx scripts/scrapers/backfill-edificio-coords.ts",
+    "backfill:edificios:prod": "tsx scripts/scrapers/backfill-edificio-coords.ts --supabase"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
