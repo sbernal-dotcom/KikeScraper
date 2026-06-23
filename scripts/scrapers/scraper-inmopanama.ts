@@ -34,9 +34,10 @@ import {
   type FichaIA,
   type ResumenBilingue,
 } from "./ia";
+import { geocodeConEdificio } from "./geocode-edificio";
 import { createScraperClient } from "./supabase-admin";
 import { type TagCerrado } from "./tags-caracteristicas";
-import { centroFromTable, jitterCoords } from "./zonas-panama";
+import { centroFromTable } from "./zonas-panama";
 
 loadEnv({ path: ".env.local" });
 loadEnv();
@@ -344,23 +345,20 @@ async function scrapeDetail(
 
   // Zona (texto)
   const zona = extractLocationText(html);
-  const coords = await geocodeZona(zona);
-  const finalCoords = coords ? jitterCoords(coords, url) : null;
-  if (finalCoords && coords) {
-    const tag = coords.source === "nominatim" ? " (Nominatim fallback)" : "";
-    console.log(
-      `  geocode → ${finalCoords.lat.toFixed(4)}, ${finalCoords.lng.toFixed(4)}${tag}`,
-    );
-  } else {
-    console.log(`  geocode → sin resultado (zona: ${zona ?? "?"}) — saltando`);
-    return null;
-  }
 
   // Descripción solo en memoria (regla del proyecto).
   const descRaw =
     extractAfterClass(html, "ib-prop-description") ??
     html.match(/<meta\s+name="description"\s+content="([^"]+)"/i)?.[1] ??
     "";
+
+  // inmopanama explícitamente dice "Ubicación no disponible" — nunca da
+  // lat/lng en el source. Pipeline siempre: edificio → cache → web → zona.
+  const geo = await geocodeConEdificio(titulo, descRaw, url, zona);
+  if (!geo) {
+    console.log(`  geocode → sin resultado — saltando`);
+    return null;
+  }
   const descripcionTemp = trimDescripcion(descRaw);
   const ahora = new Date().toISOString();
 
@@ -373,8 +371,8 @@ async function scrapeDetail(
     banos,
     estacionamientos: null,
     zona,
-    lat: finalCoords.lat,
-    lng: finalCoords.lng,
+    lat: geo.lat,
+    lng: geo.lng,
     tipoOperacion,
     url_original: url,
     fuente: FUENTE_ID,

@@ -28,10 +28,11 @@ import {
   type FichaIA,
   type ResumenBilingue,
 } from "./ia";
+import { geocodeConEdificio } from "./geocode-edificio";
 import { validarConMapbox } from "./mapbox-validate";
 import { createScraperClient } from "./supabase-admin";
 import { type TagCerrado } from "./tags-caracteristicas";
-import { centroFromTable, jitterCoords } from "./zonas-panama";
+import { centroFromTable } from "./zonas-panama";
 
 loadEnv({ path: ".env.local" });
 loadEnv();
@@ -365,20 +366,17 @@ async function scrapeDetail(url: string): Promise<AnuncioRaw | null> {
     }
   }
 
-  const coords = await geocodeZona(zona);
-  const finalCoords = coords ? jitterCoords(coords, url) : null;
-  if (finalCoords && coords) {
-    const tag = coords.source === "nominatim" ? " (Nominatim fallback)" : "";
-    console.log(
-      `  geocode → ${finalCoords.lat.toFixed(4)}, ${finalCoords.lng.toFixed(4)}${tag}`,
-    );
-    if (zona) await validarConMapbox(zona, coords);
-  } else {
-    console.log(`  geocode → sin resultado (zona: ${zona ?? "?"}) — saltando`);
+  // mlsacobir no publica lat/lng en el source → pipeline siempre.
+  // Pipeline edificio→cache→web→zona. Si nada, descarta.
+  const descRaw = readOg(html, "description") ?? "";
+  const geo = await geocodeConEdificio(titulo, descRaw, url, zona);
+  if (!geo) {
+    console.log(`  geocode → sin resultado — saltando`);
     return null;
   }
+  if (zona) await validarConMapbox(zona, { lat: geo.lat, lng: geo.lng });
 
-  const descripcionTemp = trimDescripcion(readOg(html, "description"));
+  const descripcionTemp = trimDescripcion(descRaw);
   const tipoOperacion = tipoOperacionFromSlug(slug);
   const ahora = new Date().toISOString();
   const base: AnuncioRaw = {
@@ -390,8 +388,8 @@ async function scrapeDetail(url: string): Promise<AnuncioRaw | null> {
     banos,
     estacionamientos: null,
     zona,
-    lat: finalCoords?.lat ?? null,
-    lng: finalCoords?.lng ?? null,
+    lat: geo.lat,
+    lng: geo.lng,
     url_original: url,
     fuente: FUENTE_ID,
     fecha_deteccion: ahora,

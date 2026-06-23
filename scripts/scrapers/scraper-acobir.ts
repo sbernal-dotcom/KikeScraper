@@ -32,10 +32,11 @@ import {
   type FichaIA,
   type ResumenBilingue,
 } from "./ia";
+import { geocodeConEdificio } from "./geocode-edificio";
 import { validarConMapbox } from "./mapbox-validate";
 import { createScraperClient } from "./supabase-admin";
 import { type TagCerrado } from "./tags-caracteristicas";
-import { centroFromTable, jitterCoords } from "./zonas-panama";
+import { centroFromTable } from "./zonas-panama";
 
 loadEnv({ path: ".env.local" });
 loadEnv();
@@ -367,18 +368,14 @@ async function scrapeDetail(slug: string): Promise<ProyectoRaw | null> {
   const descripcion = product.description ?? "";
   const rangos = parseRangos(descripcion);
   const zona = detectZonaFromDesc(descripcion, titulo);
-  const coords = await geocodeZona(zona);
-  const finalCoords = coords ? jitterCoords(coords, url) : null;
-
-  if (finalCoords && coords) {
-    const tag = coords.source === "nominatim" ? " (Nominatim fallback)" : "";
-    console.log(
-      `  geocode → ${finalCoords.lat.toFixed(4)}, ${finalCoords.lng.toFixed(4)}${tag}`,
-    );
-    if (zona) await validarConMapbox(zona, coords);
-  } else {
-    console.log(`  geocode → sin resultado (zona: ${zona ?? "?"})`);
+  // acobir publica proyectos (no listings individuales) y no incluye
+  // lat/lng en el HTML. Pipeline siempre: edificio (proyecto) → cache → web → zona.
+  const geo = await geocodeConEdificio(titulo, descripcion, url, zona);
+  if (!geo) {
+    console.log(`  geocode → sin resultado — saltando`);
+    return null;
   }
+  if (zona) await validarConMapbox(zona, { lat: geo.lat, lng: geo.lng });
 
   const descripcionTemp = trimDescripcion(descripcion);
   const ahora = new Date().toISOString();
@@ -390,8 +387,8 @@ async function scrapeDetail(slug: string): Promise<ProyectoRaw | null> {
     habitaciones_desde: rangos.habitaciones_desde,
     banos_desde: rangos.banos_desde,
     zona,
-    lat: finalCoords?.lat ?? null,
-    lng: finalCoords?.lng ?? null,
+    lat: geo.lat,
+    lng: geo.lng,
     url_original: url,
     fuente: FUENTE_ID,
     fecha_deteccion: ahora,

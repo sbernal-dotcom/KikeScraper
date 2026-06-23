@@ -28,6 +28,7 @@ import {
   type FichaIA,
   type ResumenBilingue,
 } from "./ia";
+import { geocodeConEdificio } from "./geocode-edificio";
 import { createScraperClient } from "./supabase-admin";
 import { type TagCerrado } from "./tags-caracteristicas";
 
@@ -326,11 +327,22 @@ async function scrapeDetail(url: string): Promise<AnuncioRaw | null> {
     readAdditional(listing.additionalProperty, "Garages", "garages", "parking", "estacionamientos"),
   );
 
-  if (lat && lng) {
-    console.log(`  geo ✓ ${lat.toFixed(4)}, ${lng.toFixed(4)} (de JSON-LD)`);
+  // Source-first: panamaequity casi siempre publica lat/lng en el JSON-LD
+  // del Schema.org. Si está, ESA es la coord exacta del edificio — la
+  // usamos sin tocar. Solo si falta caemos al pipeline edificio→web→zona.
+  let finalLat = lat;
+  let finalLng = lng;
+  if (finalLat && finalLng) {
+    console.log(`  geo ✓ ${finalLat.toFixed(4)}, ${finalLng.toFixed(4)} (de JSON-LD)`);
   } else {
-    console.log(`  ✗ sin geo en JSON-LD — saltando`);
-    return null;
+    console.log(`  ✗ sin geo en JSON-LD — corriendo pipeline edificio→cache→web→zona`);
+    const geo = await geocodeConEdificio(titulo, listing.description ?? null, url, zona);
+    if (!geo) {
+      console.log(`  pipeline tampoco resolvió — saltando`);
+      return null;
+    }
+    finalLat = geo.lat;
+    finalLng = geo.lng;
   }
 
   const descripcionTemp = trimDescripcion(listing.description);
@@ -346,8 +358,8 @@ async function scrapeDetail(url: string): Promise<AnuncioRaw | null> {
     banos,
     estacionamientos,
     zona,
-    lat,
-    lng,
+    lat: finalLat,
+    lng: finalLng,
     url_original: url,
     fuente: FUENTE_ID,
     fecha_deteccion: ahora,
