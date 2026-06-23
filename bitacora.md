@@ -423,13 +423,55 @@ Sesión grande con varios hitos. Más detalle por commit en `git log`.
   - **MIVIOT (Ministerio de Vivienda)** — robots OK, sitio responde OK, pero NO es inventario: páginas tipo `/techosdeesperanza-arraijan/` son comunicados de prensa sin precio, sin coords, sin specs. No encaja en el modelo de pines individuales.
   - **lacasa.com.pa / mudafy.com.pa** — DNS no resuelve (no existen).
 
+### MLS Acobir + InmoPanama + 5 fuentes en cron (2026-06-18 → 2026-06-21)
+
+- **Nueva fuente: MLS Acobir** (`scripts/scrapers/scraper-mlsacobir.ts`, `scrape:mls` + `scrape:mls:prod`):
+  - **¡Existe!** Está en `mlsacobir.com` (subdominio aparte de `acobir.com` — la sesión anterior solo había probado `mls.acobir.com` y dado por muerto). Es el inventario gremial real, plugin Realtyna WPL sobre WordPress.
+  - **~1300 propiedades** en 26 páginas (`?wplpage=N`), cubre TODO Panamá (Chiriquí, Los Santos, Veraguas, Coclé — zonas que encuentra24 tiene poco).
+  - Datos via **Schema.org microdata** (`itemprop="price/name/address/floorSize/numberOfRooms"`). Sin lat/lng en HTML → geocoding por `addressLocality` (igual que ACOBIR).
+  - **279 propiedades insertadas en DB** tras el primer prod run (el resto se descarta por geocode fail — zonas como "PUNTA COLON", "CALLE 67-E" no están en `zonas-panama.ts`).
+  - Migration **`0007_mlsacobir.sql`**: seed de la fuente.
+
+  Bugs encontrados y arreglados:
+  - **`&sup2;` (entity de `²`) envenenaba `toNumber`**: "153 m&sup2;" → strip non-digits dejaba "1532" en vez de 153. Fix: decodificar entities con `.replace(/&\w+;/g, " ")` ANTES del strip.
+  - **Regex multiline para microdata**: el bloque `<div itemprop="numberOfRooms" class="bedroom">` tiene SVG inline (3000+ chars) antes del `<span itemprop="value">N</span>`. El regex original limitaba el match al primer `</` del SVG y fallaba. Fix: `class=["'][^"']*${className}[^"']*["'][\s\S]*?itemprop=["']value["']` (lazy multiline).
+  - **Locale del `.` en `toNumber`**: MLS usa convención US (punto = decimal). Mantuvimos esa heurística — "67.502 m²" significa 67.5, no 67502.
+
+- **Nueva fuente: InmoPanama** (`scripts/scrapers/scraper-inmopanama.ts`, `scrape:inmo` + `scrape:inmo:prod`):
+  - **Agregador grande**: ~9500 propiedades en venta (476 págs × 20) + alquiler aparte. **Cap inicial: 50 págs por listado** (~2000 props potenciales) por presupuesto de tiempo del cron.
+  - **NO publica lat/lng** (todo dice "Ubicación no disponible") → 100% del geocoding cae a tabla + Nominatim por zona textual extraída del `class="ib-prop-info-card-location"`.
+  - Datos parseables: `class="ib-prop-main-price"`, `class="ib-prop-op-badge"`, lista de features (`5 Dorm.`, `6 Baños`, `942 m²`).
+  - Categoría se deduce del título/URL (no hay campo estructurado).
+  - Smoke test (3 pág × 2 listas) dio **98% éxito** (118/120 parsed). Primer prod run: **598 propiedades insertadas, 0 errores de upsert** (de 700 URLs únicas; el resto se perdió en timeouts puntuales + geocode fail).
+  - Migration **`0008_inmopanama.sql`**: seed de la fuente.
+
+- **Cron diario actualizado** (`.github/workflows/scraper.yml`):
+  - Ahora corre **las 5 fuentes secuenciales**: encuentra24 → ACOBIR → Panama Equity → MLS Acobir → InmoPanama → verify.
+  - **Timeout 45 → 60 min** para cubrir el pipeline completo.
+  - Cada step con `continue-on-error: true` — si uno cae, los demás siguen.
+  - `verify` corre si AL MENOS un scraper tuvo éxito.
+  - Antes solo encuentra24 estaba en el cron; ACOBIR/PE/MLS quedaban como scripts manuales.
+
+- **Probes de fuentes que NO funcionaron en esta sesión** (todas documentadas):
+  - **Indesa (`indesa.com.pa`)** — el user lo recordaba como banco con bienes adjudicados, pero es una **consultora de finanzas/investigación**, no banco. Sin inventario.
+  - **Empresas Bern (`empresasbern.com`)** — promotor inmobiliario grande, pero solo ~12-15 proyectos visibles, landing pages de marketing SIN JSON-LD/microdata. Datos reales viven en brochures PDF. Patrón general de promotores: no rinden con scraper estructurado actual.
+  - **MIVIOT (Ministerio de Vivienda)** — re-confirmado: páginas son comunicados de prensa, no inventario per-property.
+
+- **Estado actual de la DB de Supabase**:
+  - encuentra24: ~280
+  - ACOBIR proyectos: 0 (scraper existe, nunca corrió en prod manual — el cron lo va a meter mañana)
+  - Panama Equity: 100
+  - MLS Acobir: 279
+  - InmoPanama: 598
+  - **Total: ~1,257 propiedades** distribuidas por todo Panamá (antes solo ~280).
+
 ### Pendientes
 
 - **Env vars en Vercel** — agregar `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` (Production, Preview, Development) y redeploy. Sin esto el deploy de prod no puede leer la DB.
 - **Token restrictions en Mapbox** — agregar `http://localhost:3000/*` a la URL allowlist del token. Cuando exista dominio de Vercel, agregarlo también.
 - **Tipos de Supabase** — regenerar `src/lib/supabase/types.ts` con `supabase gen types typescript --project-id lbvboqoyvuxuanwvtypf > src/lib/supabase/types.ts` (requiere `supabase` CLI o usar el dashboard).
 - **Rotar claves Supabase** — `anon` y `service_role` quedaron expuestas en el chat de desarrollo. Rotar cuando termine la fase de prueba. (Gemini ya rotado el 30/5.)
-- **Más fuentes de scraping** — encuentra24 saturado (~280). ACOBIR + Panama Equity ya integrados (~100+80 más). Próximos candidatos honestos:
+- **Más fuentes de scraping** — DB ya con ~1,257 props (5 fuentes en el cron). Próximos candidatos:
   - **MEF / Catastro** — registros públicos. PDF-heavy, requiere más trabajo de parsing.
   - **DGI valores referenciales** — como capa de "precio justo" (no per-property; heat-map).
   - **Brokers individuales tipo PE** — `gilbertoroldan.com`, `panamacasas.com`, `kw-panama.com`. Probar uno a la vez.
