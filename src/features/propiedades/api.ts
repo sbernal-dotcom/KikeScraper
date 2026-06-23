@@ -208,11 +208,16 @@ export async function fetchPropiedades(): Promise<Propiedad[]> {
   // Lista pequeña (~cientos); una roundtrip extra es aceptable y evita
   // tener que reemplazar la query principal por una vista (perderíamos
   // los joins automáticos a fuentes/anuncios).
+  //
+  // Cast manual: types.ts no se ha regenerado tras 0009 (pendiente en
+  // bitacora). Una vez regenerado, este cast puede quitarse.
   const { data: dupRows, error: dupErr } = await supabase
     .from("propiedades_duplicados")
     .select("propiedad_id");
   if (dupErr) throw dupErr;
-  const dupIds = (dupRows ?? []).map((r) => r.propiedad_id as string);
+  const dupIds = ((dupRows ?? []) as Array<{ propiedad_id: string }>).map(
+    (r) => r.propiedad_id,
+  );
 
   // Mismo filtro que vw_oportunidades para mantener paridad mapa ↔ análisis,
   // + estado_anuncio='activo' (lifecycle, 0004_lifecycle.sql): las que
