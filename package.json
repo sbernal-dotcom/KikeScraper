@@ -23,7 +23,9 @@
     "dedupe": "tsx scripts/scrapers/find-duplicates.ts",
     "dedupe:prod": "tsx scripts/scrapers/find-duplicates.ts --supabase",
     "backfill:edificios": "tsx scripts/scrapers/backfill-edificio-coords.ts",
-    "backfill:edificios:prod": "tsx scripts/scrapers/backfill-edificio-coords.ts --supabase"
+    "backfill:edificios:prod": "tsx scripts/scrapers/backfill-edificio-coords.ts --supabase",
+    "reprocess:archived": "tsx scripts/scrapers/reprocess-archived.ts",
+    "reprocess:archived:prod": "tsx scripts/scrapers/reprocess-archived.ts --supabase"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
