@@ -26,7 +26,7 @@ import {
   normalizarNombre,
 } from "./ia-extract-edificio";
 import { createScraperClient } from "./supabase-admin";
-import { centroFromTable, jitterCoords, type ZonaCentro } from "./zonas-panama";
+import { centroFromTable, type ZonaCentro } from "./zonas-panama";
 
 // Singleton lazy del cliente Supabase. Permite que el pipeline funcione
 // como import-anywhere sin propagar `supa` por toda la firma del scraper.
@@ -122,15 +122,12 @@ export async function geocodeConEdificio(
     }
   }
 
-  // 4. Zona — fallback al centroide del corregimiento
-  if (zonaCentro) {
-    const c = jitterCoords(zonaCentro, url_original);
-    console.log(`  geocode → zona "${zona}" (${c.lat.toFixed(4)},${c.lng.toFixed(4)})`);
-    return { lat: c.lat, lng: c.lng, precision: "zona", source: "zonas_panama" };
-  }
-
-  // 5. Nada
-  console.log(`  geocode → SIN ubicación, propiedad se descarta`);
+  // STRICT MODE (2026-06-25): policy "edificio o nada". Eliminado el
+  // fallback a zona-centroide — usuario lo encontraba confuso (props
+  // tipo "Apto en Bella Vista" sin nombre de edificio terminaban pin-
+  // chando en el medio del barrio + jitter, dando la falsa impresión
+  // de ubicación real). Mejor mostrar menos props pero exactas.
+  console.log(`  geocode → SIN ubicación de edificio resoluble, propiedad se descarta`);
   return null;
 }
 
