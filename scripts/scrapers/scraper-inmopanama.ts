@@ -498,15 +498,28 @@ function toDbRow(a: AnuncioRaw): Record<string, unknown> | null {
 async function fetchExistingUrls(
   supa: ReturnType<typeof createScraperClient>,
 ): Promise<Set<string>> {
-  const { data, error } = await supa
-    .from("propiedades")
-    .select("url_original")
-    .eq("fuente_id", FUENTE_ID);
-  if (error) {
-    console.warn(`  No se pudo leer propiedades existentes: ${error.message}`);
-    return new Set();
+  // Solo URLs activas. Archivadas se re-procesan para poder revivirlas.
+  // Paginado por cap de 1000.
+  const PAGE = 1000;
+  const all: string[] = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await supa
+      .from("propiedades")
+      .select("url_original")
+      .eq("fuente_id", FUENTE_ID)
+      .eq("estado_anuncio", "activo")
+      .range(from, from + PAGE - 1);
+    if (error) {
+      console.warn(`  No se pudo leer propiedades existentes: ${error.message}`);
+      return new Set(all);
+    }
+    const batch = (data ?? []).map((r) => r.url_original as string);
+    all.push(...batch);
+    if (batch.length < PAGE) break;
+    from += PAGE;
   }
-  return new Set((data ?? []).map((r) => r.url_original as string));
+  return new Set(all);
 }
 
 function loadExisting(outPath: string): AnuncioRaw[] {

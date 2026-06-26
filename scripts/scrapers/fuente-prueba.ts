@@ -627,18 +627,38 @@ function toDbRow(a: AnuncioRaw): Record<string, unknown> | null {
   };
 }
 
-/** Devuelve el set de url_original ya presentes en la DB (para dedupe). */
+/**
+ * Devuelve el set de url_original ya ACTIVAS en la DB (skip list).
+ *
+ * Solo filtramos por 'activo' para que los archivados se re-procesen
+ * en cada cron — si el pipeline ahora puede resolver el edificio (ya
+ * sea por cache o por web), revivimos la prop con coord exacta. Si no,
+ * el scraper no upsertea (scrapeOne devuelve null) y queda archivada.
+ *
+ * Paginación: Supabase JS cap 1000 por defecto.
+ */
 async function fetchExistingUrls(
   supa: ReturnType<typeof createScraperClient>,
 ): Promise<Set<string>> {
-  const { data, error } = await supa
-    .from("propiedades")
-    .select("url_original");
-  if (error) {
-    console.warn(`  No se pudo leer propiedades existentes: ${error.message}`);
-    return new Set();
+  const PAGE = 1000;
+  const all: string[] = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await supa
+      .from("propiedades")
+      .select("url_original")
+      .eq("estado_anuncio", "activo")
+      .range(from, from + PAGE - 1);
+    if (error) {
+      console.warn(`  No se pudo leer propiedades existentes: ${error.message}`);
+      return new Set(all);
+    }
+    const batch = (data ?? []).map((r) => r.url_original as string);
+    all.push(...batch);
+    if (batch.length < PAGE) break;
+    from += PAGE;
   }
-  return new Set((data ?? []).map((r) => r.url_original as string));
+  return new Set(all);
 }
 
 // Tope de páginas a recorrer por listado. encuentra24 pagina con el
