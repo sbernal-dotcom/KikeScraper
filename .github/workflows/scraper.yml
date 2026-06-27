@@ -15,10 +15,13 @@ concurrency:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    # 60 min: cubre encuentra24 (8-12) + acobir (2-3) + panamaequity (2-3)
-    # + mlsacobir (15-20 primera vez, 2-3 después de la corrida inicial)
-    # + verify (3-5) + setup (~3). Total típico ~30 min, pico ~50.
-    timeout-minutes: 60
+    # 90 min: cubrir el caso donde los scrapers re-procesan archivadas.
+    # Tras el fix de skipUrls (0d2b250), el cron procesa archivadas + nuevas,
+    # lo que sube el tiempo de ~30 min a ~60-70 min. 90 da margen para
+    # crecer sin volver a cancelarse. encuentra24 (~10-12) + acobir (~2) +
+    # pe (~4-5) + mlsacobir (~15-20) + inmopanama (~20-30) + verify (~5) +
+    # dedupe (~1) + setup (~3) = ~60-75 min típico.
+    timeout-minutes: 90
 
     # issues: write necesario para que `gh issue create` pueda abrir
     # tickets cuando el scraper falla o reporta errores blandos.
