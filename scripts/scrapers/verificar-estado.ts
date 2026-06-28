@@ -122,13 +122,21 @@ async function verificar(url: string): Promise<Resultado> {
     if (res.status >= 500) {
       return { tipo: "error", motivo: `HTTP ${res.status}` };
     }
-    if (res.status !== 200) {
+    // 2xx no-200 (201, 202, 203, 206...) son respuestas válidas con
+    // cuerpo HTML. mlsacobir devuelve 202 a requests con UA bot-like.
+    // Antes este caso caía a "error_verificacion" y archivaba props
+    // vivas. Ahora procesamos el HTML igual.
+    if (res.status < 200 || res.status >= 300) {
       return { tipo: "error", motivo: `HTTP ${res.status}` };
     }
 
     const html = await res.text();
-    // JSON-LD Product presente → vivo. Buscamos el patrón sin parsear
-    // todo el HTML — más rápido y robusto a variaciones de whitespace.
+    // Patrones de "página de propiedad viva":
+    // 1) JSON-LD Product (encuentra24, panamaequity, inmopanama, acobir)
+    // 2) Schema.org microdata para tipos inmobiliarios — mlsacobir usa
+    //    itemtype="http://schema.org/SingleFamilyResidence". Genérico:
+    //    Product, Apartment, House, SingleFamilyResidence, Residence,
+    //    Place, RealEstateListing, Accommodation, Offer.
     // NO usamos heurísticas de "captcha" en el body: el HTML legítimo
     // de encuentra24 contiene "recaptchaSiteKey" (config del form de
     // contacto), lo que generaba falsos positivos en el 100% de las
@@ -137,11 +145,18 @@ async function verificar(url: string): Promise<Resultado> {
     if (/"@type"\s*:\s*"Product"/.test(html)) {
       return { tipo: "viva", motivo: "JSON-LD Product OK" };
     }
+    if (
+      /itemtype=["'][^"']*schema\.org\/(Product|Apartment|House|SingleFamilyResidence|Residence|Place|RealEstateListing|Accommodation|Offer)\b/i.test(
+        html,
+      )
+    ) {
+      return { tipo: "viva", motivo: "Microdata Schema.org OK" };
+    }
     // 200 sin Product: posibles causas legítimas (anuncio borrado por
     // el publicador, página de error custom del sitio). El contador
     // tolera 2 misses antes de cambiar el estado, así que un falso
     // negativo aislado no archiva una propiedad viva.
-    return { tipo: "no_encontrada", motivo: "200 sin JSON-LD Product" };
+    return { tipo: "no_encontrada", motivo: "sin Product/microdata" };
   } catch (err) {
     const msg = (err as Error).name === "AbortError" ? "timeout" : (err as Error).message;
     return { tipo: "error", motivo: msg };
