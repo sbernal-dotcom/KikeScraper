@@ -56,6 +56,21 @@ const SKIP_DOMAINS = [
   // Clasificados que no aportan
   "olx.com",
   "mercadolibre.com",
+  // Blogs / turismo / viewpoints — NO son inmuebles, dan coords
+  // de miradores y puntos turísticos que NO corresponden al edificio.
+  // Caso 2026-06-28: wanderlog devolvió coord de mirador para
+  // "PH Sky View" que cayó en el mar.
+  "wanderlog.com",
+  "tripadvisor.com",
+  "tripadvisor.es",
+  "lonelyplanet.com",
+  "wikitravel.org",
+  "yelp.com",
+  "foursquare.com",
+  "booking.com",
+  "airbnb.com",
+  "expedia.com",
+  "hotels.com",
 ];
 
 // Sitios que dan coords muy buenas (priorizar)
