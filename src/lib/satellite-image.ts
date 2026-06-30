@@ -42,10 +42,14 @@ export function satelliteUrl(
   const {
     width = 480,
     height = 320,
-    zoom = 17,
+    // 16 (era 17) muestra ~media manzana, da contexto del barrio sin
+    // pixelarse. 17 mostraba solo el edificio y se veía borroso.
+    zoom = 16,
     style = "satellite-streets-v12",
     pin = true,
-    retina = false,
+    // Retina @2x da 4x más píxeles. Mismo costo de quota (1 req), pero
+    // se ve sharp en pantallas modernas. Mapbox tier free aguanta bien.
+    retina = true,
   } = opts;
   if (!TOKEN) return "";
   const overlay = pin ? `pin-s+ff1f17(${lng},${lat})/` : "";

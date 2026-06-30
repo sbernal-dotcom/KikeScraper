@@ -62,7 +62,6 @@ export function PropertyGridCard({ propiedad, className }: Props) {
           src={satelliteUrl(propiedad.ubicacion.lat, propiedad.ubicacion.lng, {
             width: 480,
             height: 320,
-            zoom: 17,
           })}
           alt={`Vista satelital de ${propiedad.titulo}`}
           loading="lazy"

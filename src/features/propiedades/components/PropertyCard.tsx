@@ -164,7 +164,6 @@ export function PropertyCard({
           src={satelliteUrl(propiedad.ubicacion.lat, propiedad.ubicacion.lng, {
             width: compact ? 320 : 480,
             height: compact ? 200 : 300,
-            zoom: 17,
           })}
           alt={`Vista satelital de ${propiedad.titulo}`}
           loading="lazy"
