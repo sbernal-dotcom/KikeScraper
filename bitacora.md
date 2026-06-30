@@ -551,6 +551,67 @@ El **frontend** filtra `propiedades_duplicados` con NOT IN antes de pintar el ma
 
 **Cuándo se mete un edificio nuevo al cache:** automático en cada scrape. La primera vez que aparece "PH X" en cualquier listing, el pipeline lo googlea, valida la coord vs zona, y lo guarda en `edificios_cache`. Las próximas N props del mismo PH usan la coord del cache (instantáneo, sin Gemini ni web).
 
+### Strict mode + IA Groq + UX satelital (2026-06-25 → 2026-06-30)
+
+Semana intensiva: el sistema migró de "approx OK" a "edificio exacto o nada", se cambió la IA por razones de quota, y se agregó imagen satelital como hero de las cards.
+
+#### Strict mode — sin fallback a zona
+
+- **Política cambiada en `geocode-edificio.ts`**: eliminado el fallback a zone-centroide. Si el pipeline no resuelve edificio → la prop se descarta (no se inserta) o queda archivada. Razón: el user vio props pinchadas en el medio del barrio dando falsa impresión de exactitud (caso emblemático: pines sobre Corredor Sur).
+- **Mass-archive el 06-25**: 2,929 props activas pasaron a `archivado` con `motivo_estado='policy strict 2026-06-25'` y `veces_no_encontrado=999` (sentinel para que verify no las toque sin razón).
+- **Trade-off comunicado al user**: la cifra visible cayó de 2,929 → 69 → 164 → 346 → 460 → 660 → 924 conforme el cron iteraba + cache crecía. Lo que queda visible está al menos cerca del edificio (no en otro barrio).
+- **Honestidad explícita** documentada hacia el final de la semana: "exacto" significa que la coord viene de un edificio identificado, NO que esté clavada en el edificio. Web search da coords aproximadas (50-300m de error). Solo panamaequity (60 props) trae coord verdaderamente exacta del JSON-LD `geo` del source.
+
+#### Pipeline IA: Gemini → Groq
+
+- **Gemini Flash Lite free tier era 500 req/día** → el backfill inicial murió a la mitad (caía a 'descartadas' por 429). El user confirmó migrar.
+- **Migrado el extractor de edificios a Groq** (`llama-3.1-8b-instant`, 14,400 req/día free, ~10x más rápido). Reescritura de `ia-extract-edificio.ts` con `fetch` puro al endpoint OpenAI-compatible. Misma interfaz pública.
+- **Gemini sigue para resúmenes bilingues** (`ia.ts`) — la quota le alcanza.
+- **Smoke test 5 props**: avg 353ms/llamada vs Gemini ~3-5s. Extracciones correctas.
+- **GROQ_API_KEY agregado al cron** (5 scrape steps).
+
+#### Cron stabilization
+
+- **skipUrls fix (commit `0d2b250`)**: paginar correctamente + filtrar solo URLs `activo`. Esto fue lo que hizo que panamaequity volviera de 1 → 49 (los archivados se re-procesaron contra source y revivieron con coord exacta). Bug colateral del cap 1000 también fijado.
+- **Timeout 60 → 90 min**: el cron `2026-06-26 10:54` y `22:07` se cancelaron a los 60 min exactos porque el re-process de archivadas (InmoPanama ~25 min, antes <1 min) hizo crecer el total a ~70 min. Con 90 min mejor pero todavía rozando — verify es el cuello de botella.
+- **Reprocess-archived script**: `scripts/scrapers/reprocess-archived.ts` + npm scripts. Va específicamente sobre archivadas (no espera al cron a verlas en listings). 13 min con Groq para 3,000 props. Revivió 95 al primer pase (solo titulo, sin descripción).
+
+#### Bugs del verify (mlsacobir 60→240)
+
+Dos bugs descubiertos cuando mlsacobir desapareció del mapa (96 → 0):
+
+1. **HTTP 202**: mlsacobir devuelve 202 (Accepted) a UA bot-like. El verify trataba todo !==200 como `error_verificacion`. Fix: aceptar cualquier 2xx con cuerpo HTML.
+2. **Microdata vs JSON-LD**: mlsacobir usa `itemtype="http://schema.org/SingleFamilyResidence"`, no JSON-LD Product. El verify solo buscaba JSON-LD. Fix: regex adicional para itemtype con tipos Product/Apartment/House/SingleFamilyResidence/Residence/Place/RealEstateListing/Accommodation/Offer.
+3. **Verify --force** con el código nuevo: 543 vivas, 223 no_encontradas, 8 errores. mlsacobir pasó 60 → 240 activas.
+
+#### Limpieza de coords en el mar
+
+Dos rondas de cleanup (06-28 y 06-30): el user reportó props pinchadas en el agua de Panama Bay.
+
+- **Causas**:
+  - `wanderlog.com` (blog turismo) devolvió coord de scenic viewpoint para "PH Sky View" → en el mar
+  - Edificios costeros (Av Balboa) tenían coords del web ~100m fuera, en el agua
+  - Aggregator pages devolvían coord del primer listing, no del building buscado
+- **SKIP_DOMAINS expandido**: agregado wanderlog, tripadvisor, lonelyplanet, wikitravel, yelp, foursquare, booking, airbnb, expedia, hotels.
+- **Cleanup runs**: 06-28 → 23 props archivadas + 16 cache nullified. 06-30 → 24 props archivadas + 6 cache nullified.
+- **Limitación documentada**: el validador de "≤5km de zona" pasa coords en el agua para barrios costeros. Fix de raíz necesita coastline check (GeoJSON Panamá) o Google Places API. Está en pendientes.
+
+#### UX: imagen satelital como hero
+
+- **Idea del user**: en vez de scrapear fotos del source (ToS-hostile), usar Mapbox Static API para generar una vista satelital del lugar con pin rojo en el centro.
+- **Helper `src/lib/satellite-image.ts`**: URL determinística por (lat, lng, zoom, size). Browser y CDN cachean.
+- **Aplicado a PropertyGridCard (aspect 3/2)** y PropertyCard sidebar (aspect 16/10). `satellite-streets-v12` (con calles + nombres).
+- **Fine-tuning de calidad**: retina @2x + zoom 17 → 16 para más contexto y menos pixelación.
+- **Fix de lag al cambiar de prop**: `key={propiedad.id}` fuerza remount (sin esto el browser mantenía la imagen vieja durante el download), bajada de resolución base (480x320 → 320x213, sigue dando 640x426 con retina), fade-in vía `onLoad` + `decoding="async"`. La transición es ahora bg-muted → fade-in.
+- **Costo**: 50K req/mes Mapbox free tier, suficiente para tráfico esperado. Browser cache reduce mucho.
+
+#### Estado al final del periodo
+
+- **924 props activas** (vs 2929 antes del strict mode, y vs 460 a media semana)
+- **640+ edificios cacheados con coords** (cache crece cada cron)
+- **1 prop visualmente "fea" hoy**: 0 en el mar después del último cleanup, pero el problema reaparece cada cron si nuevas coords del web caen en el agua
+- **Cron schedule sano**: corriendo diario @ 08:00 UTC, ~75-90 min típico, hits timeout ocasional en verify
+
 ### Pendientes
 
 - **Env vars en Vercel** — agregar `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` (Production, Preview, Development) y redeploy. Sin esto el deploy de prod no puede leer la DB.
@@ -563,6 +624,11 @@ El **frontend** filtra `propiedades_duplicados` con NOT IN antes de pintar el ma
   - **Brokers individuales tipo PE** — `gilbertoroldan.com`, `panamacasas.com`, `kw-panama.com`. Probar uno a la vez.
   - Descartados (ver bitácora): compreoalquile, inmuebles24, c21, miviot, MercadoLibre.
 - **Zonas que siguen cayendo a Nominatim** — agregar a `zonas-panama.ts` con coords verificadas: Carrasquilla, Volcán, El Bosque, Las Cumbres, Ciudad de Panamá (genérico). Los logs del cron las marcan en cada corrida.
+- **Coords exactas reales para todos los edificios** (no solo "cerca del edificio"). Hoy ~93% de los pines tienen coord aproximada (50-300m de error) porque el web search da coords aproximadas. Opciones:
+  - **Google Places API** ($17/1000 reqs, free tier $200/mes cubre todo el catálogo) — solución de raíz, sabe la ubicación real de cada edificio
+  - **Coastline check** (GeoJSON Panamá, 1h) — fix del síntoma: evita que coords del web caigan en agua, pero las coords siguen siendo aproximadas
+  - **Curación manual** del top 100 edificios más frecuentes en la DB (4-6h) — el resto sigue aproximado
+- **Verify con concurrencia** — actualmente es 1 request a la vez con jitter 1.2-2.4s. Es el bottleneck del cron (timeouts ocasionales). Paralelizar 3-5 a la vez reduciría tiempo 3-5x. Fix: usar `chunkedParallel` (ya existe en otros scrapers).
 
 #### Resueltos (no quitar — historial)
 
@@ -578,7 +644,12 @@ El **frontend** filtra `propiedades_duplicados` con NOT IN antes de pintar el ma
 - ✅ **Deduplicación cross-source** (2026-06-23): tabla `propiedades_duplicados`, script idempotente en el cron, fuzzy geo + área + precio, source priority para elegir canónica. Mapa filtra automáticamente. 161 duplicados detectados en el primer run.
 - ✅ **Ubicaciones exactas via pipeline edificio→cache→web→zona** (2026-06-23): Gemini extract + DuckDuckGo + cache permanente en `edificios_cache`. Reemplaza el zone-centroid-only por coords de edificio cuando es posible. Las props sin ubicación resoluble se descartan en vez de pinearse en cualquier parte.
 - ✅ **Coco del Mar en el mar** (2026-06-23): centroide arreglado + 47 props re-ubicadas via `scrape:coords`.
-- ✅ **Bug del cap de 1000 rows en Supabase JS**: arreglado en `find-duplicates`, `recalcular-coords` y prevenido en `backfill-edificio-coords` (todos paginan con `.range()`).
+- ✅ **Bug del cap de 1000 rows en Supabase JS**: arreglado en `find-duplicates`, `recalcular-coords` y prevenido en `backfill-edificio-coords` (todos paginan con `.range()`). Tercera vez en `fetchExistingUrls` de los 5 scrapers (commit `0d2b250`).
+- ✅ **Strict mode** (2026-06-25): eliminado el zone-fallback. Política edificio-o-nada. Pasamos de mostrar 2929 a 924 props, pero todas verificablemente vinculadas a un edificio identificado.
+- ✅ **Migración Gemini → Groq** para extracción de edificios (2026-06-25): 14,400 req/día vs 500, ~10x más rápido. Gemini sigue para resúmenes bilingues.
+- ✅ **Verify fix HTTP 202 + microdata schema.org** (2026-06-28): revivió mlsacobir de 0 → 240 props activas. El verify ahora reconoce sitios que devuelven 2xx no-200 y que usan microdata en lugar de JSON-LD.
+- ✅ **Imagen satelital como hero de cards** (2026-06-29 → 06-30): Mapbox Static API genera vista satelital + pin rojo en el centro. ToS-friendly, cero storage. Lag fix al cambiar de prop vía `key` remount + bajada de resolución base + fade-in.
+- ✅ **Cleanup de coords en el mar** (2026-06-28 + 06-30): SKIP_DOMAINS expandido (wanderlog, tripadvisor, etc), 47 props archivadas + 22 cache entries nullificadas. Fix de raíz (coastline check o Google Places) queda en pendientes.
 
 ## Notas Pendientes
 
