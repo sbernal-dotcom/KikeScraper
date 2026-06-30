@@ -13,6 +13,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { satelliteUrl } from "@/lib/satellite-image";
 import { cn } from "@/lib/utils";
 import {
   useDict,
@@ -53,6 +54,22 @@ export function PropertyGridCard({ propiedad, className }: Props) {
         className,
       )}
     >
+      {/* Imagen satelital. Generada on-the-fly por Mapbox a partir de
+         lat/lng — no scrapeamos fotos del source (ToS-friendly). El
+         pin rojo indica la ubicación exacta del edificio. */}
+      <div className="relative aspect-[3/2] overflow-hidden bg-muted">
+        <img
+          src={satelliteUrl(propiedad.ubicacion.lat, propiedad.ubicacion.lng, {
+            width: 480,
+            height: 320,
+            zoom: 17,
+          })}
+          alt={`Vista satelital de ${propiedad.titulo}`}
+          loading="lazy"
+          className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+      </div>
+
       <div className="flex items-center justify-between gap-2 border-b border-border/50 bg-card/60 px-4 py-2.5">
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <span className="rounded-sm bg-background/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider">

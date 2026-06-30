@@ -23,6 +23,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { satelliteUrl } from "@/lib/satellite-image";
 import { cn } from "@/lib/utils";
 import {
   useDict,
@@ -154,6 +155,22 @@ export function PropertyCard({
           <X className="size-4" />
         </Button>
       </header>
+
+      {/* Imagen satelital — mismo enfoque que PropertyGridCard. Mapbox
+         Static genera la vista del lugar; el pin rojo marca el edificio
+         exacto. ToS-friendly (no scrapeamos fotos del source). */}
+      <div className="relative aspect-[16/10] shrink-0 overflow-hidden bg-muted">
+        <img
+          src={satelliteUrl(propiedad.ubicacion.lat, propiedad.ubicacion.lng, {
+            width: compact ? 320 : 480,
+            height: compact ? 200 : 300,
+            zoom: 17,
+          })}
+          alt={`Vista satelital de ${propiedad.titulo}`}
+          loading="lazy"
+          className="size-full object-cover"
+        />
+      </div>
 
       <div
         className={cn(
