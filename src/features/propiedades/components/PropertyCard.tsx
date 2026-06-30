@@ -158,16 +158,20 @@ export function PropertyCard({
 
       {/* Imagen satelital — mismo enfoque que PropertyGridCard. Mapbox
          Static genera la vista del lugar; el pin rojo marca el edificio
-         exacto. ToS-friendly (no scrapeamos fotos del source). */}
+         exacto. ToS-friendly (no scrapeamos fotos del source). `key`
+         fuerza remount al cambiar de propiedad para evitar que se vea
+         la imagen vieja mientras descarga la nueva. */}
       <div className="relative aspect-[16/10] shrink-0 overflow-hidden bg-muted">
         <img
+          key={propiedad.id}
           src={satelliteUrl(propiedad.ubicacion.lat, propiedad.ubicacion.lng, {
-            width: compact ? 320 : 480,
-            height: compact ? 200 : 300,
+            width: compact ? 280 : 380,
+            height: compact ? 175 : 238,
           })}
           alt={`Vista satelital de ${propiedad.titulo}`}
-          loading="lazy"
-          className="size-full object-cover"
+          decoding="async"
+          className="size-full object-cover opacity-0 transition-opacity duration-300 [&.loaded]:opacity-100"
+          onLoad={(e) => e.currentTarget.classList.add("loaded")}
         />
       </div>
 

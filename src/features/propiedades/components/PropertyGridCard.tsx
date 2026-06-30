@@ -56,16 +56,20 @@ export function PropertyGridCard({ propiedad, className }: Props) {
     >
       {/* Imagen satelital. Generada on-the-fly por Mapbox a partir de
          lat/lng — no scrapeamos fotos del source (ToS-friendly). El
-         pin rojo indica la ubicación exacta del edificio. */}
+         pin rojo indica la ubicación exacta del edificio. `key`
+         garantiza remount al cambiar de prop (sin esto el browser
+         mantiene la imagen vieja mientras descarga la nueva). */}
       <div className="relative aspect-[3/2] overflow-hidden bg-muted">
         <img
+          key={propiedad.id}
           src={satelliteUrl(propiedad.ubicacion.lat, propiedad.ubicacion.lng, {
-            width: 480,
-            height: 320,
+            width: 320,
+            height: 213,
           })}
           alt={`Vista satelital de ${propiedad.titulo}`}
-          loading="lazy"
-          className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+          decoding="async"
+          className="size-full object-cover opacity-0 transition-[opacity,transform] duration-300 group-hover:scale-105 [&.loaded]:opacity-100"
+          onLoad={(e) => e.currentTarget.classList.add("loaded")}
         />
       </div>
 
