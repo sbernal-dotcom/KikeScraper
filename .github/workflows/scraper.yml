@@ -135,6 +135,21 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: npm run dedupe:prod
 
+      # Pase 4: presunta venta. Marca como presunta_venta=true las
+      # archivadas que estuvieron ≥30 días activas y llevan ≥14 días
+      # sin volver a verse (patrón típico de venta vs. pausa corta).
+      # Idempotente + rectifica: si una prop marcada reaparece activa,
+      # limpia el flag. Sin fetches externos, muy rápido (~5-10s).
+      # continue-on-error + if:always: un fallo aquí es cosmético.
+      - name: Marcar presuntas ventas
+        id: presunta_venta
+        if: always()
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run presunta-venta:apply
+
       # Siempre corre: si el scrape petó duro, abre issue con link al log;
       # si pasó pero scraper_runs reporta errors>0, abre issue con detalles.
       - name: Alertar (GitHub Issue) si hubo errores
