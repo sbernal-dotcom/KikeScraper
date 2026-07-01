@@ -19,6 +19,8 @@
  * timeout corto.
  */
 
+import { isOnLand } from "../../src/lib/geo/panama-land";
+
 const USER_AGENT =
   "MapaInteractivoInteligente/0.1 (+contacto: abilendesign@gmail.com)";
 
@@ -243,6 +245,12 @@ async function extraerCoordsDeURL(
       const lng = parseFloat(m[ilng]);
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
       if (!isInPanama(lat, lng)) continue;
+      // Rechazar coords en el mar (miradores, hoteles turísticos, o
+      // listings de páginas de viaje que dan coords aproximadas fuera
+      // del contorno costero). Combina polígono continental + landmarks
+      // costeros (Coronado, Chame, Rio Hato, Pedasí, Colón, etc.) para
+      // no rechazar props reales de playa.
+      if (!isOnLand(lat, lng)) continue;
       // Validator es opcional. Si está, debe pasar; si no, se acepta.
       // Sirve para descartar coords aleatorias de listings vecinos en
       // páginas multi-listing — exige cercanía a la zona conocida.

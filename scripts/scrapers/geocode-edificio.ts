@@ -19,6 +19,7 @@
 
 import { type SupabaseClient } from "@supabase/supabase-js";
 
+import { isOnLand } from "../../src/lib/geo/panama-land";
 import { buscarEdificioWeb, type Validator } from "./buscar-edificio-web";
 // SupabaseClient se usa solo como tipo del singleton.
 import {
@@ -107,18 +108,26 @@ export async function geocodeConEdificio(
   // 2. Edificio
   if (extr.edificio) {
     const r = await resolverNombre(extr.edificio, validator);
-    if (r) {
+    if (r && isOnLand(r.lat, r.lng)) {
       console.log(`  geocode → edificio "${extr.edificio}" ${r.source} (${r.lat.toFixed(4)},${r.lng.toFixed(4)})`);
       return { ...r, precision: "edificio" };
+    }
+    if (r) {
+      // Defensivo: coord en mar aunque venía del cache. Puede pasar si
+      // el cache se pobló antes de que existiera isOnLand. Ignoramos.
+      console.log(`  geocode → edificio "${extr.edificio}" descarta coord (en mar)`);
     }
   }
 
   // 3. Proyecto (solo si es DIFERENTE del edificio para no repetir el lookup)
   if (extr.proyecto && extr.proyecto !== extr.edificio) {
     const r = await resolverNombre(extr.proyecto, validator);
-    if (r) {
+    if (r && isOnLand(r.lat, r.lng)) {
       console.log(`  geocode → proyecto "${extr.proyecto}" ${r.source} (${r.lat.toFixed(4)},${r.lng.toFixed(4)})`);
       return { ...r, precision: "edificio" };
+    }
+    if (r) {
+      console.log(`  geocode → proyecto "${extr.proyecto}" descarta coord (en mar)`);
     }
   }
 

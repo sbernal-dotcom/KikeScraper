@@ -28,6 +28,7 @@ import {
   type FichaIA,
   type ResumenBilingue,
 } from "./ia";
+import { isOnLand } from "../../src/lib/geo/panama-land";
 import { geocodeConEdificio } from "./geocode-edificio";
 import { createScraperClient } from "./supabase-admin";
 import { type TagCerrado } from "./tags-caracteristicas";
@@ -328,14 +329,21 @@ async function scrapeDetail(url: string): Promise<AnuncioRaw | null> {
   );
 
   // Source-first: panamaequity casi siempre publica lat/lng en el JSON-LD
-  // del Schema.org. Si está, ESA es la coord exacta del edificio — la
-  // usamos sin tocar. Solo si falta caemos al pipeline edificio→web→zona.
+  // del Schema.org. Si está Y cae en tierra, ESA es la coord exacta —
+  // la usamos sin tocar. Si falta o cae en el mar (broker con typo),
+  // caemos al pipeline edificio→web→zona.
   let finalLat = lat;
   let finalLng = lng;
-  if (finalLat && finalLng) {
+  if (finalLat && finalLng && isOnLand(finalLat, finalLng)) {
     console.log(`  geo ✓ ${finalLat.toFixed(4)}, ${finalLng.toFixed(4)} (de JSON-LD)`);
   } else {
-    console.log(`  ✗ sin geo en JSON-LD — corriendo pipeline edificio→cache→web→zona`);
+    if (finalLat && finalLng) {
+      console.log(`  ✗ geo del JSON-LD cae en mar (${finalLat.toFixed(4)}, ${finalLng.toFixed(4)}) — corriendo pipeline`);
+    } else {
+      console.log(`  ✗ sin geo en JSON-LD — corriendo pipeline edificio→cache→web→zona`);
+    }
+    finalLat = null;
+    finalLng = null;
     const geo = await geocodeConEdificio(titulo, listing.description ?? null, url, zona);
     if (!geo) {
       console.log(`  pipeline tampoco resolvió — saltando`);

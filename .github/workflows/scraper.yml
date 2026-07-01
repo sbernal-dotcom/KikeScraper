@@ -135,6 +135,19 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: npm run dedupe:prod
 
+      # Pase 3.5: archivar props cuya coord cae en el mar. Los scrapers
+      # nuevos ya validan (isOnLand), pero corremos esto por si el cache
+      # de edificios devuelve algo malo o hay data histórica.
+      # Idempotente + rápido (~5s), solo Supabase.
+      - name: Archivar props en el mar
+        id: archivar_en_mar
+        if: always()
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run archivar-en-mar:apply
+
       # Pase 4: presunta venta. Marca como presunta_venta=true las
       # archivadas que estuvieron ≥30 días activas y llevan ≥14 días
       # sin volver a verse (patrón típico de venta vs. pausa corta).

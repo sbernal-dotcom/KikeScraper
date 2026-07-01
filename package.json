@@ -27,7 +27,9 @@
     "reprocess:archived": "tsx scripts/scrapers/reprocess-archived.ts",
     "reprocess:archived:prod": "tsx scripts/scrapers/reprocess-archived.ts --supabase",
     "presunta-venta": "tsx scripts/scrapers/marcar-presuntas-ventas.ts",
-    "presunta-venta:apply": "tsx scripts/scrapers/marcar-presuntas-ventas.ts --apply"
+    "presunta-venta:apply": "tsx scripts/scrapers/marcar-presuntas-ventas.ts --apply",
+    "archivar-en-mar": "tsx scripts/scrapers/archivar-props-en-mar.ts",
+    "archivar-en-mar:apply": "tsx scripts/scrapers/archivar-props-en-mar.ts --apply"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
