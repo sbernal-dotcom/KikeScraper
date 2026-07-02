@@ -59,12 +59,12 @@ export function PropertyGridCard({ propiedad, className }: Props) {
          pin rojo indica la ubicación exacta del edificio. `key`
          garantiza remount al cambiar de prop (sin esto el browser
          mantiene la imagen vieja mientras descarga la nueva). */}
-      <div className="relative aspect-[3/2] overflow-hidden bg-muted">
+      <div className="relative aspect-[16/9] overflow-hidden bg-muted">
         <img
           key={propiedad.id}
           src={satelliteUrl(propiedad.ubicacion.lat, propiedad.ubicacion.lng, {
             width: 320,
-            height: 213,
+            height: 180,
           })}
           alt={`Vista satelital de ${propiedad.titulo}`}
           decoding="async"
