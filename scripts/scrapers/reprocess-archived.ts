@@ -103,8 +103,10 @@ async function main() {
         continue;
       }
 
-      // Pipeline strict solo devuelve precision='edificio' (sin fallback a zona)
-      if (geo.precision !== "edificio") {
+      // Solo revivir con precisión exacta (coord del source o cache manual).
+      // Aproximada = web search — no queremos revivir con coord dudosa.
+      // Zona-declarada no aplica: reprocess corre sin allowZoneFallback.
+      if (geo.precision !== "exacta") {
         sinResultado++;
         continue;
       }

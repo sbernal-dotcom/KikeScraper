@@ -114,10 +114,12 @@ async function main() {
         continue;
       }
 
-      // Solo nos interesa actualizar si la nueva coord es de EDIFICIO
-      // (precisión exacta). Las de "zona" son las mismas que ya tenemos
-      // (centroide + jitter determinístico por url_original).
-      if (geo.precision !== "edificio") {
+      // Solo nos interesa actualizar si la nueva coord es "exacta"
+      // (coord del source o cache manual). "aproximada" viene del
+      // web search — no mejor que lo que ya tenemos. "zona-declarada"
+      // es más grueso (centroide) y solo se usa cuando la fuente lo
+      // publica explícitamente, no en backfill retroactivo.
+      if (geo.precision !== "exacta") {
         unchanged++;
         continue;
       }

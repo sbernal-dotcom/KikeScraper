@@ -14,7 +14,7 @@
  *
  * El campo `precision` permite que el frontend distinga entre pines
  * exactos y aproximados (zona). Si se quiere mostrar solo los exactos:
- * filtrar por precision === "edificio".
+ * filtrar por precision === "exacta".
  */
 
 import { type SupabaseClient } from "@supabase/supabase-js";
