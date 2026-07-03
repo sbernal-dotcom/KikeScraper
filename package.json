@@ -17,6 +17,8 @@
     "scrape:mls:prod": "tsx scripts/scrapers/scraper-mlsacobir.ts --supabase",
     "scrape:inmo": "tsx scripts/scrapers/scraper-inmopanama.ts",
     "scrape:inmo:prod": "tsx scripts/scrapers/scraper-inmopanama.ts --supabase",
+    "scrape:savitat": "tsx scripts/scrapers/scraper-savitat.ts",
+    "scrape:savitat:prod": "tsx scripts/scrapers/scraper-savitat.ts --supabase",
     "scrape:coords": "tsx scripts/scrapers/recalcular-coords.ts",
     "scrape:backfill-ia": "tsx scripts/scrapers/backfill-ia.ts",
     "scrape:verify": "tsx scripts/scrapers/verificar-estado.ts",

@@ -42,10 +42,13 @@ function getGroqKey(): string | null {
 }
 
 const DESC_MAX = 600;
+const MAX_RETRIES_429 = 3;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export async function extraerEdificio(
   titulo: string | null,
   descripcion: string | null,
+  attempt = 0,
 ): Promise<ExtraccionEdificio> {
   const key = getGroqKey();
   if (!key) return EXTRACCION_VACIA;
@@ -95,7 +98,17 @@ Descripción: ${desc}`;
     });
     clearTimeout(t);
     if (!res.ok) {
-      console.warn(`  extract-edificio: HTTP ${res.status} ${await res.text().catch(() => "")}`);
+      const body = await res.text().catch(() => "");
+      // Rate limit — reintentar con el retry-after que Groq indica en el
+      // mensaje ("Please try again in 4.75s"). Con cap para no colgar.
+      if (res.status === 429 && attempt < MAX_RETRIES_429) {
+        const m = body.match(/try again in ([\d.]+)s/i);
+        const waitS = Math.min(30, m ? parseFloat(m[1]) + 0.5 : 8);
+        console.warn(`  extract-edificio: 429 → retry en ${waitS}s (intento ${attempt + 1}/${MAX_RETRIES_429})`);
+        await sleep(waitS * 1000);
+        return extraerEdificio(titulo, descripcion, attempt + 1);
+      }
+      console.warn(`  extract-edificio: HTTP ${res.status} ${body}`);
       return EXTRACCION_VACIA;
     }
     const data = (await res.json()) as {

@@ -62,11 +62,42 @@ function makeZoneValidator(centro: ZonaCentro | null): Validator | undefined {
     haversineKm({ lat, lng }, centro) <= ZONE_PROXIMITY_KM;
 }
 
+/**
+ * Precisión de ubicación — mapea 1:1 al CHECK constraint de la columna
+ * `propiedades.precision_ubicacion` (migration 0014):
+ *
+ *   - "exacta"          : coord del source (JSON-LD o cache manual)
+ *   - "zona-declarada"  : centroide de zona conocida que el source publicó
+ *                         (allowZoneFallback: true)
+ *   - "aproximada"      : coord del web-search u otro método inferido
+ */
+export type PrecisionUbicacion = "exacta" | "zona-declarada" | "aproximada";
+
 export type GeocodeResultado = {
   lat: number;
   lng: number;
-  precision: "edificio" | "zona";
-  source: string; // "edificios_cache" | "web" | "zonas_panama"
+  precision: PrecisionUbicacion;
+  /**
+   * Cómo se obtuvo la coord — mapea 1:1 a `propiedades.ubicacion_fuente`.
+   * Valores comunes: "edificios_cache" | "web_search" |
+   * "streetAddress_zona" | "titulo_zona".
+   */
+  source: string;
+};
+
+export type GeocodeOpts = {
+  /**
+   * Si true, cuando el edificio/proyecto no resuelva y la zona (extraída
+   * por IA del título/descripción o pasada por el scraper vía
+   * zonaFallback) esté en la tabla de zonas conocidas, devolvemos su
+   * centroide sin jitter con precision="zona-declarada".
+   *
+   * Default false: mantiene strict mode "edificio o nada" para las
+   * fuentes existentes (encuentra24, mlsacobir, inmopanama, acobir).
+   * Solo scrapers de fuentes de alta confianza que publican la zona
+   * explícitamente (ej. savitat con streetAddress) deberían pasar true.
+   */
+  allowZoneFallback?: boolean;
 };
 
 // Tabla de cache (escribimos también filas "sin_resultado" para no
@@ -94,7 +125,10 @@ export async function geocodeConEdificio(
   descripcion: string | null,
   url_original: string,
   zonaFallback: string | null = null, // zona del JSON-LD del scraper
+  opts: GeocodeOpts = {},
 ): Promise<GeocodeResultado | null> {
+  const { allowZoneFallback = false } = opts;
+  void url_original;
   // 1. IA extrae
   const extr = await extraerEdificio(titulo, descripcion);
 
@@ -110,7 +144,7 @@ export async function geocodeConEdificio(
     const r = await resolverNombre(extr.edificio, validator);
     if (r && isOnLand(r.lat, r.lng)) {
       console.log(`  geocode → edificio "${extr.edificio}" ${r.source} (${r.lat.toFixed(4)},${r.lng.toFixed(4)})`);
-      return { ...r, precision: "edificio" };
+      return { ...r, precision: precisionFromSource(r.source) };
     }
     if (r) {
       // Defensivo: coord en mar aunque venía del cache. Puede pasar si
@@ -124,20 +158,51 @@ export async function geocodeConEdificio(
     const r = await resolverNombre(extr.proyecto, validator);
     if (r && isOnLand(r.lat, r.lng)) {
       console.log(`  geocode → proyecto "${extr.proyecto}" ${r.source} (${r.lat.toFixed(4)},${r.lng.toFixed(4)})`);
-      return { ...r, precision: "edificio" };
+      return { ...r, precision: precisionFromSource(r.source) };
     }
     if (r) {
       console.log(`  geocode → proyecto "${extr.proyecto}" descarta coord (en mar)`);
     }
   }
 
-  // STRICT MODE (2026-06-25): policy "edificio o nada". Eliminado el
-  // fallback a zona-centroide — usuario lo encontraba confuso (props
-  // tipo "Apto en Bella Vista" sin nombre de edificio terminaban pin-
-  // chando en el medio del barrio + jitter, dando la falsa impresión
-  // de ubicación real). Mejor mostrar menos props pero exactas.
+  // 4. Zona-declarada (opt-in — solo scrapers de alta confianza)
+  // Cuando el edificio no resuelve pero la fuente publicó la zona
+  // (extr.zona viene del título/descripción vía IA, o zonaFallback
+  // viene del JSON-LD del scraper) y esa zona está en nuestra tabla,
+  // usamos el centroide SIN jitter. La coord no es exacta pero es
+  // fuente-declarada, no adivinada — de ahí precision="zona-declarada".
+  if (allowZoneFallback && zonaCentro && isOnLand(zonaCentro.lat, zonaCentro.lng)) {
+    const source = extr.zona ? "titulo_zona" : "streetAddress_zona";
+    console.log(
+      `  geocode → zona "${zona}" (centroide, ${source}) (${zonaCentro.lat.toFixed(4)},${zonaCentro.lng.toFixed(4)})`,
+    );
+    return {
+      lat: zonaCentro.lat,
+      lng: zonaCentro.lng,
+      precision: "zona-declarada",
+      source,
+    };
+  }
+
+  // STRICT MODE (2026-06-25): policy "edificio o nada" para las fuentes
+  // legacy. Eliminado el fallback a zona-centroide con jitter porque
+  // el user lo encontraba confuso — props tipo "Apto en Bella Vista"
+  // sin nombre de edificio terminaban pinchando en el medio del barrio,
+  // dando la falsa impresión de ubicación real. Con allowZoneFallback
+  // sí se permite, pero SIN jitter y marcado como "zona-declarada".
   console.log(`  geocode → SIN ubicación de edificio resoluble, propiedad se descarta`);
   return null;
+}
+
+/**
+ * Deriva la precisión a partir del `source` que resolvió la coord.
+ * `edificios_cache` con source "manual" → exacta; con "web" → aproximada
+ * (viene del web search). Uno u otro se codifica en el string devuelto
+ * por resolverNombre — ver switch abajo.
+ */
+function precisionFromSource(source: string): PrecisionUbicacion {
+  if (source === "cache(manual)" || source === "cache(google)") return "exacta";
+  return "aproximada"; // cache(web), cache(sin_resultado), web
 }
 
 /**

@@ -15,13 +15,11 @@ concurrency:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    # 90 min: cubrir el caso donde los scrapers re-procesan archivadas.
-    # Tras el fix de skipUrls (0d2b250), el cron procesa archivadas + nuevas,
-    # lo que sube el tiempo de ~30 min a ~60-70 min. 90 da margen para
-    # crecer sin volver a cancelarse. encuentra24 (~10-12) + acobir (~2) +
-    # pe (~4-5) + mlsacobir (~15-20) + inmopanama (~20-30) + verify (~5) +
-    # dedupe (~1) + setup (~3) = ~60-75 min típico.
-    timeout-minutes: 90
+    # 120 min: Savitat agregado 2026-07-02 con concurrency 1 + jitter alto
+    # (rate limit Groq). Corrida diaria ~90-100 min típica. Encuentra24
+    # (~10-12) + acobir (~2) + pe (~4-5) + mlsacobir (~15-20) + inmopanama
+    # (~20-30) + savitat (~15-25) + verify (~5) + dedupe (~1) + setup (~3).
+    timeout-minutes: 120
 
     # issues: write necesario para que `gh issue create` pueda abrir
     # tickets cuando el scraper falla o reporta errores blandos.
@@ -103,6 +101,19 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: npm run scrape:inmo:prod
 
+      # Savitat = CBRE Panamá afiliado. ~150-300 URLs en sitemap, mayormente
+      # comercial premium. Concurrencia 1 + jitter alto para respetar el
+      # rate limit de Groq (extract-edificio). Puede tardar ~15-25 min.
+      - name: Scrape CBRE Panamá (Savitat)
+        id: scrape-savitat
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: npm run scrape:savitat:prod
+
       # Pase 2 del lifecycle: verifica las URLs que el scrape NO vio
       # (probablemente porque están en páginas profundas del listado).
       # Marca como activo / posible_inactivo / archivado / error_verificacion
@@ -115,7 +126,8 @@ jobs:
           steps.scrape-acobir.outcome == 'success' ||
           steps.scrape-pe.outcome == 'success' ||
           steps.scrape-mls.outcome == 'success' ||
-          steps.scrape-inmo.outcome == 'success'
+          steps.scrape-inmo.outcome == 'success' ||
+          steps.scrape-savitat.outcome == 'success'
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
