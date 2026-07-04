@@ -73,6 +73,27 @@ const SKIP_DOMAINS = [
   "airbnb.com",
   "expedia.com",
   "hotels.com",
+  // Wikipedia — da coord del ARTÍCULO (barrio, zona, ciudad), NO del
+  // edificio buscado. Caso 2026-07-04: buscar "Costa del Este" resolvía
+  // a wikipedia.org/Costa_del_Este_(Panama) → coord del centroide del
+  // barrio → 112 propiedades distintas pinchando en el mismo punto.
+  "wikipedia.org",
+  "wikipedia.com",
+  // gogetit.com.pa — portal inmobiliario panameño con bug/quirk: usa
+  // la MISMA coord (9.0233, -79.4986) como default para MUCHOS listings
+  // en barrios completamente distintos (Ancón, Tumba Muerto, Punta
+  // Pacífica, Pueblo Nuevo, Costa del Este, Bella Vista, San Francisco).
+  // Caso 2026-07-04: 24 edificios distintos apuntando al mismo pin.
+  "gogetit.com",
+  "gogetit.com.pa",
+  // laaparq.com — devuelve coord genérica del sitio principal para
+  // páginas de "copia-de-jordanal-altos-del-maria..." (URLs sospechosas
+  // de contenido duplicado sin listings reales).
+  "laaparq.com",
+  // grupotribaldos.com — devuelve la misma coord (8.9870, -79.5180)
+  // para 12+ edificios distintos (Marabierto, Porto Vita, KHUBLU,
+  // Paramount 30A, etc.). Detectado 2026-07-04.
+  "grupotribaldos.com",
 ];
 
 // Sitios que dan coords muy buenas (priorizar)

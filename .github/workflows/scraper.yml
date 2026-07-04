@@ -160,6 +160,19 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: npm run archivar-en-mar:apply
 
+      # Pase 3.6: detectar cache entries con coord genérica (compartida
+      # por >1 source_url distinto) o de dominio blacklist (wikipedia,
+      # gogetit, etc.). Invalida cache + archiva props afectadas para
+      # que se re-scrapeen limpio en el próximo pase.
+      - name: Limpiar cache con coord duplicada
+        id: limpiar_cache
+        if: always()
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run limpiar-cache-duplicado:apply
+
       # Pase 4: presunta venta. Marca como presunta_venta=true las
       # archivadas que estuvieron ≥30 días activas y llevan ≥14 días
       # sin volver a verse (patrón típico de venta vs. pausa corta).
