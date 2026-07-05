@@ -41,11 +41,19 @@ const SOURCE_PRIORITY = [
   "mlsacobir",
   "panamaequity",
   "inmopanama",
+  "savitat",
 ];
 
-const MAX_DIST_M = 50;
-const MAX_AREA_PCT = 0.05; // ±5%
-const MAX_PRECIO_PCT = 0.10; // ±10%
+// Umbrales ajustados 2026-07-04 tras reportes de duplicados no
+// detectados. Antes: 50m/5%/10%. Problema: cada scraper cachea el
+// mismo edificio con coord ligeramente distinta (60-90m aparte por
+// variabilidad del web-search) y brokers listan el mismo apto a
+// precios ligeramente diferentes. Umbrales más flexibles = más
+// grupos detectados sin generar falsos positivos (siempre exigimos
+// mismo tipo_operacion + categoria + al menos área o precio).
+const MAX_DIST_M = 100;
+const MAX_AREA_PCT = 0.08; // ±8%
+const MAX_PRECIO_PCT = 0.15; // ±15%
 
 const WRITE = process.argv.includes("--supabase");
 
