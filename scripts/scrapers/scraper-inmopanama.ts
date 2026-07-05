@@ -498,24 +498,49 @@ function toDbRow(a: AnuncioRaw): Record<string, unknown> | null {
 async function fetchExistingUrls(
   supa: ReturnType<typeof createScraperClient>,
 ): Promise<Set<string>> {
-  // Solo URLs activas. Archivadas se re-procesan para poder revivirlas.
-  // Paginado por cap de 1000.
+  // Saltamos:
+  //   - Activas (obviamente ya están en el mapa)
+  //   - Archivadas RECIENTES (últimos SKIP_ARCHIVADAS_DIAS días)
+  // Las archivadas antiguas SÍ se re-procesan para poder revivirlas si
+  // el edificio vuelve a listar.
+  //
+  // Fix 2026-07-05: cron canceló InmoPanama a los 108 min por re-procesar
+  // 471 archivadas del bulk cleanup del día anterior. Cada una llamaba
+  // al pipeline IA (Groq rate-limited). Con esta ventana de 7 días, el
+  // scraper deja pasar el bulk sin re-tocarlo.
+  const SKIP_ARCHIVADAS_DIAS = 7;
+  const cutoff = new Date(
+    Date.now() - SKIP_ARCHIVADAS_DIAS * 86_400_000,
+  ).toISOString();
+
   const PAGE = 1000;
   const all: string[] = [];
   let from = 0;
   while (true) {
     const { data, error } = await supa
       .from("propiedades")
-      .select("url_original")
+      .select("url_original, estado_anuncio, fecha_ultima_revision")
       .eq("fuente_id", FUENTE_ID)
-      .eq("estado_anuncio", "activo")
       .range(from, from + PAGE - 1);
     if (error) {
       console.warn(`  No se pudo leer propiedades existentes: ${error.message}`);
       return new Set(all);
     }
-    const batch = (data ?? []).map((r) => r.url_original as string);
-    all.push(...batch);
+    const batch = (data ?? []) as Array<{
+      url_original: string;
+      estado_anuncio: string;
+      fecha_ultima_revision: string | null;
+    }>;
+    for (const r of batch) {
+      if (r.estado_anuncio === "activo") all.push(r.url_original);
+      else if (
+        r.estado_anuncio === "archivado" &&
+        r.fecha_ultima_revision &&
+        r.fecha_ultima_revision > cutoff
+      ) {
+        all.push(r.url_original);
+      }
+    }
     if (batch.length < PAGE) break;
     from += PAGE;
   }

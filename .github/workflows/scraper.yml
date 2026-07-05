@@ -91,19 +91,12 @@ jobs:
           NEXT_PUBLIC_MAPBOX_TOKEN: ${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
         run: npm run scrape:mls:prod
 
-      - name: Scrape InmoPanama
-        id: scrape-inmo
-        continue-on-error: true
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-        run: npm run scrape:inmo:prod
-
       # Savitat = CBRE Panamá afiliado. ~150-300 URLs en sitemap, mayormente
       # comercial premium. Concurrencia 1 + jitter alto para respetar el
       # rate limit de Groq (extract-edificio). Puede tardar ~15-25 min.
+      # ORDEN: Savitat va ANTES que InmoPanama (fix 2026-07-05) — InmoPanama
+      # ha llegado a tomar >100 min re-procesando archivadas, y si consume
+      # todo el timeout dejaba Savitat/Verify sin correr.
       - name: Scrape CBRE Panamá (Savitat)
         id: scrape-savitat
         continue-on-error: true
@@ -114,11 +107,12 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: npm run scrape:savitat:prod
 
-      # Pase 2 del lifecycle: verifica las URLs que el scrape NO vio
-      # (probablemente porque están en páginas profundas del listado).
+      # Pase 2 del lifecycle: verifica las URLs que el scrape NO vio.
       # Marca como activo / posible_inactivo / archivado / error_verificacion
-      # según GET + JSON-LD Product. Corre si AL MENOS un scrape funcionó —
-      # si todos petaron duro, la DB no se tocó y no hay nada que reconciliar.
+      # según GET + JSON-LD Product.
+      # ORDEN: Verify va ANTES que InmoPanama (fix 2026-07-05) para
+      # garantizar que corra aunque InmoPanama se cancele por timeout.
+      # Corre si AL MENOS un scrape previo funcionó.
       - name: Verificar estado (pase 2 del lifecycle)
         id: verify
         if: |
@@ -126,12 +120,26 @@ jobs:
           steps.scrape-acobir.outcome == 'success' ||
           steps.scrape-pe.outcome == 'success' ||
           steps.scrape-mls.outcome == 'success' ||
-          steps.scrape-inmo.outcome == 'success' ||
           steps.scrape-savitat.outcome == 'success'
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: npm run scrape:verify
+
+      # InmoPanama al FINAL de los scrapers — es el bottleneck (agregador
+      # grande, ~9500 props en el catálogo). Si explota por timeout, los
+      # demás ya corrieron. Además: fetchExistingUrls ahora saltea
+      # archivadas recientes (últimos 7 días) para no re-procesar bulks
+      # de limpieza.
+      - name: Scrape InmoPanama
+        id: scrape-inmo
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: npm run scrape:inmo:prod
 
       # Pase 3: deduplicación cross-source. Wipe + rebuild de la tabla
       # propiedades_duplicados. Idempotente; corre siempre (los duplicados
