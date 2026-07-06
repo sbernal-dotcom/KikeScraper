@@ -344,7 +344,14 @@ async function scrapeDetail(url: string): Promise<AnuncioRaw | null> {
     }
     finalLat = null;
     finalLng = null;
-    const geo = await geocodeConEdificio(titulo, listing.description ?? null, url, zona);
+    // Pasamos la categoría: terrenos/casas activan zona-fallback automático.
+    const geo = await geocodeConEdificio(
+      titulo,
+      listing.description ?? null,
+      url,
+      zona,
+      { categoria: categoriaFromTitleOrUrl(`${titulo ?? ""} ${url}`) },
+    );
     if (!geo) {
       console.log(`  pipeline tampoco resolvió — saltando`);
       return null;

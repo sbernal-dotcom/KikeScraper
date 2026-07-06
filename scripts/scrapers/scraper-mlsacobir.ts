@@ -369,7 +369,11 @@ async function scrapeDetail(url: string): Promise<AnuncioRaw | null> {
   // mlsacobir no publica lat/lng en el source → pipeline siempre.
   // Pipeline edificio→cache→web→zona. Si nada, descarta.
   const descRaw = readOg(html, "description") ?? "";
-  const geo = await geocodeConEdificio(titulo, descRaw, url, zona);
+  // Pasamos la categoría: terrenos/casas activan zona-fallback automático.
+  const slugForCategoria = url.match(/\/propiedades\/([^/]+)/)?.[1] ?? "";
+  const geo = await geocodeConEdificio(titulo, descRaw, url, zona, {
+    categoria: categoriaFromSlug(slugForCategoria),
+  });
   if (!geo) {
     console.log(`  geocode → sin resultado — saltando`);
     return null;

@@ -98,7 +98,19 @@ export type GeocodeOpts = {
    * explícitamente (ej. savitat con streetAddress) deberían pasar true.
    */
   allowZoneFallback?: boolean;
+  /**
+   * Categoría de la propiedad. Cuando es "terreno" / "lote" / "casa",
+   * el fallback a zona se activa AUTOMÁTICAMENTE porque no tienen
+   * edificio identificable por definición (terreno) o porque la casa
+   * suele ser única de un barrio sin nombre de edificio. Para
+   * "apartamento", "oficina", "local-comercial", "galera" se mantiene
+   * strict — son unidades dentro de un edificio y sin nombre del
+   * edificio la coord sería demasiado inespecífica.
+   */
+  categoria?: string;
 };
+
+const CATEGORIAS_CON_FALLBACK_AUTO = new Set(["terreno", "lote", "casa"]);
 
 // Tabla de cache (escribimos también filas "sin_resultado" para no
 // re-buscar la misma cadena en cada corrida).
@@ -127,7 +139,12 @@ export async function geocodeConEdificio(
   zonaFallback: string | null = null, // zona del JSON-LD del scraper
   opts: GeocodeOpts = {},
 ): Promise<GeocodeResultado | null> {
-  const { allowZoneFallback = false } = opts;
+  const { allowZoneFallback = false, categoria } = opts;
+  // Terrenos, lotes y casas activan zona-declarada automáticamente
+  // (no requieren edificio identificable).
+  const useZoneFallback =
+    allowZoneFallback ||
+    (categoria != null && CATEGORIAS_CON_FALLBACK_AUTO.has(categoria));
   void url_original;
   // 1. IA extrae
   const extr = await extraerEdificio(titulo, descripcion);
@@ -171,7 +188,7 @@ export async function geocodeConEdificio(
   // viene del JSON-LD del scraper) y esa zona está en nuestra tabla,
   // usamos el centroide SIN jitter. La coord no es exacta pero es
   // fuente-declarada, no adivinada — de ahí precision="zona-declarada".
-  if (allowZoneFallback && zonaCentro && isOnLand(zonaCentro.lat, zonaCentro.lng)) {
+  if (useZoneFallback && zonaCentro && isOnLand(zonaCentro.lat, zonaCentro.lng)) {
     const source = extr.zona ? "titulo_zona" : "streetAddress_zona";
     console.log(
       `  geocode → zona "${zona}" (centroide, ${source}) (${zonaCentro.lat.toFixed(4)},${zonaCentro.lng.toFixed(4)})`,

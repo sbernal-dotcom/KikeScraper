@@ -354,7 +354,10 @@ async function scrapeDetail(
 
   // inmopanama explícitamente dice "Ubicación no disponible" — nunca da
   // lat/lng en el source. Pipeline siempre: edificio → cache → web → zona.
-  const geo = await geocodeConEdificio(titulo, descRaw, url, zona);
+  // Pasamos la categoría: terrenos/casas activan zona-fallback automático.
+  const geo = await geocodeConEdificio(titulo, descRaw, url, zona, {
+    categoria: categoriaFromTitle(titulo ?? "", url),
+  });
   if (!geo) {
     console.log(`  geocode → sin resultado — saltando`);
     return null;

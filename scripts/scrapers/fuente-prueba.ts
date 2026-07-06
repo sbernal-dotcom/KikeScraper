@@ -465,7 +465,16 @@ async function scrapeOne(
   //  3. Web search si miss (cachea positivo y negativo)
   //  4. Si nada, fallback al zone-centroide
   //  5. Si tampoco zona, descarta la propiedad
-  const geo = await geocodeConEdificio(titulo, product.description ?? null, item.url, zona);
+  // Pasamos la categoría al pipeline: terrenos/casas activan zona-fallback
+  // automático (no exigimos edificio identificable para esas categorías).
+  const categoria = categoriaFromUrl(item.url);
+  const geo = await geocodeConEdificio(
+    titulo,
+    product.description ?? null,
+    item.url,
+    zona,
+    { categoria },
+  );
   if (!geo) {
     console.warn("  Sin ubicación resoluble — saltando");
     return null;
