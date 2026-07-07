@@ -39,12 +39,22 @@ loadEnv();
 
 const FUENTE_ID = "mlsacobir";
 const BASE_URL = "https://www.mlsacobir.com";
-const LIST_URL = `${BASE_URL}/propiedades/`;
+// 2026-07-07: el sitio movió el listado principal de /propiedades/ a
+// /propiedades-en-panama/. La URL vieja ahora es un hub sin URLs
+// individuales — solo apuntadores a subcategorías por zona/tipo.
+// La nueva URL sirve las mismas ~1300 props paginadas con ?wplpage=N,
+// aunque ahora devuelve 6 por página en vez de 51.
+const LIST_URL = `${BASE_URL}/propiedades-en-panama/`;
 const USER_AGENT =
   "MapaInteractivoInteligente/0.1 (+contacto: abilendesign@gmail.com)";
 
-const MAX_PAGES = 30;
-const MAX_EMPTY_PAGES = 2;
+// El sitio ahora devuelve 6 URLs por página (antes 51). Para cubrir el
+// inventario completo (~1300 props) haría falta ~220 páginas, pero el
+// scraper corta con MAX_EMPTY_PAGES cuando ya no hay novedad. Cap a 250
+// como margen absoluto — bajo densidad real (~6/pág) es un ceiling raro
+// que solo se toca en corridas iniciales.
+const MAX_PAGES = 250;
+const MAX_EMPTY_PAGES = 3;
 const DETAIL_CONCURRENCY = 3;
 const UPSERT_CONCURRENCY = 5;
 
