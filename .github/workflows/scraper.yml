@@ -15,11 +15,12 @@ concurrency:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    # 120 min: Savitat agregado 2026-07-02 con concurrency 1 + jitter alto
-    # (rate limit Groq). Corrida diaria ~90-100 min típica. Encuentra24
-    # (~10-12) + acobir (~2) + pe (~4-5) + mlsacobir (~15-20) + inmopanama
-    # (~20-30) + savitat (~15-25) + verify (~5) + dedupe (~1) + setup (~3).
-    timeout-minutes: 120
+    # 150 min: colchón tras optimizaciones 2026-07-08. Con verify
+    # paralelo (42 → ~10 min), InmoPanama concurrency 5 (~20 min típico),
+    # MLS Acobir con MAX_PAGES 100, la corrida diaria típica queda en
+    # ~75-90 min. El colchón cubre picos ocasionales sin arriesgar
+    # cancelaciones cerca del final.
+    timeout-minutes: 150
 
     # issues: write necesario para que `gh issue create` pueda abrir
     # tickets cuando el scraper falla o reporta errores blandos.

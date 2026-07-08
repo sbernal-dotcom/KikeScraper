@@ -58,11 +58,34 @@ const THRESH_ARCHIVADO = 7;
 
 // Para no martillar la fuente: delay entre requests.
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const jitter = (min = 1200, max = 2400) =>
+const jitter = (min = 800, max = 1600) =>
   sleep(min + Math.floor(Math.random() * (max - min)));
 
 // Timeout por request. encuentra24 normalmente responde en <2s.
 const FETCH_TIMEOUT_MS = 15_000;
+
+// Concurrencia del pase de verify. Cada request es un GET simple sin
+// pipeline IA, así que podemos paralelizar bastante — el cuello de
+// botella es el server-side de cada portal. 5 en paralelo mantiene
+// distintas fuentes distribuidas (las URLs van mezcladas) sin
+// martillar a ninguna en particular.
+const VERIFY_CONCURRENCY = 5;
+
+async function chunkedParallel<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const out: R[] = [];
+  for (let i = 0; i < items.length; i += concurrency) {
+    const chunk = items.slice(i, i + concurrency);
+    const settled = await Promise.allSettled(chunk.map(fn));
+    for (const r of settled) {
+      if (r.status === "fulfilled") out.push(r.value);
+    }
+  }
+  return out;
+}
 
 type FilaPendiente = {
   id: string;
@@ -220,7 +243,7 @@ async function main() {
   let archivadas = 0;
   let posiblesInactivas = 0;
 
-  for (const fila of pendientes) {
+  await chunkedParallel(pendientes, VERIFY_CONCURRENCY, async (fila) => {
     await jitter();
     const r = await verificar(fila.url_original);
     const ahoraIso = new Date().toISOString();
@@ -250,7 +273,6 @@ async function main() {
     } else {
       update = {
         estado_anuncio: "error_verificacion",
-        // NO incrementa contador.
         fecha_ultima_revision: ahoraIso,
         motivo_estado: `error: ${r.motivo}`,
       };
@@ -268,7 +290,8 @@ async function main() {
         r.tipo === "viva" ? "✓" : r.tipo === "no_encontrada" ? "✗" : "?";
       console.log(`  ${tag} ${r.tipo} — ${r.motivo}`);
     }
-  }
+    return null;
+  });
 
   console.log(
     `\nVerificadas: ${pendientes.length} | vivas: ${vivas} | no encontradas: ${noEncontradas} (→ ${posiblesInactivas} posible_inactivo, ${archivadas} archivado) | errores: ${erroresVerificacion}.`,

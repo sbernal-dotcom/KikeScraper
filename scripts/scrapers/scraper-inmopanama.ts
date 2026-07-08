@@ -53,7 +53,11 @@ const USER_AGENT =
 
 const MAX_PAGES_PER_LIST = 50;
 const MAX_EMPTY_PAGES = 2;
-const DETAIL_CONCURRENCY = 3;
+// 2026-07-08: concurrency 3 → 5. Cada detail hace fetch + pipeline IA
+// (Groq). Con concurrency 5 mantenemos ~5-8 req/s al sitio (aceptable,
+// es agregador con infra robusta) y baja el tiempo total ~35%. Groq
+// TPM aguanta gracias al retry 429 en ia-extract-edificio.ts.
+const DETAIL_CONCURRENCY = 5;
 const UPSERT_CONCURRENCY = 5;
 
 const TARGET: "json" | "supabase" = process.argv.includes("--supabase")

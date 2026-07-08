@@ -48,12 +48,12 @@ const LIST_URL = `${BASE_URL}/propiedades-en-panama/`;
 const USER_AGENT =
   "MapaInteractivoInteligente/0.1 (+contacto: abilendesign@gmail.com)";
 
-// El sitio ahora devuelve 6 URLs por página (antes 51). Para cubrir el
-// inventario completo (~1300 props) haría falta ~220 páginas, pero el
-// scraper corta con MAX_EMPTY_PAGES cuando ya no hay novedad. Cap a 250
-// como margen absoluto — bajo densidad real (~6/pág) es un ceiling raro
-// que solo se toca en corridas iniciales.
-const MAX_PAGES = 250;
+// El sitio devuelve 6 URLs por página. Con MAX_PAGES=100 cubrimos
+// hasta 600 nuevas por corrida — muy por encima de la novedad típica
+// (~70 nuevas/día tras el fix del listado). MAX_EMPTY_PAGES=3 corta
+// antes cuando skipUrls tumba varias páginas seguidas.
+// 2026-07-08: bajado de 250 → 100 para acotar corridas grandes.
+const MAX_PAGES = 100;
 const MAX_EMPTY_PAGES = 3;
 const DETAIL_CONCURRENCY = 3;
 const UPSERT_CONCURRENCY = 5;
