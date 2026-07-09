@@ -31,6 +31,8 @@
  * y se saltan automáticamente (no caen en la ventana de re-verificación).
  */
 
+import { spawnSync } from "child_process";
+
 import { config as loadEnv } from "dotenv";
 
 import { createScraperClient } from "./supabase-admin";
@@ -67,12 +69,17 @@ const FETCH_TIMEOUT_MS = 15_000;
 // Concurrencia del pase de verify.
 // 2026-07-09: bajado de 5 → 2 después de que concurrency 5 archivara
 // masivamente props válidas de Panama Equity y Savitat (58→4, 90→14).
-// Con bursts paralelos los portales devolvían HTML "shell" sin JSON-LD
-// → clasificado como no_encontrada → contador +1 → archivo. Con
-// concurrency 2 + jitter 1.2-2.4s vamos ~15-18 min (vs. 42 secuencial,
-// vs. 9 con conc=5). Trade-off razonable: 2x más lento que conc=5 pero
-// sin corromper el estado.
 const VERIFY_CONCURRENCY = 2;
+
+// ---------------- Circuit breaker (2026-07-09) ----------------
+// Antes de aplicar cambios sobre TODO el inventario, corremos verify
+// sobre una muestra mezclada y medimos la tasa de "no_encontrada". Si
+// pasa el umbral asumimos que el bug NO son las props sino la red o
+// los portales devolviendo HTML sin JSON-LD → abortamos sin escribir
+// nada. Esto evita el caso 2026-07-09 exacto: verify archivó 395 props
+// válidas por un problema transitorio del sitio.
+const CANARY_SIZE = 100;
+const CANARY_NO_ENCONTRADA_MAX_RATIO = 0.25;
 
 async function chunkedParallel<T, R>(
   items: T[],
@@ -88,6 +95,39 @@ async function chunkedParallel<T, R>(
     }
   }
   return out;
+}
+
+/**
+ * Selecciona una muestra mezclada: 1/3 más recientemente revisadas +
+ * 1/3 más antiguas + 1/3 aleatorias. Sirve para detectar tanto
+ * problemas de red genéricos como fallos por HTML nuevo del portal.
+ */
+function makeCanarySample(pendientes: FilaPendiente[]): FilaPendiente[] {
+  if (pendientes.length <= CANARY_SIZE) return pendientes.slice();
+  const third = Math.floor(CANARY_SIZE / 3);
+  const recent = pendientes.slice(0, third);
+  const old = pendientes.slice(-third);
+  const remainingPool = pendientes.slice(third, pendientes.length - third);
+  const random: FilaPendiente[] = [];
+  const need = CANARY_SIZE - recent.length - old.length;
+  // Muestra determinística por índice — evitamos Math.random() para
+  // que dos corridas seguidas peguen las mismas URLs.
+  const step = Math.max(1, Math.floor(remainingPool.length / need));
+  for (let i = 0, j = 0; j < need && i < remainingPool.length; i += step, j++) {
+    random.push(remainingPool[i]);
+  }
+  return [...recent, ...random, ...old];
+}
+
+function ghIssue(title: string, body: string) {
+  if (!process.env.GH_TOKEN && !process.env.GITHUB_TOKEN) {
+    console.warn("  (sin GH_TOKEN — issue no creado)");
+    return;
+  }
+  const r = spawnSync("gh", ["issue", "create", "--title", title, "--body", body], {
+    stdio: "inherit",
+  });
+  if (r.status !== 0) console.warn(`  gh issue create falló (exit ${r.status}).`);
 }
 
 type FilaPendiente = {
@@ -239,6 +279,69 @@ async function main() {
     .select("id")
     .single();
   const runId = runRow?.id as string | undefined;
+
+  // ---------------- CANARY (circuit breaker) ----------------
+  const canary = makeCanarySample(pendientes);
+  console.log(`\n▶ Canary: ${canary.length} URLs (recientes + antiguas + aleatorias)`);
+  const canarySamples: Array<{
+    url: string;
+    tipo: "viva" | "no_encontrada" | "error";
+    motivo: string;
+  }> = [];
+  await chunkedParallel(canary, VERIFY_CONCURRENCY, async (fila) => {
+    await jitter();
+    const r = await verificar(fila.url_original);
+    canarySamples.push({ url: fila.url_original, tipo: r.tipo, motivo: r.motivo });
+    return null;
+  });
+  const canaryVivas = canarySamples.filter((s) => s.tipo === "viva").length;
+  const canaryNo = canarySamples.filter((s) => s.tipo === "no_encontrada").length;
+  const canaryErr = canarySamples.filter((s) => s.tipo === "error").length;
+  const noRatio = canary.length > 0 ? canaryNo / canary.length : 0;
+  console.log(
+    `  Canary result: vivas=${canaryVivas} no_encontradas=${canaryNo} errores=${canaryErr} → ratio no_encontrada = ${(noRatio * 100).toFixed(1)}%`,
+  );
+
+  if (noRatio > CANARY_NO_ENCONTRADA_MAX_RATIO) {
+    const muestraFalsos = canarySamples
+      .filter((s) => s.tipo === "no_encontrada")
+      .slice(0, 10)
+      .map((s) => `- \`${s.motivo}\` ${s.url}`)
+      .join("\n");
+    const body = [
+      `Circuit breaker en verify: la muestra canary tuvo ${(noRatio * 100).toFixed(1)}% de "no_encontrada" (umbral ${(CANARY_NO_ENCONTRADA_MAX_RATIO * 100).toFixed(0)}%).`,
+      "",
+      `Muestra: ${canary.length} URLs (recientes + antiguas + aleatorias).`,
+      `- vivas: ${canaryVivas}`,
+      `- no_encontradas: ${canaryNo}`,
+      `- errores: ${canaryErr}`,
+      "",
+      "**Verify ABORTADO** — no se aplicaron cambios de estado ni contadores. La causa más probable es que uno o varios portales están devolviendo HTML shell (sin JSON-LD) por problema transitorio.",
+      "",
+      "Ejemplos de las URLs marcadas como no_encontrada:",
+      muestraFalsos,
+      "",
+      "Log completo: " + `https://github.com/${process.env.GITHUB_REPOSITORY ?? "?"}/actions/runs/${process.env.GITHUB_RUN_ID ?? "?"}`,
+    ].join("\n");
+    console.warn(`\n✗ ABORT: canary ${(noRatio * 100).toFixed(1)}% > ${(CANARY_NO_ENCONTRADA_MAX_RATIO * 100).toFixed(0)}%`);
+    ghIssue(
+      `verify: canary abort ${(noRatio * 100).toFixed(0)}% no_encontrada (${new Date().toISOString().slice(0, 10)})`,
+      body,
+    );
+    if (runId) {
+      await supa
+        .from("scraper_runs")
+        .update({
+          finished_at: new Date().toISOString(),
+          status: "error",
+          found: canary.length,
+          notes: `verify canary abort — ratio ${(noRatio * 100).toFixed(1)}% > ${(CANARY_NO_ENCONTRADA_MAX_RATIO * 100).toFixed(0)}%`,
+        })
+        .eq("id", runId);
+    }
+    process.exit(1);
+  }
+  console.log(`  Canary OK — procediendo con las ${pendientes.length} URLs.`);
 
   let vivas = 0;
   let noEncontradas = 0;

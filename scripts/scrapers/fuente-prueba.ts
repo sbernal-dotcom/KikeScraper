@@ -30,6 +30,7 @@ import {
   type ResumenBilingue,
 } from "./ia";
 import { geocodeConEdificio } from "./geocode-edificio";
+import { preflightCheck } from "./preflight-check";
 import { validarConMapbox } from "./mapbox-validate";
 import { createScraperClient } from "./supabase-admin";
 import { type TagCerrado } from "./tags-caracteristicas";
@@ -905,6 +906,11 @@ async function runSupabaseMode() {
 
 async function main() {
   if (TARGET === "supabase") {
+    const pf = await preflightCheck("encuentra24");
+    if (!pf.ok) {
+      console.error(`Preflight abort: ${pf.reason}`);
+      process.exit(1);
+    }
     await runSupabaseMode();
   } else {
     await runJsonMode();

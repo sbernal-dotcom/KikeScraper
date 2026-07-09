@@ -30,6 +30,7 @@ import { config as loadEnv } from "dotenv";
 
 import { isOnLand } from "../../src/lib/geo/panama-land";
 import { geocodeConEdificio } from "./geocode-edificio";
+import { preflightCheck } from "./preflight-check";
 import {
   enriquecerConIA,
   trimDescripcion,
@@ -608,8 +609,14 @@ async function runSupabaseMode() {
 }
 
 async function main() {
-  if (TARGET === "supabase") await runSupabaseMode();
-  else await runJsonMode();
+  if (TARGET === "supabase") {
+    const pf = await preflightCheck("savitat");
+    if (!pf.ok) {
+      console.error(`Preflight abort: ${pf.reason}`);
+      process.exit(1);
+    }
+    await runSupabaseMode();
+  } else await runJsonMode();
 }
 
 main().catch((err) => {

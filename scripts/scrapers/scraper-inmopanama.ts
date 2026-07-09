@@ -35,6 +35,7 @@ import {
   type ResumenBilingue,
 } from "./ia";
 import { geocodeConEdificio } from "./geocode-edificio";
+import { preflightCheck } from "./preflight-check";
 import { createScraperClient } from "./supabase-admin";
 import { type TagCerrado } from "./tags-caracteristicas";
 import { centroFromTable } from "./zonas-panama";
@@ -643,8 +644,14 @@ async function runSupabaseMode() {
 }
 
 async function main() {
-  if (TARGET === "supabase") await runSupabaseMode();
-  else await runJsonMode();
+  if (TARGET === "supabase") {
+    const pf = await preflightCheck("inmopanama");
+    if (!pf.ok) {
+      console.error(`Preflight abort: ${pf.reason}`);
+      process.exit(1);
+    }
+    await runSupabaseMode();
+  } else await runJsonMode();
 }
 
 main().catch((err) => {
