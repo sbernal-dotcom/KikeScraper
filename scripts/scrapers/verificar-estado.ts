@@ -58,18 +58,21 @@ const THRESH_ARCHIVADO = 7;
 
 // Para no martillar la fuente: delay entre requests.
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const jitter = (min = 800, max = 1600) =>
+const jitter = (min = 1200, max = 2400) =>
   sleep(min + Math.floor(Math.random() * (max - min)));
 
 // Timeout por request. encuentra24 normalmente responde en <2s.
 const FETCH_TIMEOUT_MS = 15_000;
 
-// Concurrencia del pase de verify. Cada request es un GET simple sin
-// pipeline IA, así que podemos paralelizar bastante — el cuello de
-// botella es el server-side de cada portal. 5 en paralelo mantiene
-// distintas fuentes distribuidas (las URLs van mezcladas) sin
-// martillar a ninguna en particular.
-const VERIFY_CONCURRENCY = 5;
+// Concurrencia del pase de verify.
+// 2026-07-09: bajado de 5 → 2 después de que concurrency 5 archivara
+// masivamente props válidas de Panama Equity y Savitat (58→4, 90→14).
+// Con bursts paralelos los portales devolvían HTML "shell" sin JSON-LD
+// → clasificado como no_encontrada → contador +1 → archivo. Con
+// concurrency 2 + jitter 1.2-2.4s vamos ~15-18 min (vs. 42 secuencial,
+// vs. 9 con conc=5). Trade-off razonable: 2x más lento que conc=5 pero
+// sin corromper el estado.
+const VERIFY_CONCURRENCY = 2;
 
 async function chunkedParallel<T, R>(
   items: T[],
