@@ -135,6 +135,7 @@ type FilaPendiente = {
   url_original: string;
   estado_anuncio: string;
   veces_no_encontrado: number | null;
+  fuente_id: string;
 };
 
 type Resultado =
@@ -218,10 +219,28 @@ async function verificar(url: string): Promise<Resultado> {
     ) {
       return { tipo: "viva", motivo: "Microdata Schema.org OK" };
     }
-    // 200 sin Product: posibles causas legítimas (anuncio borrado por
-    // el publicador, página de error custom del sitio). El contador
-    // tolera 2 misses antes de cambiar el estado, así que un falso
-    // negativo aislado no archiva una propiedad viva.
+    // Fallback dominio-específico. Algunos portales no publican JSON-LD
+    // ni microdata (InmoPanama removió los markers `ib-prop-*` a mediados
+    // de 2026-07). En vez de marcar 100% de sus URLs como no_encontrada,
+    // aceptamos un heurístico débil: título contiene el nombre del
+    // portal + HTML de tamaño razonable (>20KB, no es página de error).
+    const domainMarkers: Array<{ host: string; titleMarker: string }> = [
+      { host: "inmopanama.com", titleMarker: "InmoPanama" },
+    ];
+    for (const { host, titleMarker } of domainMarkers) {
+      if (url.toLowerCase().includes(host)) {
+        const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+        const hasTitle = titleMatch?.[1]?.includes(titleMarker) ?? false;
+        if (hasTitle && html.length > 20_000) {
+          return { tipo: "viva", motivo: `${host}: title+size OK` };
+        }
+        // Motivo detallado para debug del canary
+        return {
+          tipo: "no_encontrada",
+          motivo: `${host}: title=${hasTitle} size=${Math.round(html.length / 1024)}KB`,
+        };
+      }
+    }
     return { tipo: "no_encontrada", motivo: "sin Product/microdata" };
   } catch (err) {
     const msg = (err as Error).name === "AbortError" ? "timeout" : (err as Error).message;
@@ -247,7 +266,7 @@ async function main() {
   // URLs muertas.
   const baseQuery = supa
     .from("propiedades")
-    .select("id, url_original, estado_anuncio, veces_no_encontrado")
+    .select("id, url_original, estado_anuncio, veces_no_encontrado, fuente_id")
     .neq("estado_anuncio", "archivado");
   const { data, error } = FORCE
     ? await baseQuery
@@ -285,31 +304,74 @@ async function main() {
   console.log(`\n▶ Canary: ${canary.length} URLs (recientes + antiguas + aleatorias)`);
   const canarySamples: Array<{
     url: string;
+    fuente_id: string;
     tipo: "viva" | "no_encontrada" | "error";
     motivo: string;
   }> = [];
   await chunkedParallel(canary, VERIFY_CONCURRENCY, async (fila) => {
     await jitter();
     const r = await verificar(fila.url_original);
-    canarySamples.push({ url: fila.url_original, tipo: r.tipo, motivo: r.motivo });
+    canarySamples.push({
+      url: fila.url_original,
+      fuente_id: fila.fuente_id,
+      tipo: r.tipo,
+      motivo: r.motivo,
+    });
     return null;
   });
   const canaryVivas = canarySamples.filter((s) => s.tipo === "viva").length;
   const canaryNo = canarySamples.filter((s) => s.tipo === "no_encontrada").length;
   const canaryErr = canarySamples.filter((s) => s.tipo === "error").length;
+  // Distinguimos "muerte legítima" (404/410/redirect a prop_unavailable/
+  // page dead) de "posible bug del sitio" (200 sin Product/microdata,
+  // HTML shell). Solo lo segundo cuenta como sospechoso — el circuit
+  // breaker solo debe activarse contra bugs del sitio, no contra
+  // props reales que están archivadas y hay que procesar.
+  const sospechosas = canarySamples.filter((s) => {
+    if (s.tipo !== "no_encontrada") return false;
+    const m = s.motivo.toLowerCase();
+    if (/^http (?:404|410)/.test(m)) return false;
+    if (/prop_unavailable/.test(m)) return false;
+    return /sin product|microdata|title=false|shell/.test(m) || !/redirect|http/.test(m);
+  }).length;
   const noRatio = canary.length > 0 ? canaryNo / canary.length : 0;
+  const suspRatio = canary.length > 0 ? sospechosas / canary.length : 0;
   console.log(
-    `  Canary result: vivas=${canaryVivas} no_encontradas=${canaryNo} errores=${canaryErr} → ratio no_encontrada = ${(noRatio * 100).toFixed(1)}%`,
+    `  Canary result: vivas=${canaryVivas} no_encontradas=${canaryNo} (sospechosas=${sospechosas}) errores=${canaryErr}`,
   );
+  console.log(
+    `  Total no_encontrada: ${(noRatio * 100).toFixed(1)}% | Sospechosas (bug potencial): ${(suspRatio * 100).toFixed(1)}%`,
+  );
+  // Desglose por fuente (útil para saber si el problema es un solo portal)
+  const desglose: Record<string, Record<string, number>> = {};
+  for (const s of canarySamples) {
+    desglose[s.fuente_id] = desglose[s.fuente_id] ?? {};
+    desglose[s.fuente_id][s.tipo] = (desglose[s.fuente_id][s.tipo] ?? 0) + 1;
+  }
+  console.log("  Por fuente:");
+  for (const [f, e] of Object.entries(desglose)) {
+    const total = Object.values(e).reduce((a, b) => a + b, 0);
+    const no = e.no_encontrada ?? 0;
+    console.log(`    ${f.padEnd(15)} ${JSON.stringify(e)} → ${((no / total) * 100).toFixed(0)}% no_encontrada`);
+  }
 
-  if (noRatio > CANARY_NO_ENCONTRADA_MAX_RATIO) {
+  // Log de detalle: muestra 8 URLs no_encontrada para debug
+  const falsos = canarySamples.filter((s) => s.tipo === "no_encontrada");
+  if (falsos.length > 0) {
+    console.log("  Muestra no_encontrada:");
+    for (const f of falsos.slice(0, 8)) {
+      console.log(`    [${f.fuente_id}] ${f.motivo} — ${f.url.slice(0, 80)}`);
+    }
+  }
+
+  if (suspRatio > CANARY_NO_ENCONTRADA_MAX_RATIO) {
     const muestraFalsos = canarySamples
       .filter((s) => s.tipo === "no_encontrada")
       .slice(0, 10)
       .map((s) => `- \`${s.motivo}\` ${s.url}`)
       .join("\n");
     const body = [
-      `Circuit breaker en verify: la muestra canary tuvo ${(noRatio * 100).toFixed(1)}% de "no_encontrada" (umbral ${(CANARY_NO_ENCONTRADA_MAX_RATIO * 100).toFixed(0)}%).`,
+      `Circuit breaker en verify: la muestra canary tuvo ${(suspRatio * 100).toFixed(1)}% de sospechosas (bug potencial del sitio) — umbral ${(CANARY_NO_ENCONTRADA_MAX_RATIO * 100).toFixed(0)}%.`,
       "",
       `Muestra: ${canary.length} URLs (recientes + antiguas + aleatorias).`,
       `- vivas: ${canaryVivas}`,
