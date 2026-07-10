@@ -612,6 +612,101 @@ Dos rondas de cleanup (06-28 y 06-30): el user reportó props pinchadas en el ag
 - **1 prop visualmente "fea" hoy**: 0 en el mar después del último cleanup, pero el problema reaparece cada cron si nuevas coords del web caen en el agua
 - **Cron schedule sano**: corriendo diario @ 08:00 UTC, ~75-90 min típico, hits timeout ocasional en verify
 
+### Estabilización + defensas (2026-07-01 → 2026-07-10)
+
+Sesión centrada en dejar el cron estable, sumar 6ª fuente y añadir defensas contra fallos silenciosos.
+
+**Presunta venta** (`0012_presunta_venta.sql` + `marcar-presuntas-ventas.ts`, 2026-07-01):
+- Columnas `presunta_venta` bool + `fecha_presunta_venta`.
+- Regla: activa ≥30 días + archivada ≥14 días → probable venta.
+- NO borra, solo marca. Rectifica si vuelve a activa.
+- Idempotente, en el cron 1×/día.
+
+**Validación tierra/mar** (`src/lib/geo/panama-land.ts`, 2026-07-01):
+- `isOnLand(lat, lng)` — point-in-polygon contra contorno continental (~50 pts) + landmarks costeros (Coronado, Chame, Colón, Bocas…) con radio 10 km.
+- Integrado en 3 puntos del pipeline (web-search, geocode-edificio, panamaequity).
+- Script retroactivo `archivar-props-en-mar.ts` — 13 archivadas + 10 cache limpiadas iniciales.
+- Nuevo paso 3.5 en el cron (idempotente).
+
+**CBRE Panamá / Savitat como 6ª fuente** (`0013_savitat.sql` + `scraper-savitat.ts`, 2026-07-02):
+- `cbre.com.pa` redirige a `savitat.com` — afiliado local.
+- Sitemap XML ~150 URLs únicas, JSON-LD Schema.org con `geo.latitude/longitude` cuando existe.
+- Comercial premium: oficinas, terrenos, industrial + inversión.
+- Retry 429 en `ia-extract-edificio.ts` para el rate limit de Groq.
+- Concurrency 1 + jitter 1.5-3s por respetar 6k TPM del free tier.
+- **93 props insertadas** en la primera corrida.
+
+**Precisión de ubicación + fuente auditable** (`0014_precision_ubicacion.sql`, 2026-07-02):
+- Columna `precision_ubicacion` con CHECK: `'exacta' | 'zona-declarada' | 'aproximada' | null`.
+- Columna `ubicacion_fuente` text libre para debug: `jsonld_geo`, `edificios_cache`, `web_search`, `titulo_zona`, `streetAddress_zona`.
+- Opción `allowZoneFallback` en `geocodeConEdificio` — cuando el edificio no resuelve pero la zona sí, usar centroide SIN jitter con precision="zona-declarada". Solo Savitat lo pasa true por defecto.
+- Diferente al fallback pre-strict: sin jitter (posición determinística), badge visible en UI planificado.
+
+**Fix del cache de coords compartidas** (`limpiar-cache-duplicado.ts`, 2026-07-04):
+- Descubierto: cluster de **24 edificios distintos** apuntando al mismo pin `(9.0233, -79.4986)` — gogetit.com.pa devuelve la misma coord como default. Wikipedia daba coord del artículo del barrio, no del edificio. Similar en laaparq y grupotribaldos.
+- Blacklist en `buscar-edificio-web.ts`: wikipedia, gogetit, laaparq, grupotribaldos.
+- Script detecta coords compartidas por >1 source_url distinto → invalida cache + archiva props (`motivo_estado='coord_falsa'`).
+- Corrida inicial: **334 cache invalidadas + 471 props archivadas**.
+- Nuevo paso 3.6 en el cron.
+
+**Terrenos/casas con zona-declarada automática** (2026-07-06):
+- Strict mode descartaba terrenos y casas sin edificio identificable (política "edificio o nada").
+- `GeocodeOpts.categoria` — cuando es `terreno`/`lote`/`casa`, `allowZoneFallback` se activa auto sin necesidad de flag.
+- Apto/oficina/local/galera se mantienen strict (son unidades DENTRO de un edificio).
+- Ganancia medida: **+57 terrenos + +181 casas** que antes se perdían silenciosamente.
+
+**Fix MLS Acobir — el sitio cambió URL de listado** (2026-07-07):
+- El sitio movió `/propiedades/` → `/propiedades-en-panama/`. La URL vieja quedó como hub sin URLs individuales, solo apuntadores por categoría. 6 URLs/pág vs. 51 antes.
+- El scraper corrió 3 días con 0 nuevos sin que nadie lo notara — dolor que motivó la defensa preflight.
+- MAX_PAGES 30 → 100 para compensar la menor densidad.
+
+**Optimizaciones del cron** (2026-07-08):
+- Reordenado: Savitat + Verify **antes** que InmoPanama (bottleneck) — si InmoPanama explota, ya se hizo lo crítico.
+- `fetchExistingUrls` de InmoPanama ahora saltea también archivadas de últimos 7 días — evita re-procesar bulk cleanups.
+- Timeout workflow 120 → 150 min.
+- Aplicación de las 3 fuentes = **846 activas** al final del día.
+
+**Desastre del verify paralelo + rollback** (2026-07-09):
+- Subimos VERIFY_CONCURRENCY 1 → 5 buscando bajar de 42 min a ~10 min.
+- Efecto real: los portales devolvían **HTML shell sin JSON-LD** bajo bursts paralelos → clasificado como "sin Product/microdata" → contador +1 → archivado.
+- **Panama Equity 58→4**, **Savitat 90→14**, **InmoPanama 121→84**. Total 846 → 695 activas (-18%).
+- Rollback: concurrency 5→2, jitter 800-1600ms → 1200-2400ms.
+- Script one-shot revivió **395 props** con motivo "sin Product/microdata".
+
+**2 defensas críticas contra corrupción silenciosa** (`verificar-estado.ts` + `preflight-check.ts`, 2026-07-09 → 2026-07-10):
+- **Circuit breaker en verify**: canary de 100 URLs mezcladas (recientes + antiguas + aleatorias) antes de tocar la DB. Si el ratio de "sospechosas" (200 sin Product/microdata) > 25% → **aborta todo el pase**, sin incrementar contadores ni archivar. Distingue muerte legítima (HTTP 404/410, redirect a `?prop_unavailable=`) de bug del sitio. Alerta vía GitHub Issue.
+- **Preflight check por scraper**: antes de scrapear, GET al listado principal + valida ≥N URLs con patrón esperado + markers de HTML. Si falla, aborta SOLO esa fuente (las demás siguen por `continue-on-error`) + GitHub Issue con diagnóstico. Config por fuente en `PREFLIGHT_CONFIG`.
+- **Fallback dominio-específico**: InmoPanama removió su JSON-LD y microdata en 2026-07 — verify ahora acepta "viva" si `<title>` contiene "InmoPanama" + HTML >20KB. Sin este fallback los 121 activos de InmoPanama se archivaban en cada corrida.
+- Habría prevenido el desastre del 07-09 exacto (395 víctimas) y detectado el 07-07 el día 0 (MLS Acobir cambio de URL).
+
+**Requeriments folder** (2026-07-02):
+- Nueva carpeta `requeriments/` con 6 archivos que documentan el estado actual del sistema (complemento de bitácora que es histórica).
+- README, funcional, tecnico, fuentes, ubicacion, pendientes.
+
+**UI — imagen satelital en el grid de propiedades**:
+- Aspect ratio 3/2 → 21/9 para reducir altura visual en `PropertyGridCard.tsx`.
+- Se mantiene sin cambio en el detail (`PropertyCard.tsx`).
+
+**Dedupe cross-source** — umbrales relajados (2026-07-04):
+- Distancia 50m → 100m (variabilidad del web-search entre fuentes).
+- Área ±5% → ±8%.
+- Precio ±10% → ±15%.
+- Savitat agregado al array PRIORITY.
+
+**Fuentes evaluadas y descartadas**:
+- **Compre o Alquile** — Cloudflare Turnstile agresivo bloquea Playwright headless. Requiere stealth plugin (frágil) o solver de pago. Abandonado.
+- **CBRE global** — no tiene inventario en Panamá en su sitio principal (solo US/EU/Asia). Va vía Savitat (afiliado local).
+- **Colliers Panamá** — sin inventario Panamá públicamente listado.
+- Otros pendientes vistos rápido: RE/MAX Panamá (dominio no responde desde local).
+
+#### Estado al final del periodo (2026-07-10)
+
+- **~690 props activas** (drop temporal por cleanup de coords genéricas — 471 archivadas por `coord_falsa`).
+- **6 fuentes activas** en el cron.
+- **Cron con 2 defensas** — circuit breaker (canary) + preflight per-scraper.
+- **Fallback dominio-específico** para InmoPanama (sin JSON-LD).
+- **1 UI fix del grid + 6 archivos requeriments/**.
+
 ### Pendientes
 
 - **Env vars en Vercel** — agregar `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` (Production, Preview, Development) y redeploy. Sin esto el deploy de prod no puede leer la DB.
@@ -624,11 +719,14 @@ Dos rondas de cleanup (06-28 y 06-30): el user reportó props pinchadas en el ag
   - **Brokers individuales tipo PE** — `gilbertoroldan.com`, `panamacasas.com`, `kw-panama.com`. Probar uno a la vez.
   - Descartados (ver bitácora): compreoalquile, inmuebles24, c21, miviot, MercadoLibre.
 - **Zonas que siguen cayendo a Nominatim** — agregar a `zonas-panama.ts` con coords verificadas: Carrasquilla, Volcán, El Bosque, Las Cumbres, Ciudad de Panamá (genérico). Los logs del cron las marcan en cada corrida.
-- **Coords exactas reales para todos los edificios** (no solo "cerca del edificio"). Hoy ~93% de los pines tienen coord aproximada (50-300m de error) porque el web search da coords aproximadas. Opciones:
-  - **Google Places API** ($17/1000 reqs, free tier $200/mes cubre todo el catálogo) — solución de raíz, sabe la ubicación real de cada edificio
-  - **Coastline check** (GeoJSON Panamá, 1h) — fix del síntoma: evita que coords del web caigan en agua, pero las coords siguen siendo aproximadas
-  - **Curación manual** del top 100 edificios más frecuentes en la DB (4-6h) — el resto sigue aproximado
-- **Verify con concurrencia** — actualmente es 1 request a la vez con jitter 1.2-2.4s. Es el bottleneck del cron (timeouts ocasionales). Paralelizar 3-5 a la vez reduciría tiempo 3-5x. Fix: usar `chunkedParallel` (ya existe en otros scrapers).
+- **Coords exactas reales para todos los edificios** (no solo "cerca del edificio"). Hoy ~93% de los pines tienen coord aproximada (50-300m de error) porque el web search da coords aproximadas. El `isOnLand()` fix bloquea coord en el mar pero las coords siguen siendo aproximadas en tierra. Opciones:
+  - **Google Places API** ($17/1000 reqs, free tier $200/mes cubre todo el catálogo) — solución de raíz.
+  - **Curación manual** del top 100 edificios más frecuentes en la DB (4-6h).
+- **Verify con concurrencia** — actualmente concurrency 2 (después del rollback del 07-09). Subir a 3-4 con circuit breaker activo podría ser seguro, pero solo tras validar 5 corridas estables consecutivas.
+- **Precision_ubicacion en los otros 4 scrapers** — solo Savitat setea la columna. Los otros dejan `null` (~680 activas sin auditoría). Aplicar el mismo tracking en encuentra24, mlsacobir, inmopanama, acobir, panamaequity.
+- **Backfill retroactivo de `precision_ubicacion`** para las ~680 filas históricas con la columna en `null`.
+- **Badge "Ubicación aproximada"** en las cards del frontend cuando `precision_ubicacion !== 'exacta'` — pendiente de UI.
+- **Investigar por qué InmoPanama removió su JSON-LD/microdata** — hoy tenemos fallback débil (title+size). El scraper de detail sigue funcionando por regex propio, pero verify tiene que confiar en título. Ideal: reconocer nuevo patrón HTML del sitio si lo publican.
 
 #### Resueltos (no quitar — historial)
 
@@ -650,6 +748,20 @@ Dos rondas de cleanup (06-28 y 06-30): el user reportó props pinchadas en el ag
 - ✅ **Verify fix HTTP 202 + microdata schema.org** (2026-06-28): revivió mlsacobir de 0 → 240 props activas. El verify ahora reconoce sitios que devuelven 2xx no-200 y que usan microdata en lugar de JSON-LD.
 - ✅ **Imagen satelital como hero de cards** (2026-06-29 → 06-30): Mapbox Static API genera vista satelital + pin rojo en el centro. ToS-friendly, cero storage. Lag fix al cambiar de prop vía `key` remount + bajada de resolución base + fade-in.
 - ✅ **Cleanup de coords en el mar** (2026-06-28 + 06-30): SKIP_DOMAINS expandido (wanderlog, tripadvisor, etc), 47 props archivadas + 22 cache entries nullificadas. Fix de raíz (coastline check o Google Places) queda en pendientes.
+- ✅ **Validación tierra/mar como fix de raíz** (2026-07-01): `isOnLand()` con polígono continental + landmarks costeros. Rechaza coords en el mar en 3 puntos del pipeline. Cron paso 3.5 diario.
+- ✅ **Presunta venta** (2026-07-01): flag `presunta_venta` con regla temporal (≥30 días activa + ≥14 días archivada). No destructivo.
+- ✅ **Savitat (6ª fuente)** (2026-07-02): CBRE Panamá afiliado, comercial premium. Sitemap XML + JSON-LD Schema.org.
+- ✅ **precision_ubicacion + ubicacion_fuente** (2026-07-02): DB registra ahora nivel de precisión (exacta/zona-declarada/aproximada) y método (jsonld_geo/edificios_cache/web_search/titulo_zona…).
+- ✅ **Requeriments folder** (2026-07-02): 6 archivos documentando el estado actual del sistema.
+- ✅ **Coords compartidas de cache** (2026-07-04): descubierto que gogetit/wikipedia/laaparq/grupotribaldos devolvían coords genéricas — 24 edificios en el mismo pin. Blacklist + limpieza retroactiva (334 cache + 471 archivadas). Cron paso 3.6 diario para prevenir recurrencia.
+- ✅ **Dedupe umbrales ajustados** (2026-07-04): distancia 50→100m, área ±5→8%, precio ±10→15%. Savitat en PRIORITY.
+- ✅ **Terrenos/casas con zona-declarada auto** (2026-07-06): +57 terrenos + 181 casas que antes se descartaban silenciosamente.
+- ✅ **Fix MLS Acobir cambio de URL** (2026-07-07): `/propiedades/` → `/propiedades-en-panama/`. MAX_PAGES 30 → 100.
+- ✅ **Cron reordenado + timeout 150 min** (2026-07-08): Savitat + Verify antes de InmoPanama (bottleneck). skipUrls incluye archivadas de últimos 7 días para no re-procesar bulk cleanups.
+- ✅ **Verify paralelo → rollback + revivir 395 víctimas** (2026-07-09): concurrency 5 causó falsos negativos masivos por HTML shell. Rollback a concurrency 2 + jitter 1200-2400ms.
+- ✅ **Circuit breaker en verify** (2026-07-09): canary de 100 URLs mezcladas. Solo cuenta como sospechosas las "200 sin Product/microdata" (distingue muerte legítima). Aborta el pase + GitHub Issue si > 25%.
+- ✅ **Preflight check por scraper** (2026-07-10): GET al listado + valida ≥N URLs con patrón esperado + markers. Aborta solo esa fuente si falla + GitHub Issue. Config por fuente en `PREFLIGHT_CONFIG`.
+- ✅ **Fallback dominio-específico para InmoPanama** (2026-07-09): el sitio removió JSON-LD/microdata. Verify acepta viva si `<title>` contiene "InmoPanama" + HTML >20KB.
 
 ## Notas Pendientes
 
