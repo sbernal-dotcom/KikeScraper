@@ -10,6 +10,7 @@ import type {
   EstadoAnuncio,
   Moneda,
   Oportunidad,
+  PrecisionUbicacion,
   Propiedad,
   TipoOperacion,
 } from "./types";
@@ -40,6 +41,7 @@ type DbPropiedad = {
   provincia: string | null;
   distrito: string | null;
   corregimiento: string | null;
+  precision_ubicacion: PrecisionUbicacion | null;
   area_m2: number | string | null;
   habitaciones: number | null;
   banos: number | null;
@@ -89,6 +91,7 @@ function mapPropiedad(p: DbPropiedad): Propiedad {
       provincia: p.provincia ?? undefined,
       distrito: p.distrito ?? undefined,
       corregimiento: p.corregimiento ?? undefined,
+      precision: p.precision_ubicacion ?? undefined,
     },
     areaM2: toNumber(p.area_m2),
     habitaciones: p.habitaciones ?? undefined,

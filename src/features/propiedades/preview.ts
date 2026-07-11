@@ -31,6 +31,7 @@ type ScrapedRow = {
   zona: string | null;
   lat: number | null;
   lng: number | null;
+  precision_ubicacion?: "exacta" | "zona-declarada" | "aproximada" | null;
   resumen_ia?: { es: string; en: string } | string | null;
   tags_caracteristicas?: string[] | null;
   tags_extra?: string[] | null;
@@ -100,6 +101,7 @@ function toPropiedad(row: ScrapedRow): Propiedad | null {
       lat: row.lat,
       lng: row.lng,
       corregimiento: row.zona ?? undefined,
+      precision: row.precision_ubicacion ?? undefined,
     },
     areaM2: row.area_m2 ?? undefined,
     habitaciones: row.habitaciones ?? undefined,

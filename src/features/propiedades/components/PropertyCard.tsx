@@ -101,6 +101,14 @@ export function PropertyCard({
           <div className="flex flex-wrap items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
             <MapPin className="size-3" />
             <span className="truncate">{localizacion}</span>
+            {propiedad.ubicacion.precision !== "exacta" ? (
+              <span
+                className="inline-flex items-center rounded-sm border border-dashed border-amber-400/60 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-medium normal-case tracking-normal text-amber-300"
+                title={dict.card.location_approximate_hint}
+              >
+                {dict.card.location_approximate}
+              </span>
+            ) : null}
             <span className="ml-1.5 inline-flex items-center rounded-sm bg-background/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-foreground/85">
               {labels.categoria(propiedad.categoria)}
             </span>

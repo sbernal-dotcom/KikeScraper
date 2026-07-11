@@ -75,6 +75,8 @@ export type Dictionary = {
     listing_status: string;
     also_listed_on: string;
     other_listings_count: string;
+    location_approximate: string;
+    location_approximate_hint: string;
   };
   domain: {
     operation: Record<"venta" | "alquiler", string>;
@@ -203,6 +205,9 @@ const es: Dictionary = {
     listing_status: "Estado anuncio",
     also_listed_on: "También publicado en",
     other_listings_count: "otras fuentes",
+    location_approximate: "Ubicación aproximada",
+    location_approximate_hint:
+      "El pin muestra el centroide de la zona — el edificio exacto no está confirmado.",
   },
   domain: {
     operation: { venta: "en venta", alquiler: "en alquiler" },
@@ -362,6 +367,9 @@ const en: Dictionary = {
     listing_status: "Listing status",
     also_listed_on: "Also listed on",
     other_listings_count: "other sources",
+    location_approximate: "Approximate location",
+    location_approximate_hint:
+      "The pin shows the zone centroid — the exact building is not confirmed.",
   },
   domain: {
     operation: { venta: "for sale", alquiler: "for rent" },

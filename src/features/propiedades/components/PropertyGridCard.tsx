@@ -110,9 +110,17 @@ export function PropertyGridCard({ propiedad, className }: Props) {
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div>
-          <div className="flex items-center gap-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-1 text-[11px] uppercase tracking-wider text-muted-foreground">
             <MapPin className="size-3" />
             <span className="truncate">{localizacion}</span>
+            {propiedad.ubicacion.precision !== "exacta" ? (
+              <span
+                className="inline-flex items-center rounded-sm border border-dashed border-amber-400/60 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-medium normal-case tracking-normal text-amber-300"
+                title={dict.card.location_approximate_hint}
+              >
+                {dict.card.location_approximate}
+              </span>
+            ) : null}
           </div>
           <h3 className="mt-1 line-clamp-2 text-sm font-semibold leading-snug tracking-tight">
             {propiedad.titulo}

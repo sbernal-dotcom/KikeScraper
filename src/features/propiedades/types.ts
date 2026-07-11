@@ -14,6 +14,8 @@ export type Condicion = "nueva" | "usada";
 
 export type EstadoAnuncio = "activo" | "vendido" | "alquilado" | "retirado";
 
+export type PrecisionUbicacion = "exacta" | "zona-declarada" | "aproximada";
+
 export interface Ubicacion {
   lat: number;
   lng: number;
@@ -21,6 +23,12 @@ export interface Ubicacion {
   provincia?: string;
   distrito?: string;
   corregimiento?: string;
+  /**
+   * Nivel de confianza de la coord — mapea a la columna
+   * `propiedades.precision_ubicacion`. Null (histórico sin backfill)
+   * se trata como "aproximada" en UI para no falso-positivar el badge.
+   */
+  precision?: PrecisionUbicacion;
 }
 
 export type ConfianzaScore = "baja" | "media" | "alta";
