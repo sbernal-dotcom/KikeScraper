@@ -235,23 +235,30 @@ async function verificarUnaVez(url: string): Promise<Resultado> {
 
     const html = await res.text();
     // Patrones de "página de propiedad viva":
-    // 1) JSON-LD Product (encuentra24, panamaequity, inmopanama, acobir)
+    // 1) JSON-LD @type de Product / RealEstate — encuentra24, acobir usan
+    //    "Product"; panamaequity y savitat usan "RealEstateListing" (tema
+    //    RealHomes de WordPress). Antes del fix 2026-07-11 solo aceptábamos
+    //    "Product" → ambas fuentes daban "sin Product/microdata" (100%
+    //    falsos negativos, disparaba el canary).
     // 2) Schema.org microdata para tipos inmobiliarios — mlsacobir usa
-    //    itemtype="http://schema.org/SingleFamilyResidence". Genérico:
-    //    Product, Apartment, House, SingleFamilyResidence, Residence,
-    //    Place, RealEstateListing, Accommodation, Offer.
+    //    itemtype="http://schema.org/SingleFamilyResidence".
     // NO usamos heurísticas de "captcha" en el body: el HTML legítimo
     // de encuentra24 contiene "recaptchaSiteKey" (config del form de
     // contacto), lo que generaba falsos positivos en el 100% de las
     // páginas reales. Si hay un challenge real, vendrá con 403/503 o
-    // sin Product — ambos casos ya quedan cubiertos.
-    if (/"@type"\s*:\s*"Product"/.test(html)) {
-      return { tipo: "viva", motivo: "JSON-LD Product OK" };
+    // sin marker de real-estate — ambos casos ya quedan cubiertos.
+    const REAL_ESTATE_TYPES =
+      "Product|Apartment|House|SingleFamilyResidence|Residence|Place|RealEstate|RealEstateListing|Accommodation|Offer";
+    if (
+      new RegExp(`"@type"\\s*:\\s*"(${REAL_ESTATE_TYPES})"`).test(html)
+    ) {
+      return { tipo: "viva", motivo: "JSON-LD real-estate OK" };
     }
     if (
-      /itemtype=["'][^"']*schema\.org\/(Product|Apartment|House|SingleFamilyResidence|Residence|Place|RealEstateListing|Accommodation|Offer)\b/i.test(
-        html,
-      )
+      new RegExp(
+        `itemtype=["'][^"']*schema\\.org\\/(${REAL_ESTATE_TYPES})\\b`,
+        "i",
+      ).test(html)
     ) {
       return { tipo: "viva", motivo: "Microdata Schema.org OK" };
     }
