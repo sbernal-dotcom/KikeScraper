@@ -132,8 +132,13 @@ jobs:
       # demás ya corrieron. Además: fetchExistingUrls ahora saltea
       # archivadas recientes (últimos 7 días) para no re-procesar bulks
       # de limpieza.
+      # if: always() — InmoPanama es un scraper independiente del verify;
+      # si el circuit breaker aborta el verify, InmoPanama debe correr
+      # igual (fix 2026-07-11: verify canary abort dejaba a InmoPanama
+      # sin actualizar toda la corrida).
       - name: Scrape InmoPanama
         id: scrape-inmo
+        if: always()
         continue-on-error: true
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
