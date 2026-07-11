@@ -154,8 +154,33 @@ type Resultado =
  * Usamos `Accept: text/html` y un UA de browser para que el server no
  * devuelva una versión adelgazada. `redirect: 'manual'` para detectar
  * redirects raros sin perder la URL final.
+ *
+ * Retry (fix 2026-07-11): si el error es transitorio (network, timeout,
+ * 429, 5xx), reintentamos hasta MAX_ATTEMPTS con backoff + jitter. Antes,
+ * ráfagas de "fetch failed" (típico rate-limit de Savitat) contaban como
+ * errores → 14 URLs/1000 en la corrida de prueba. Con retry esperamos
+ * dejar solo los errores reales (server abajo, DNS caído).
  */
+const MAX_ATTEMPTS = 3;
+
 async function verificar(url: string): Promise<Resultado> {
+  let last: Resultado = { tipo: "error", motivo: "sin intento" };
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    last = await verificarUnaVez(url);
+    if (last.tipo !== "error") return last;
+    // Solo retry cuando el error es transitorio.
+    const transient = /timeout|fetch failed|ECONN|HTTP 5\d\d|HTTP 429/i.test(last.motivo);
+    if (!transient) return last;
+    if (attempt < MAX_ATTEMPTS) {
+      // Backoff creciente + jitter: 2-4s → 4-8s.
+      const base = 2000 * attempt;
+      await sleep(base + Math.floor(Math.random() * base));
+    }
+  }
+  return last;
+}
+
+async function verificarUnaVez(url: string): Promise<Resultado> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
   try {

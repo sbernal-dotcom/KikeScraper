@@ -159,6 +159,12 @@ async function checkRobotsTxt(): Promise<boolean> {
   }
 }
 
+// Retry con backoff + jitter para tolerar rate limit y errores de red.
+// Fix 2026-07-11: antes solo 1 retry con 3s fijo — ante ráfagas de "fetch
+// failed" caían URLs enteras. Con 3 intentos y jitter respetamos el sitio
+// y aumentamos supervivencia. HTTP 4xx no-429 no se reintenta (es
+// respuesta válida del servidor: no lo martillamos).
+const FETCH_MAX_ATTEMPTS = 3;
 async function fetchText(url: string, attempt = 1): Promise<string> {
   try {
     const res = await fetch(url, {
@@ -169,11 +175,21 @@ async function fetchText(url: string, attempt = 1): Promise<string> {
       },
       signal: AbortSignal.timeout(25_000),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status} en ${url}`);
+    if (!res.ok) {
+      const transient = res.status === 429 || res.status >= 500;
+      const err = new Error(`HTTP ${res.status} en ${url}`);
+      (err as Error & { transient?: boolean }).transient = transient;
+      throw err;
+    }
     return res.text();
   } catch (err) {
-    if (attempt < 2) {
-      await sleep(3000);
+    const msg = (err as Error).message ?? String(err);
+    const isNetwork = /fetch failed|timeout|ECONN|abort/i.test(msg);
+    const transient = (err as Error & { transient?: boolean }).transient ?? isNetwork;
+    if (transient && attempt < FETCH_MAX_ATTEMPTS) {
+      // 2-4s → 4-8s.
+      const base = 2000 * attempt;
+      await sleep(base + Math.floor(Math.random() * base));
       return fetchText(url, attempt + 1);
     }
     throw err;
