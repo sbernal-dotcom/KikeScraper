@@ -255,25 +255,54 @@ async function verificarUnaVez(url: string): Promise<Resultado> {
     ) {
       return { tipo: "viva", motivo: "Microdata Schema.org OK" };
     }
-    // Fallback dominio-específico. Algunos portales no publican JSON-LD
-    // ni microdata (InmoPanama removió los markers `ib-prop-*` a mediados
-    // de 2026-07). En vez de marcar 100% de sus URLs como no_encontrada,
-    // aceptamos un heurístico débil: título contiene el nombre del
-    // portal + HTML de tamaño razonable (>20KB, no es página de error).
-    const domainMarkers: Array<{ host: string; titleMarker: string }> = [
-      { host: "inmopanama.com", titleMarker: "InmoPanama" },
+    // Fallback dominio-específico para portales sin JSON-LD/microdata.
+    // Fix 2026-07-11: reemplazo del heurístico débil (title + tamaño) por
+    // markers del template de detail. El anterior era vulnerable — cualquier
+    // página del sitio con el nombre en el <title> pasaba como viva.
+    //
+    // Estructura: `anchors` son markers EXCLUSIVOS del template de detail
+    // (no aparecen en listado/home). `support` son adicionales de la ficha.
+    // Regla: ≥1 anchor + ≥1 support total (o ≥2 anchors) → viva. Esto
+    // rechaza al listado principal (tiene ib-prop-* y gallery pero NO
+    // data-property-id ni og:type=product).
+    const domainProfiles: Array<{
+      host: string;
+      anchors: Array<{ name: string; re: RegExp }>;
+      support: Array<{ name: string; re: RegExp }>;
+    }> = [
+      {
+        host: "inmopanama.com",
+        anchors: [
+          // og:type=product solo en fichas (listado usa website).
+          { name: "og:type=product", re: /property=["']og:type["']\s+content=["']product/i },
+          // ID interno del CMS. Solo en templates de propiedad.
+          { name: "data-property-id", re: /data-property-id=["']\d+/i },
+        ],
+        support: [
+          // Prefijo de clases del template — también en cards del listado,
+          // pero como ancla ya restringe, este solo confirma.
+          { name: "ib-prop-*", re: /class=["'][^"']*ib-prop-/i },
+          // Carrusel/galería de la ficha. En el shell/error no está.
+          {
+            name: "gallery",
+            re: /class=["'][^"']*(gallery|carousel|swiper|prop-slider)/i,
+          },
+        ],
+      },
     ];
-    for (const { host, titleMarker } of domainMarkers) {
+    for (const { host, anchors, support } of domainProfiles) {
       if (url.toLowerCase().includes(host)) {
-        const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
-        const hasTitle = titleMatch?.[1]?.includes(titleMarker) ?? false;
-        if (hasTitle && html.length > 20_000) {
-          return { tipo: "viva", motivo: `${host}: title+size OK` };
+        const anchorHits = anchors.filter((m) => m.re.test(html));
+        const supportHits = support.filter((m) => m.re.test(html));
+        const hasAnchor = anchorHits.length >= 1;
+        const hasCorroboration = anchorHits.length >= 2 || supportHits.length >= 1;
+        if (hasAnchor && hasCorroboration) {
+          const names = [...anchorHits, ...supportHits].map((h) => h.name).join(",");
+          return { tipo: "viva", motivo: `${host}: ${names}` };
         }
-        // Motivo detallado para debug del canary
         return {
           tipo: "no_encontrada",
-          motivo: `${host}: title=${hasTitle} size=${Math.round(html.length / 1024)}KB`,
+          motivo: `${host}: anchors=${anchorHits.length} support=${supportHits.length} size=${Math.round(html.length / 1024)}KB`,
         };
       }
     }
