@@ -178,13 +178,24 @@ async function verificar(url: string): Promise<Resultado> {
     // redirige a /panama-es/bienes-raices... cuando el ad muere.
     if (res.status >= 300 && res.status < 400) {
       const loc = res.headers.get("location") ?? "";
-      const lostId = !/\/\d{6,}/.test(loc); // sin ID de anuncio
-      if (lostId) {
+      // Consideramos "viva" si el redirect es a otro detalle:
+      //  - path incluye un patrón de detail (/propiedades/, /listings/, etc.)
+      //    Y tiene un ID de al menos 4 dígitos.
+      // Consideramos "no_encontrada" si redirige a listado/home/prop_unavailable.
+      // Fix 2026-07-11: el regex antes exigía \d{6,} pero MLS Acobir usa IDs
+      // de 5 dígitos — todos sus 301 (cambio de slug) caían como
+      // no_encontrada y disparaban el canary.
+      const isDetailRedirect =
+        /\/(propiedades|listings|properties|propiedad|proyecto)\//i.test(loc) &&
+        /\d{4,}/.test(loc);
+      const isUnavailable = /prop_unavailable|removed|deleted|not[-_]?found/i.test(loc);
+      if (isUnavailable) {
         return { tipo: "no_encontrada", motivo: `redirect a ${loc.slice(0, 80)}` };
       }
-      // Redirect que mantiene un ID → seguimos manualmente una vez más.
-      // Por simplicidad lo tratamos como vivo si el redirect parece a otro anuncio.
-      return { tipo: "viva", motivo: `redirect mantiene id` };
+      if (isDetailRedirect) {
+        return { tipo: "viva", motivo: `redirect mantiene detail` };
+      }
+      return { tipo: "no_encontrada", motivo: `redirect a ${loc.slice(0, 80)}` };
     }
     if (res.status >= 500) {
       return { tipo: "error", motivo: `HTTP ${res.status}` };
