@@ -488,11 +488,111 @@ async function main() {
   }
 
   if (suspRatio > CANARY_NO_ENCONTRADA_MAX_RATIO) {
-    const muestraFalsos = canarySamples
-      .filter((s) => s.tipo === "no_encontrada")
-      .slice(0, 10)
-      .map((s) => `- \`${s.motivo}\` ${s.url}`)
-      .join("\n");
+    // Ranking de fuentes por ratio de sospechosas (no cualquier
+    // no_encontrada — muerte legítima no cuenta para el diagnóstico).
+    const susPorFuente: Record<string, { total: number; susp: number }> = {};
+    for (const s of canarySamples) {
+      susPorFuente[s.fuente_id] = susPorFuente[s.fuente_id] ?? { total: 0, susp: 0 };
+      susPorFuente[s.fuente_id].total++;
+      if (s.tipo === "no_encontrada") {
+        const m = s.motivo.toLowerCase();
+        const legitima =
+          /^http (?:404|410)/.test(m) || /prop_unavailable/.test(m);
+        if (!legitima) susPorFuente[s.fuente_id].susp++;
+      }
+    }
+    const topFuentes = Object.entries(susPorFuente)
+      .map(([f, e]) => ({ fuente: f, total: e.total, susp: e.susp, ratio: e.susp / e.total }))
+      .filter((r) => r.susp > 0)
+      .sort((a, b) => b.ratio - a.ratio)
+      .slice(0, 3);
+
+    // Elegimos hasta 3 URLs sospechosas: 1 por cada fuente del top.
+    // Fetch adicional con timeout corto para capturar status + snippet
+    // HTML (útil para diagnosticar shell vs bloqueo vs cambio de HTML).
+    const sospechosasParaSnippet = topFuentes
+      .map((tf) =>
+        canarySamples.find(
+          (s) =>
+            s.fuente_id === tf.fuente &&
+            s.tipo === "no_encontrada" &&
+            !/^http (?:404|410)/.test(s.motivo.toLowerCase()) &&
+            !/prop_unavailable/.test(s.motivo.toLowerCase()),
+        ),
+      )
+      .filter((s): s is (typeof canarySamples)[number] => Boolean(s));
+
+    const snippets = await Promise.all(
+      sospechosasParaSnippet.map(async (s) => {
+        try {
+          const res = await fetch(s.url, {
+            headers: { "user-agent": USER_AGENT, accept: "text/html" },
+            signal: AbortSignal.timeout(8_000),
+            redirect: "manual",
+          });
+          let body = "";
+          if (res.status >= 200 && res.status < 300) {
+            const full = await res.text();
+            body = full.slice(0, 500).replace(/\s+/g, " ");
+          }
+          return {
+            url: s.url,
+            fuente: s.fuente_id,
+            motivo: s.motivo,
+            status: res.status,
+            location: res.headers.get("location") ?? "",
+            body,
+          };
+        } catch (err) {
+          return {
+            url: s.url,
+            fuente: s.fuente_id,
+            motivo: s.motivo,
+            status: 0,
+            location: "",
+            body: `[fetch failed: ${(err as Error).message}]`,
+          };
+        }
+      }),
+    );
+
+    const rankMd =
+      topFuentes.length > 0
+        ? [
+            "",
+            "## Top fuentes por ratio de sospechosas",
+            "| Fuente | Total | Sospechosas | Ratio |",
+            "|---|---|---|---|",
+            ...topFuentes.map(
+              (t) => `| ${t.fuente} | ${t.total} | ${t.susp} | ${(t.ratio * 100).toFixed(0)}% |`,
+            ),
+          ].join("\n")
+        : "";
+
+    const snippetMd =
+      snippets.length > 0
+        ? [
+            "",
+            "## Muestras sospechosas (1 por fuente)",
+            ...snippets.map((sn) =>
+              [
+                "",
+                `### ${sn.fuente} — HTTP ${sn.status}${sn.location ? ` → ${sn.location.slice(0, 80)}` : ""}`,
+                `- URL: ${sn.url}`,
+                `- Motivo del verify: \`${sn.motivo}\``,
+                sn.body
+                  ? "- HTML snippet (primeros 500 chars, whitespace colapsado):"
+                  : "",
+                sn.body ? "```" : "",
+                sn.body ? sn.body : "",
+                sn.body ? "```" : "",
+              ]
+                .filter(Boolean)
+                .join("\n"),
+            ),
+          ].join("\n")
+        : "";
+
     const body = [
       `Circuit breaker en verify: la muestra canary tuvo ${(suspRatio * 100).toFixed(1)}% de sospechosas (bug potencial del sitio) — umbral ${(CANARY_NO_ENCONTRADA_MAX_RATIO * 100).toFixed(0)}%.`,
       "",
@@ -501,10 +601,10 @@ async function main() {
       `- no_encontradas: ${canaryNo}`,
       `- errores: ${canaryErr}`,
       "",
-      "**Verify ABORTADO** — no se aplicaron cambios de estado ni contadores. La causa más probable es que uno o varios portales están devolviendo HTML shell (sin JSON-LD) por problema transitorio.",
+      "**Verify ABORTADO** — no se aplicaron cambios de estado ni contadores. La causa más probable es que uno o varios portales están devolviendo HTML shell (sin JSON-LD) por problema transitorio o por cambio del template.",
+      rankMd,
+      snippetMd,
       "",
-      "Ejemplos de las URLs marcadas como no_encontrada:",
-      muestraFalsos,
       "",
       "Log completo: " + `https://github.com/${process.env.GITHUB_REPOSITORY ?? "?"}/actions/runs/${process.env.GITHUB_RUN_ID ?? "?"}`,
     ].join("\n");
