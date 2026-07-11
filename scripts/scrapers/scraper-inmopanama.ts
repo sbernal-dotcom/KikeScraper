@@ -84,6 +84,8 @@ type AnuncioRaw = {
   zona: string | null;
   lat: number | null;
   lng: number | null;
+  precision_ubicacion: "exacta" | "zona-declarada" | "aproximada" | null;
+  ubicacion_fuente: string | null;
   tipoOperacion: "venta" | "alquiler";
   url_original: string;
   fuente: string;
@@ -381,6 +383,8 @@ async function scrapeDetail(
     zona,
     lat: geo.lat,
     lng: geo.lng,
+    precision_ubicacion: geo.precision,
+    ubicacion_fuente: geo.source,
     tipoOperacion,
     url_original: url,
     fuente: FUENTE_ID,
@@ -484,6 +488,8 @@ function toDbRow(a: AnuncioRaw): Record<string, unknown> | null {
     motivo_estado: "visto en scrape inmopanama",
     lat: a.lat,
     lng: a.lng,
+    precision_ubicacion: a.precision_ubicacion,
+    ubicacion_fuente: a.ubicacion_fuente,
     corregimiento: a.zona,
     area_m2: a.area_m2,
     habitaciones: a.habitaciones,

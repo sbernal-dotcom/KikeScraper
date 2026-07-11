@@ -99,6 +99,8 @@ type AnuncioRaw = {
   zona: string | null;
   lat: number | null;
   lng: number | null;
+  precision_ubicacion: "exacta" | "zona-declarada" | "aproximada" | null;
+  ubicacion_fuente: string | null;
   url_original: string;
   fuente: string;
   fecha_deteccion: string;
@@ -335,8 +337,12 @@ async function scrapeDetail(url: string): Promise<AnuncioRaw | null> {
   // caemos al pipeline edificio→web→zona.
   let finalLat = lat;
   let finalLng = lng;
+  let precision: AnuncioRaw["precision_ubicacion"] = null;
+  let ubicacionFuente: string | null = null;
   if (finalLat && finalLng && isOnLand(finalLat, finalLng)) {
     console.log(`  geo ✓ ${finalLat.toFixed(4)}, ${finalLng.toFixed(4)} (de JSON-LD)`);
+    precision = "exacta";
+    ubicacionFuente = "jsonld_geo";
   } else {
     if (finalLat && finalLng) {
       console.log(`  ✗ geo del JSON-LD cae en mar (${finalLat.toFixed(4)}, ${finalLng.toFixed(4)}) — corriendo pipeline`);
@@ -359,6 +365,8 @@ async function scrapeDetail(url: string): Promise<AnuncioRaw | null> {
     }
     finalLat = geo.lat;
     finalLng = geo.lng;
+    precision = geo.precision;
+    ubicacionFuente = geo.source;
   }
 
   const descripcionTemp = trimDescripcion(listing.description);
@@ -376,6 +384,8 @@ async function scrapeDetail(url: string): Promise<AnuncioRaw | null> {
     zona,
     lat: finalLat,
     lng: finalLng,
+    precision_ubicacion: precision,
+    ubicacion_fuente: ubicacionFuente,
     url_original: url,
     fuente: FUENTE_ID,
     fecha_deteccion: ahora,
@@ -479,6 +489,8 @@ function toDbRow(a: AnuncioRaw): Record<string, unknown> | null {
     motivo_estado: "visto en scrape panamaequity",
     lat: a.lat,
     lng: a.lng,
+    precision_ubicacion: a.precision_ubicacion,
+    ubicacion_fuente: a.ubicacion_fuente,
     corregimiento: a.zona,
     area_m2: a.area_m2,
     habitaciones: a.habitaciones,
