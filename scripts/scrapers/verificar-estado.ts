@@ -143,6 +143,37 @@ type Resultado =
   | { tipo: "no_encontrada"; motivo: string }
   | { tipo: "error"; motivo: string };
 
+// ---------------- Sitemap-based check (Savitat) ----------------
+// Savitat NUNCA cambia el HTML de una ficha vendida: devuelve 200 con
+// el mismo JSON-LD RealEstateListing → verify siempre la marca viva y
+// no se archiva por lifecycle. Solución: usar el sitemap como fuente
+// de verdad. Si la URL de savitat NO está en el sitemap, la propiedad
+// fue removida del inventario (equivale a muerte).
+//
+// Si el sitemap no se pudo descargar, savitatSitemap queda null y no
+// aplicamos el check — mejor no archivar por error de red que archivar
+// mal.
+const SAVITAT_SITEMAP_URL = "https://savitat.com/sitemap.xml";
+let savitatSitemap: Set<string> | null = null;
+
+async function loadSavitatSitemap(): Promise<Set<string> | null> {
+  try {
+    const res = await fetch(SAVITAT_SITEMAP_URL, {
+      headers: { "user-agent": USER_AGENT, accept: "application/xml,text/xml" },
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) return null;
+    const xml = await res.text();
+    const urls = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)]
+      .map((m) => m[1].trim())
+      .filter((u) => u.includes("savitat.com/properties/"));
+    if (urls.length < 20) return null; // sanity check
+    return new Set(urls);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Hace GET a la URL y decide si la propiedad sigue viva. Heurística:
  *   - status 404 / 410 → no_encontrada (caso explícito).
@@ -181,6 +212,17 @@ async function verificar(url: string): Promise<Resultado> {
 }
 
 async function verificarUnaVez(url: string): Promise<Resultado> {
+  // Sitemap check para Savitat: si tenemos el sitemap descargado y la
+  // URL no aparece, es muerte legítima (el sitio no cambia el HTML de
+  // vendidas — sin este check nunca se archivan).
+  if (savitatSitemap && url.includes("savitat.com/properties/")) {
+    // Normalizamos ambos lados: sin trailing slash.
+    const normalized = url.replace(/\/$/, "");
+    const hit = savitatSitemap.has(normalized) || savitatSitemap.has(`${normalized}/`);
+    if (!hit) {
+      return { tipo: "no_encontrada", motivo: "savitat: no en sitemap" };
+    }
+  }
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
   try {
@@ -370,6 +412,15 @@ async function main() {
     .select("id")
     .single();
   const runId = runRow?.id as string | undefined;
+
+  // Precarga del sitemap de Savitat (opcional: si falla, continuamos sin
+  // el check). Se hace UNA vez y sirve para todas las URLs de savitat.
+  savitatSitemap = await loadSavitatSitemap();
+  if (savitatSitemap) {
+    console.log(`✓ Sitemap Savitat cargado: ${savitatSitemap.size} URLs`);
+  } else {
+    console.log("⚠ No se pudo cargar sitemap de Savitat — check omitido");
+  }
 
   // ---------------- CANARY (circuit breaker) ----------------
   const canary = makeCanarySample(pendientes);
