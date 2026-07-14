@@ -157,7 +157,11 @@ async function geocodeZona(
 
 function toNumber(text: string | null | undefined): number | null {
   if (text == null) return null;
-  let s = String(text).replace(/[^\d.,]/g, "");
+  const raw = String(text).trim();
+  // Preservar signo negativo (coord.longitude PA es "-79.x"). Ver
+  // scraper-savitat.ts para el bug histórico que este flag evita.
+  const negative = raw.startsWith("-");
+  let s = raw.replace(/[^\d.,]/g, "");
   if (!s) return null;
   const hasComma = s.includes(",");
   const hasDot = s.includes(".");
@@ -167,8 +171,10 @@ function toNumber(text: string | null | undefined): number | null {
     if (/^\d{1,3}(,\d{3})+$/.test(s)) s = s.replace(/,/g, "");
     else s = s.replace(",", ".");
   }
-  const n = Number(s);
-  return Number.isFinite(n) && n > 0 ? n : null;
+  let n = Number(s);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  if (negative) n = -n;
+  return n;
 }
 
 async function checkRobotsTxt(): Promise<boolean> {
@@ -596,7 +602,10 @@ async function runSupabaseMode() {
   for (const a of allNew) {
     const row = toDbRow(a);
     if (!row) {
-      console.warn(`  ✗ saltado (sin precio/lat/lng): ${a.url_original}`);
+      {
+        const falta = [a.precio_desde == null && "precio_desde", a.lat == null && "lat", a.lng == null && "lng"].filter(Boolean).join(",");
+        console.warn(`  ✗ saltado (falta: ${falta}): ${a.url_original}`);
+      }
       errors++;
       continue;
     }

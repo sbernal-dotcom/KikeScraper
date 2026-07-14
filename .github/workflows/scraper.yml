@@ -15,12 +15,13 @@ concurrency:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    # 150 min: colchón tras optimizaciones 2026-07-08. Con verify
-    # paralelo (42 → ~10 min), InmoPanama concurrency 5 (~20 min típico),
-    # MLS Acobir con MAX_PAGES 100, la corrida diaria típica queda en
-    # ~75-90 min. El colchón cubre picos ocasionales sin arriesgar
-    # cancelaciones cerca del final.
-    timeout-minutes: 150
+    # 180 min: subido de 150 el 07-14 tras 3 días seguidos de cancelación
+    # a los 2h35m. La corrida de hoy tardó 2h35m completa (encuentra24 16m
+    # + MLS Acobir 27m + Savitat 16m + Verify 32m + InmoPanama 59m + resto)
+    # → los steps post-InmoPanama (dedupe, archivar-mar, limpiar-cache,
+    # presuntas-venta, alertar) quedaron skipped. Con 180 caben, y damos
+    # margen para picos ocasionales de InmoPanama.
+    timeout-minutes: 180
 
     # issues: write necesario para que `gh issue create` pueda abrir
     # tickets cuando el scraper falla o reporta errores blandos.

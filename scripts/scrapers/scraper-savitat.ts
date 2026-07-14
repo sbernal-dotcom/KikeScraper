@@ -119,6 +119,10 @@ function toNumber(text: string | number | null | undefined): number | null {
     .replace(/&\w+;/g, " ")
     .replace(/&#\d+;/g, " ")
     .trim();
+  // Preservar signo negativo — coord.longitude de Panamá viene "-79.29" del
+  // JSON-LD; sin esto quedaba "79.29" (Arabia) y isOnLand rechazaba →
+  // pipeline geocode innecesario → 29/30 props no insertadas (fix 07-14).
+  const negative = raw.startsWith("-");
   let s = raw.replace(/[^\d.,]/g, "");
   if (!s) return null;
   const hasComma = s.includes(",");
@@ -128,8 +132,9 @@ function toNumber(text: string | number | null | undefined): number | null {
     if (/^\d{1,3}(,\d{3})+$/.test(s)) s = s.replace(/,/g, "");
     else s = s.replace(",", ".");
   }
-  const n = Number(s);
+  let n = Number(s);
   if (!Number.isFinite(n) || n <= 0) return null;
+  if (negative) n = -n;
   return n;
 }
 
@@ -587,7 +592,8 @@ async function runSupabaseMode() {
   for (const a of allNew) {
     const row = toDbRow(a);
     if (!row) {
-      console.warn(`  ✗ saltado (sin precio/lat/lng): ${a.url_original}`);
+      const falta = [a.precio == null && "precio", a.lat == null && "lat", a.lng == null && "lng"].filter(Boolean).join(",");
+      console.warn(`  ✗ saltado (falta: ${falta}): ${a.url_original}`);
       errors++;
       continue;
     }

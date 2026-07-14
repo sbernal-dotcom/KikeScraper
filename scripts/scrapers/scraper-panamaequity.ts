@@ -590,7 +590,10 @@ async function runSupabaseMode() {
   for (const a of allNew) {
     const row = toDbRow(a);
     if (!row) {
-      console.warn(`  ✗ saltado (sin precio/lat/lng): ${a.url_original}`);
+      {
+        const falta = [a.precio == null && "precio", a.lat == null && "lat", a.lng == null && "lng"].filter(Boolean).join(",");
+        console.warn(`  ✗ saltado (falta: ${falta}): ${a.url_original}`);
+      }
       errors++;
       continue;
     }
