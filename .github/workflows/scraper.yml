@@ -15,13 +15,14 @@ concurrency:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    # 180 min: subido de 150 el 07-14 tras 3 días seguidos de cancelación
-    # a los 2h35m. La corrida de hoy tardó 2h35m completa (encuentra24 16m
-    # + MLS Acobir 27m + Savitat 16m + Verify 32m + InmoPanama 59m + resto)
-    # → los steps post-InmoPanama (dedupe, archivar-mar, limpiar-cache,
-    # presuntas-venta, alertar) quedaron skipped. Con 180 caben, y damos
-    # margen para picos ocasionales de InmoPanama.
-    timeout-minutes: 180
+    # 240 min: subido de 180 el 07-14 tras el dispatch manual con fixes.
+    # Savitat pasó de 16m → 108m porque el fix del signo negativo hizo
+    # que resuelva muchas más URLs (16 nuevas insertadas vs 1 histórico),
+    # cada una vía pipeline geocode con IA rate-limited. Total del run:
+    # 3h05m → cancelled a 3h → dedupe/archivar-mar/limpiar-cache/
+    # presuntas-venta/alertar skipped. Con 240 caben con margen mientras
+    # se estabiliza el cache de edificios de Savitat.
+    timeout-minutes: 240
 
     # issues: write necesario para que `gh issue create` pueda abrir
     # tickets cuando el scraper falla o reporta errores blandos.
