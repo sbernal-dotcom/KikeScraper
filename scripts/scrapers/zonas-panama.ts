@@ -128,19 +128,44 @@ function normalizeKey(zona: string): string {
 
 /**
  * Busca una zona conocida en la tabla. Match case+accent-insensitive.
- * Devuelve null si no está mapeada — el caller debe usar Nominatim como fallback.
+ *
+ * Estrategia (en orden):
+ *   1. Match exacto de la key.
+ *   2. Match exacto normalizado (sin acentos, whitespace colapsado).
+ *   3. Substring: la zona CONTIENE una key de la tabla. Cubre casos
+ *      compuestos como "Avenida Samuel Lewis, Obarrio" → obarrio.
+ *      Fix 2026-07-15: Savitat publica streetAddress compuestos y
+ *      cada URL sin edificio identificable caía como no-resuelta.
+ *      Preferimos el match MÁS LARGO (ej. "punta paitilla" antes que
+ *      "paitilla") para evitar ambigüedad.
+ *
+ * Devuelve null si no está mapeada — el caller debe usar Nominatim
+ * como fallback.
  */
 export function centroFromTable(zona: string | null): ZonaCentro | null {
   if (!zona) return null;
   const key = normalizeKey(zona);
-  // intento exacto
+  // 1) exacto
   const direct = ZONAS_PANAMA[zona.toLowerCase()] ?? null;
   if (direct) return direct;
-  // intento normalizado contra TODAS las keys también normalizadas
+  // 2) exacto normalizado
   for (const [k, v] of Object.entries(ZONAS_PANAMA)) {
     if (normalizeKey(k) === key) return v;
   }
-  return null;
+  // 3) substring — buscar la KEY más larga que aparezca en la zona
+  //    Usamos regex \b para exigir word boundary y evitar falsos hits
+  //    (ej. "obarrio" dentro de "obarriogrande" no debería matchear).
+  let bestKey: string | null = null;
+  let bestVal: ZonaCentro | null = null;
+  for (const [k, v] of Object.entries(ZONAS_PANAMA)) {
+    const nk = normalizeKey(k);
+    const re = new RegExp(`\\b${nk.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
+    if (re.test(key) && (bestKey == null || nk.length > bestKey.length)) {
+      bestKey = nk;
+      bestVal = v;
+    }
+  }
+  return bestVal;
 }
 
 /**

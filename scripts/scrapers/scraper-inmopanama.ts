@@ -512,49 +512,38 @@ function toDbRow(a: AnuncioRaw): Record<string, unknown> | null {
 async function fetchExistingUrls(
   supa: ReturnType<typeof createScraperClient>,
 ): Promise<Set<string>> {
-  // Saltamos:
-  //   - Activas (obviamente ya están en el mapa)
-  //   - Archivadas RECIENTES (últimos SKIP_ARCHIVADAS_DIAS días)
-  // Las archivadas antiguas SÍ se re-procesan para poder revivirlas si
-  // el edificio vuelve a listar.
+  // Saltamos TODAS las URLs ya en DB (activas + archivadas).
   //
-  // Fix 2026-07-05: cron canceló InmoPanama a los 108 min por re-procesar
-  // 471 archivadas del bulk cleanup del día anterior. Cada una llamaba
-  // al pipeline IA (Groq rate-limited). Con esta ventana de 7 días, el
-  // scraper deja pasar el bulk sin re-tocarlo.
-  const SKIP_ARCHIVADAS_DIAS = 7;
-  const cutoff = new Date(
-    Date.now() - SKIP_ARCHIVADAS_DIAS * 86_400_000,
-  ).toISOString();
-
+  // Fix 2026-07-15: el diseño anterior re-procesaba archivadas viejas
+  // (>7 días) para "poder revivirlas si el edificio vuelve a listar",
+  // pero con 1418 archivadas cumpliendo ese criterio, cada corrida
+  // llamaba al pipeline IA (Groq rate-limited) 1418 veces → InmoPanama
+  // consumía 3h+ y quedaba cancelado por timeout del workflow.
+  //
+  // La reactivación de archivadas ya está cubierta por otros mecanismos:
+  //  1. Si InmoPanama re-publica una URL archivada, aparece en el
+  //     listado. Aquí la saltamos, pero el pase de VERIFY la revive
+  //     porque su HTML sigue viva (elimina el bug de "muerta legítima").
+  //  2. Manual: script separado para re-intentar archivadas específicas
+  //     si se agregan al cache de edificios.
+  //
+  // Perdemos: la reactivación automática vía scraper. Ganamos: corrida
+  // de InmoPanama estable en <60 min.
   const PAGE = 1000;
   const all: string[] = [];
   let from = 0;
   while (true) {
     const { data, error } = await supa
       .from("propiedades")
-      .select("url_original, estado_anuncio, fecha_ultima_revision")
+      .select("url_original")
       .eq("fuente_id", FUENTE_ID)
       .range(from, from + PAGE - 1);
     if (error) {
       console.warn(`  No se pudo leer propiedades existentes: ${error.message}`);
       return new Set(all);
     }
-    const batch = (data ?? []) as Array<{
-      url_original: string;
-      estado_anuncio: string;
-      fecha_ultima_revision: string | null;
-    }>;
-    for (const r of batch) {
-      if (r.estado_anuncio === "activo") all.push(r.url_original);
-      else if (
-        r.estado_anuncio === "archivado" &&
-        r.fecha_ultima_revision &&
-        r.fecha_ultima_revision > cutoff
-      ) {
-        all.push(r.url_original);
-      }
-    }
+    const batch = (data ?? []) as Array<{ url_original: string }>;
+    for (const r of batch) all.push(r.url_original);
     if (batch.length < PAGE) break;
     from += PAGE;
   }
