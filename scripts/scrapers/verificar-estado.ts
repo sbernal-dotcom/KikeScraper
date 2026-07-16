@@ -69,7 +69,13 @@ const FETCH_TIMEOUT_MS = 15_000;
 // Concurrencia del pase de verify.
 // 2026-07-09: bajado de 5 → 2 después de que concurrency 5 archivara
 // masivamente props válidas de Panama Equity y Savitat (58→4, 90→14).
-const VERIFY_CONCURRENCY = 2;
+// 2026-07-16: subido de 2 → 3 tras estabilización. Defensas activas:
+//  - Canary con circuit breaker (aborta si sospechosas > 25%)
+//  - Retry con backoff en errores transitorios (network, 429, 5xx)
+//  - Sitemap-based check para Savitat (evita re-fetch)
+//  - Jitter 1.2-2.4s entre requests
+// Ahorro esperado: verify baja de ~30 min a ~20 min.
+const VERIFY_CONCURRENCY = 3;
 
 // ---------------- Circuit breaker (2026-07-09) ----------------
 // Antes de aplicar cambios sobre TODO el inventario, corremos verify
