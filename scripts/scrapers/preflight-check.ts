@@ -75,6 +75,46 @@ function ghIssue(title: string, body: string) {
   if (r.status !== 0) console.warn(`  gh issue create falló (exit ${r.status}).`);
 }
 
+// Retry en errores transitorios (network/timeout/429/5xx) antes de
+// abortar la fuente. Fix 2026-07-18: durante la caída de internet
+// del user y ratos de latencia alta, un solo timeout hacía abortar
+// toda la corrida de Panama Equity (transitorio, no bug del sitio).
+// Ahora reintentamos hasta 3 veces con backoff 2s → 4s.
+const PREFLIGHT_MAX_ATTEMPTS = 3;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function fetchListingOnce(listUrl: string): Promise<
+  | { ok: true; html: string }
+  | { ok: false; status: number; message: string; transient: boolean }
+> {
+  try {
+    const res = await fetch(listUrl, {
+      headers: {
+        "User-Agent": USER_AGENT,
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      return {
+        ok: false,
+        status: res.status,
+        message: `HTTP ${res.status}`,
+        transient: res.status === 429 || res.status >= 500,
+      };
+    }
+    return { ok: true, html: await res.text() };
+  } catch (err) {
+    const message = (err as Error).message ?? String(err);
+    return {
+      ok: false,
+      status: 0,
+      message,
+      transient: /fetch failed|timeout|ECONN|abort/i.test(message),
+    };
+  }
+}
+
 /**
  * Verifica que el listado del sitio sigue devolviendo URLs con el
  * patrón esperado y suficientes markers. Retorna ok:true si todo
@@ -89,25 +129,28 @@ export async function preflightCheck(fuenteId: string): Promise<PreflightResult>
     return { ok: true, foundUrls: 0 };
   }
   console.log(`  preflight ${fuenteId} → ${cfg.listUrl}`);
-  let html: string;
-  try {
-    const res = await fetch(cfg.listUrl, {
-      headers: {
-        "User-Agent": USER_AGENT,
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!res.ok) {
-      const reason = `HTTP ${res.status} al pedir el listado`;
-      raiseIssue(fuenteId, cfg, reason, 0, `HTTP status ${res.status}`);
-      return { ok: false, reason, foundUrls: 0, sample: `HTTP ${res.status}` };
+
+  let html: string | null = null;
+  let lastFail: { status: number; message: string } | null = null;
+  for (let attempt = 1; attempt <= PREFLIGHT_MAX_ATTEMPTS; attempt++) {
+    const r = await fetchListingOnce(cfg.listUrl);
+    if (r.ok) {
+      html = r.html;
+      break;
     }
-    html = await res.text();
-  } catch (err) {
-    const reason = `Fetch falló: ${(err as Error).message}`;
-    raiseIssue(fuenteId, cfg, reason, 0, "fetch error");
-    return { ok: false, reason, foundUrls: 0, sample: "fetch error" };
+    lastFail = { status: r.status, message: r.message };
+    if (!r.transient || attempt === PREFLIGHT_MAX_ATTEMPTS) break;
+    const backoffMs = 2000 * attempt;
+    console.warn(`  preflight intento ${attempt} falló (${r.message}) — retry en ${backoffMs}ms`);
+    await sleep(backoffMs);
+  }
+
+  if (html == null) {
+    const reason = lastFail?.status
+      ? `HTTP ${lastFail.status} al pedir el listado (${PREFLIGHT_MAX_ATTEMPTS} intentos)`
+      : `Fetch falló: ${lastFail?.message ?? "?"} (${PREFLIGHT_MAX_ATTEMPTS} intentos)`;
+    raiseIssue(fuenteId, cfg, reason, 0, lastFail?.message ?? "fetch error");
+    return { ok: false, reason, foundUrls: 0, sample: lastFail?.message ?? "fetch error" };
   }
 
   const matches = html.match(new RegExp(cfg.detailPattern.source, "g")) ?? [];
