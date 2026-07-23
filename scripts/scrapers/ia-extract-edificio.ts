@@ -42,7 +42,13 @@ function getGroqKey(): string | null {
 }
 
 const DESC_MAX = 600;
-const MAX_RETRIES_429 = 3;
+// 2026-07-23: 3 → 5 retries + cap wait 30s → 60s. Con 3 muchas URLs se
+// rendían durante bursts sostenidos (Railway cron con InmoPanama+MLS+PE
+// en una sola corrida) y perdían la extracción de edificio → caían al
+// fallback de zona con precisión "aproximada". Con 5 retries + 60s max
+// wait, casi todas sobreviven al rate limit y resuelven al edificio.
+const MAX_RETRIES_429 = 5;
+const MAX_WAIT_S = 60;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export async function extraerEdificio(
@@ -103,7 +109,7 @@ Descripción: ${desc}`;
       // mensaje ("Please try again in 4.75s"). Con cap para no colgar.
       if (res.status === 429 && attempt < MAX_RETRIES_429) {
         const m = body.match(/try again in ([\d.]+)s/i);
-        const waitS = Math.min(30, m ? parseFloat(m[1]) + 0.5 : 8);
+        const waitS = Math.min(MAX_WAIT_S, m ? parseFloat(m[1]) + 0.5 : 8);
         console.warn(`  extract-edificio: 429 → retry en ${waitS}s (intento ${attempt + 1}/${MAX_RETRIES_429})`);
         await sleep(waitS * 1000);
         return extraerEdificio(titulo, descripcion, attempt + 1);
