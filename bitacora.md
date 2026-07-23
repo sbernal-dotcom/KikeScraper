@@ -793,6 +793,47 @@ Semana centrada en depurar comportamiento del cron, arreglar 3 bugs de larga dat
 - **Frontend con badge de precisión** — usuario ve cuando el pin no es exacto.
 - **Cuota GH Actions agotada** — plan: pipeline manual local hasta reset o pago.
 
+### Migración a Railway + rate limit Groq (2026-07-16 → 2026-07-23)
+
+Sesión centrada en operar sin GH Actions (cuota agotada), migrar el cron a un runner externo, y descubrir el siguiente cuello de botella (Groq TPM).
+
+**Retry en preflight-check** (`preflight-check.ts`, 2026-07-18):
+- Durante la caída de internet del user y ratos de latencia alta, un solo timeout del preflight (ej. Panama Equity) abortaba toda la fuente hasta próximo cron.
+- Fix: `fetchListingOnce` interno + loop hasta 3 intentos con backoff 2s → 4s. Solo re-intenta transient (network/timeout/429/5xx). 4xx no-429 no se re-intenta (respuesta válida del server).
+- Test local del sitio: 60-200ms en 8 pings consecutivos — confirmó que el timeout era transitorio, no bug del sitio.
+
+**Pipelines manuales locales para no perder días** (2026-07-16 → 2026-07-18):
+- 3 corridas del pipeline completo (bash script en la PC del user, sin GH Actions) mientras se estabilizan los fixes.
+- Descubrimiento: procesos node se pausan cuando Windows entra en sleep — un run del 07-18 quedó "corriendo" 3 días con 87/1000 URLs procesadas (PC dormida).
+- Ganancias reales medidas: MLS Acobir **20 nuevas**, Savitat **27 nuevas**, verify pasa canary con 4% no_encontrada (excelente ratio).
+
+**Migración a Railway como runner del cron** (2026-07-23):
+- Motivación: free tier GH Actions (2000 min/mes) agotado por semanas de crons de 3-4h. Railway ofrece $5/mes de crédito gratis que cubre ~90h/mes.
+- Archivos nuevos:
+  - `Dockerfile` — Node 22-bookworm-slim + deps de OS para Chromium headless + Playwright + `npm ci` + `npx playwright install chromium`.
+  - `scripts/run-pipeline.sh` — equivalente al workflow yml (11 steps con `|| echo "✗ X fallo"` para no cortar).
+  - `railway.json` — cron schedule `0 8 * * *` (08:00 UTC = 03:00 Panamá), `restartPolicyType: NEVER`, `builder: DOCKERFILE`.
+  - `.dockerignore` — excluye node_modules, .next, requeriments/, bitacora.md, tmp scripts.
+- Deploy vía Railway UI: conectar repo GitHub → Railway detecta Dockerfile → auto-build → env vars pegadas vía Raw Editor (formato `.env`) → primer trigger manual con "Run now".
+- Comparado con GH Actions: sin timeout por corrida, cron nativo, sin cuota de minutos, cache de imagen Docker acelera builds subsecuentes.
+
+**Rate limit de Groq en corridas de Railway** (`ia-extract-edificio.ts` + `scraper-inmopanama.ts`, 2026-07-23):
+- Primer run en Railway (~1h50m) mostró cascada de HTTP 429 del free tier de Groq (6000 TPM).
+- Causa: InmoPanama con `DETAIL_CONCURRENCY=5` × ~500 tokens/request = 2500 tokens burst → agotaba la ventana de 60s. Con solo 3 retries y cap 30s, muchas URLs perdían la extracción de edificio y caían al fallback de zona con precisión "aproximada".
+- 3 fixes:
+  - InmoPanama `DETAIL_CONCURRENCY` 5 → 3 (baja el burst).
+  - `MAX_RETRIES_429` 3 → 5 (más intentos antes de rendirse).
+  - Cap del wait 30s → 60s (respeta el `retry-after` que Groq indica cuando el rate limit es sostenido).
+- Trade-off: InmoPanama ~30% más lento. Aceptable en Railway (sin timeout de workflow) y compensado por menos retries totales al no golpear el 429.
+
+#### Estado al final del periodo (2026-07-23)
+
+- **Cron corriendo en Railway** — sin límite de minutos, cron nativo cada día 08:00 UTC.
+- **Preflight con retry** — un timeout puntual ya no aborta la fuente.
+- **Groq rate limit mitigado** — concurrency + retries ajustados al free tier (6000 TPM).
+- **GH Actions cron desactivado** (pendiente de comentar el `schedule:` en el yml).
+- **~$5/mes de crédito Railway** cubre la operación completa (~90h/mes de compute).
+
 ### Pendientes
 
 - **Env vars en Vercel** — agregar `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` (Production, Preview, Development) y redeploy. Sin esto el deploy de prod no puede leer la DB.
@@ -808,8 +849,9 @@ Semana centrada en depurar comportamiento del cron, arreglar 3 bugs de larga dat
 - **Coords exactas reales para todos los edificios** (no solo "cerca del edificio"). Hoy ~93% de los pines tienen coord aproximada (50-300m de error) porque el web search da coords aproximadas. El `isOnLand()` fix bloquea coord en el mar pero las coords siguen siendo aproximadas en tierra. Opciones:
   - **Google Places API** ($17/1000 reqs, free tier $200/mes cubre todo el catálogo). Resuelve al 100% el problema de coords en mar (Places devuelve la coord real del edificio) y ~60-75% del problema de coords aproximadas (el resto — PH nuevos, casas particulares, terrenos, proyectos preventa, nombres genéricos — sigue cayendo al pipeline actual como fallback).
   - **Curación manual** del top 100 edificios más frecuentes en la DB (4-6h).
-- **Cuota de GitHub Actions** — hoy 07-16 el cron falló por cuota. Con InmoPanama fix + verify concurrency 3, el consumo esperado baja a ~1h30m/día = ~45h/mes (dentro del free tier de 2000 min). Confirmar en el próximo reset. Alternativas si vuelve a excederse: repo público (Actions ilimitado), pagar (~$5-30/mes), migrar a VPS/Fly.io.
+- **Deshabilitar cron de GH Actions** — el yml sigue apuntando a `schedule: 0 8 * * *` pero ya no debería correr (Railway lo hace). Comentar el `schedule:` para no duplicar ni consumir minutos innecesarios. Dejar `workflow_dispatch` por si hace falta manualmente.
 - **Script manual para revivir archivadas de InmoPanama** — el skip de todas las archivadas quita la reactivación automática. Ver si algún edificio se agrega al cache y disparar el re-scrape solo para ese subconjunto.
+- **Concurrency de los otros scrapers** — hoy 07-23 solo se bajó InmoPanama (5 → 3). Si Groq 429 persiste, evaluar bajar MLS Acobir y Panama Equity a 3 también. Encuentra24 usa Playwright pool distinto (chequear si aplica).
 
 #### Resueltos (no quitar — historial)
 
