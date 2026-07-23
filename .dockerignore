@@ -1,0 +1,40 @@
+# Reduce el tamaño de la imagen Docker: excluye lo que no necesita
+# el scraper. `.git` solo, es ~10 MB; `node_modules` local, cientos de MB.
+
+# Deps: se instalan dentro del container con `npm ci`
+node_modules
+
+# Next build artifacts (el scraper no corre la app)
+.next
+out
+
+# Git
+.git
+.gitignore
+.github
+
+# Env vars (se pasan por Railway dashboard)
+.env
+.env.local
+.env.production
+
+# Logs / temporales
+*.log
+scripts/tmp-*.ts
+scripts/tmp-*.mjs
+
+# Preview del scraper (opt-in solo para dev local)
+public/scrape-preview*.json
+
+# Docs (no ejecutables)
+requeriments/
+bitacora.md
+CLAUDE.md
+AGENTS.md
+README.md
+.claude
+.vscode
+
+# Sistemas
+.DS_Store
+Thumbs.db
