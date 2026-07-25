@@ -39,6 +39,7 @@ import {
 } from "./ia";
 import { createScraperClient } from "./supabase-admin";
 import { type TagCerrado } from "./tags-caracteristicas";
+import { fetchUrlsFallidasRecientes, marcarUrlFallida } from "./urls-fallidas";
 
 loadEnv({ path: ".env.local" });
 loadEnv();
@@ -396,6 +397,8 @@ async function scrapeDetail(url: string): Promise<AnuncioRaw | null> {
     });
     if (!geoRes) {
       console.log(`  pipeline tampoco resolvió — saltando`);
+      // Marcar URL como fallida para no re-consumir Groq mañana.
+      marcarUrlFallida(FUENTE_ID, url, "sin_geo", "pipeline edificio→cache→web→zona sin resultado");
       return null;
     }
     lat = geoRes.lat;
@@ -477,11 +480,14 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
     return [];
   }
   console.log(`  ${urls.length} URLs en sitemap`);
+  const urlsFallidas = await fetchUrlsFallidasRecientes(FUENTE_ID);
+  console.log(`  ${urlsFallidas.size} URLs marcadas como fallidas recientes (skip)`);
   const procesables = urls.filter((u) => {
     if (skipUrls.has(u)) return false;
+    if (urlsFallidas.has(u)) return false;
     return true;
   });
-  console.log(`  ${procesables.length} tras filtrar existentes`);
+  console.log(`  ${procesables.length} tras filtrar existentes y fallidas`);
   if (procesables.length === 0) return [];
 
   const results = await chunkedParallel(

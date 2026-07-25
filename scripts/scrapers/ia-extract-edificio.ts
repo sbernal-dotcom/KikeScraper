@@ -20,6 +20,10 @@
  * la misma calidad de extracción.
  */
 
+import { createHash } from "node:crypto";
+
+import { createScraperClient } from "./supabase-admin";
+
 const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_MODEL = "llama-3.1-8b-instant";
 
@@ -51,6 +55,66 @@ const MAX_RETRIES_429 = 5;
 const MAX_WAIT_S = 60;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// Cache in-process de la sesión (evita ir a Supabase 2 veces por la misma
+// URL dentro de una corrida). Se resetea al reiniciar el proceso.
+const sessionCache = new Map<string, ExtraccionEdificio>();
+
+function inputHash(titulo: string, desc: string): string {
+  return createHash("sha256").update(`${titulo}|${desc}`).digest("hex");
+}
+
+/**
+ * Busca en el cache persistente de Supabase. Retorna null si no hay hit
+ * o si hubo error de red (fail-open — llamar a Groq es aceptable).
+ */
+async function lookupCache(hash: string): Promise<ExtraccionEdificio | null> {
+  try {
+    const supa = createScraperClient();
+    const { data, error } = await supa
+      .from("ia_extract_cache")
+      .select("edificio, proyecto, zona, model")
+      .eq("input_hash", hash)
+      .maybeSingle();
+    if (error || !data) return null;
+    // Si el cache fue creado con otro modelo, ignorar (invalidación).
+    if (data.model !== GROQ_MODEL) return null;
+    // Fire-and-forget: actualizar hit_count + last_hit_at.
+    void Promise.resolve(supa.rpc("ia_extract_cache_touch", { p_hash: hash })).catch(() => {});
+    return {
+      edificio: data.edificio,
+      proyecto: data.proyecto,
+      zona: data.zona,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Guarda la respuesta en el cache persistente. Fail-open: si Supabase
+ * falla, seguimos como si nada (la extracción ya se pagó, no queremos
+ * bloquear la corrida por un problema de escritura de cache).
+ */
+async function saveCache(
+  hash: string,
+  titulo: string,
+  desc: string,
+  result: ExtraccionEdificio,
+): Promise<void> {
+  try {
+    const supa = createScraperClient();
+    await supa.from("ia_extract_cache").upsert({
+      input_hash: hash,
+      edificio: result.edificio,
+      proyecto: result.proyecto,
+      zona: result.zona,
+      model: GROQ_MODEL,
+    }, { onConflict: "input_hash" });
+  } catch {
+    // silent
+  }
+}
+
 export async function extraerEdificio(
   titulo: string | null,
   descripcion: string | null,
@@ -65,6 +129,19 @@ export async function extraerEdificio(
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, DESC_MAX);
+
+  // Cache lookup — solo en el primer intento; en retries por 429 ya sabemos
+  // que no está cacheado.
+  if (attempt === 0) {
+    const hash = inputHash(titulo ?? "", desc);
+    const inSession = sessionCache.get(hash);
+    if (inSession) return inSession;
+    const cached = await lookupCache(hash);
+    if (cached) {
+      sessionCache.set(hash, cached);
+      return cached;
+    }
+  }
 
   const systemMsg = `Eres un asistente que extrae datos estructurados de anuncios inmobiliarios panameños. Respondes SOLO con JSON válido. Si no estás seguro de un campo, devuelves null en vez de inventar.`;
 
@@ -123,11 +200,18 @@ Descripción: ${desc}`;
     const raw = data.choices?.[0]?.message?.content?.trim() ?? "";
     if (!raw) return EXTRACCION_VACIA;
     const parsed = JSON.parse(raw) as Partial<ExtraccionEdificio>;
-    return {
+    const result: ExtraccionEdificio = {
       edificio: cleanString(parsed.edificio),
       proyecto: cleanString(parsed.proyecto),
       zona: cleanString(parsed.zona),
     };
+
+    // Persistir en cache (fail-open — no bloquea el retorno).
+    const hash = inputHash(titulo ?? "", desc);
+    sessionCache.set(hash, result);
+    saveCache(hash, titulo ?? "", desc, result).catch(() => {});
+
+    return result;
   } catch (err) {
     console.warn(`  extract-edificio: ${(err as Error).message}`);
     return EXTRACCION_VACIA;
