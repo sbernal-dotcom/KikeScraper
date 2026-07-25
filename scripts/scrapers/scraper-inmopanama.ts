@@ -64,6 +64,25 @@ const MAX_EMPTY_PAGES = 2;
 const DETAIL_CONCURRENCY = 1;
 const UPSERT_CONCURRENCY = 5;
 
+// Red de seguridad wall-clock. Con concurrency 1 no debería atascarse
+// (el bug de 16h fue por concurrency 3 peleando por el rate limit) pero
+// esta cota garantiza que jamás una corrida vuelva a consumir el trial
+// de Railway. Si la deadline expira, terminamos limpio: guardamos lo
+// procesado y registramos en scraper_runs con notes="timeout".
+const MAX_RUNTIME_MS = 90 * 60 * 1000; // 90 min
+let deadline = 0;
+let hitDeadline = false;
+function isExpired(): boolean {
+  if (Date.now() > deadline) {
+    if (!hitDeadline) {
+      console.warn(`\n⏱ InmoPanama: alcanzado hard timeout de ${MAX_RUNTIME_MS / 60000} min — abortando limpio.`);
+      hitDeadline = true;
+    }
+    return true;
+  }
+  return false;
+}
+
 const TARGET: "json" | "supabase" = process.argv.includes("--supabase")
   ? "supabase"
   : "json";
@@ -420,6 +439,9 @@ async function scrapeDetail(
 }
 
 async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
+  deadline = Date.now() + MAX_RUNTIME_MS;
+  hitDeadline = false;
+
   const allowed = await checkRobotsTxt();
   if (!allowed) {
     console.warn("robots.txt prohíbe — abortando.");
@@ -429,10 +451,12 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
   const seenUrls = new Set<string>();
   const results: AnuncioRaw[] = [];
 
-  for (const { url: listUrl, tipo } of LIST_URLS) {
+  outer: for (const { url: listUrl, tipo } of LIST_URLS) {
+    if (isExpired()) break;
     console.log(`\n▶ Listado: ${listUrl}`);
     let consecutiveEmpty = 0;
     for (let n = 1; n <= MAX_PAGES_PER_LIST; n++) {
+      if (isExpired()) break outer;
       console.log(`  pág ${n}`);
       let urls: string[];
       try {
@@ -468,11 +492,12 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
         }),
       );
       results.push(...batch);
+      if (isExpired()) break outer;
       await jitter(300, 700);
     }
   }
   console.log(
-    `\n┌─ Resumen InmoPanama: ${seenUrls.size} URLs únicas, ${results.length} scrapeadas`,
+    `\n┌─ Resumen InmoPanama: ${seenUrls.size} URLs únicas, ${results.length} scrapeadas${hitDeadline ? " (cortado por timeout)" : ""}`,
   );
   return results;
 }
@@ -627,6 +652,9 @@ async function runSupabaseMode() {
   });
 
   const status = errors > 0 && inserted === 0 ? "error" : "ok";
+  const notes = hitDeadline
+    ? `inmopanama (agregador) — cortado por hard timeout ${MAX_RUNTIME_MS / 60000}min`
+    : "inmopanama (agregador)";
   const { error: runErr } = await supa.from("scraper_runs").insert({
     fuente_id: FUENTE_ID,
     started_at: startedAt,
@@ -636,7 +664,7 @@ async function runSupabaseMode() {
     inserted,
     updated: 0,
     errors,
-    notes: "inmopanama (agregador)",
+    notes,
   });
   if (runErr) console.warn(`  scraper_runs: ${runErr.message}`);
   console.log(
