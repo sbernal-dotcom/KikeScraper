@@ -55,6 +55,26 @@ const USER_AGENT =
 const DETAIL_CONCURRENCY = 1;
 const UPSERT_CONCURRENCY = 5;
 
+// Hard timeout wall-clock. Savitat re-procesa cada corrida ~40 URLs que
+// nunca resuelven geo (galeras/oficinas sin coord ni zona reconocible),
+// consumiendo 3h+ en llamadas Groq que siempre fallan. 60 min es techo
+// suficiente para procesar las URLs nuevas legítimas antes de rendirse.
+// La solución estructural (cache de URLs ya intentadas fallidas) queda
+// para más adelante.
+const MAX_RUNTIME_MS = 60 * 60 * 1000;
+let deadline = 0;
+let hitDeadline = false;
+function isExpired(): boolean {
+  if (Date.now() > deadline) {
+    if (!hitDeadline) {
+      console.warn(`\n⏱ Savitat: alcanzado hard timeout de ${MAX_RUNTIME_MS / 60000} min — abortando limpio.`);
+      hitDeadline = true;
+    }
+    return true;
+  }
+  return false;
+}
+
 const TARGET: "json" | "supabase" = process.argv.includes("--supabase")
   ? "supabase"
   : "json";
@@ -439,6 +459,9 @@ async function scrapeDetail(url: string): Promise<AnuncioRaw | null> {
 }
 
 async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
+  deadline = Date.now() + MAX_RUNTIME_MS;
+  hitDeadline = false;
+
   const allowed = await checkRobotsTxt();
   if (!allowed) {
     console.warn("robots.txt prohíbe /properties/ — abortando.");
@@ -465,6 +488,7 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
     procesables,
     DETAIL_CONCURRENCY,
     async (u) => {
+      if (isExpired()) return null;
       const r = await scrapeDetail(u).catch((err) => {
         console.warn(`  Error en ${u}: ${(err as Error).message}`);
         return null;
@@ -622,7 +646,9 @@ async function runSupabaseMode() {
     inserted,
     updated: 0,
     errors,
-    notes: "savitat (CBRE Panamá afiliado)",
+    notes: hitDeadline
+      ? `savitat (CBRE Panamá afiliado) — cortado por hard timeout ${MAX_RUNTIME_MS / 60000}min`
+      : "savitat (CBRE Panamá afiliado)",
   });
   if (runErr) console.warn(`  scraper_runs: ${runErr.message}`);
   console.log(

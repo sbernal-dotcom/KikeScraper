@@ -46,8 +46,12 @@ const PREFLIGHT_CONFIG: Record<string, PreflightConfig> = {
     detailPattern: /panamaequity\.com\/es\/listings\/[a-z0-9-]{5,}/,
   },
   mlsacobir: {
+    // 2026-07-25: minUrls 3 → 1. El sitio devuelve HTML con cantidad
+    // variable de cards según load (a veces 42, a veces 6, a veces 0).
+    // Con 3 el preflight abortaba en días de HTML degradado; con 1
+    // procesamos lo que haya (aunque sean pocas URLs nuevas).
     listUrl: "https://www.mlsacobir.com/propiedades-en-panama/",
-    minUrls: 3,
+    minUrls: 1,
     detailPattern: /mlsacobir\.com\/propiedades\/\d+-[a-z0-9-]+\//,
   },
   inmopanama: {
