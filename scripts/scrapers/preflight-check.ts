@@ -130,18 +130,35 @@ export async function preflightCheck(fuenteId: string): Promise<PreflightResult>
   }
   console.log(`  preflight ${fuenteId} → ${cfg.listUrl}`);
 
+  // Ahora el retry cubre 2 casos transitorios: (a) fetch falló (network/
+  // timeout/5xx) y (b) fetch OK pero 0 URLs matcheadas — este segundo caso
+  // apareció con MLS Acobir el 2026-07-24: el sitio devolvió HTML válido
+  // pero sin las cards de propiedades (probable challenge de Cloudflare o
+  // render parcial). Un retry lo agarra si fue transitorio; si es cambio
+  // real de estructura, los 3 intentos siguen fallando y abortamos igual.
   let html: string | null = null;
+  let unique = new Set<string>();
+  let matches: string[] = [];
   let lastFail: { status: number; message: string } | null = null;
+
   for (let attempt = 1; attempt <= PREFLIGHT_MAX_ATTEMPTS; attempt++) {
     const r = await fetchListingOnce(cfg.listUrl);
-    if (r.ok) {
-      html = r.html;
-      break;
+    if (!r.ok) {
+      lastFail = { status: r.status, message: r.message };
+      html = null;
+      if (!r.transient || attempt === PREFLIGHT_MAX_ATTEMPTS) break;
+      const backoffMs = 2000 * attempt;
+      console.warn(`  preflight intento ${attempt} falló (${r.message}) — retry en ${backoffMs}ms`);
+      await sleep(backoffMs);
+      continue;
     }
-    lastFail = { status: r.status, message: r.message };
-    if (!r.transient || attempt === PREFLIGHT_MAX_ATTEMPTS) break;
+    html = r.html;
+    matches = html.match(new RegExp(cfg.detailPattern.source, "g")) ?? [];
+    unique = new Set(matches);
+    if (unique.size >= cfg.minUrls) break;
+    if (attempt === PREFLIGHT_MAX_ATTEMPTS) break;
     const backoffMs = 2000 * attempt;
-    console.warn(`  preflight intento ${attempt} falló (${r.message}) — retry en ${backoffMs}ms`);
+    console.warn(`  preflight intento ${attempt}: ${unique.size} URLs (esperado ≥${cfg.minUrls}) — retry en ${backoffMs}ms`);
     await sleep(backoffMs);
   }
 
@@ -153,10 +170,8 @@ export async function preflightCheck(fuenteId: string): Promise<PreflightResult>
     return { ok: false, reason, foundUrls: 0, sample: lastFail?.message ?? "fetch error" };
   }
 
-  const matches = html.match(new RegExp(cfg.detailPattern.source, "g")) ?? [];
-  const unique = new Set(matches);
   if (unique.size < cfg.minUrls) {
-    const reason = `Listado devolvió ${unique.size} URLs (esperado ≥${cfg.minUrls})`;
+    const reason = `Listado devolvió ${unique.size} URLs (esperado ≥${cfg.minUrls}) tras ${PREFLIGHT_MAX_ATTEMPTS} intentos`;
     raiseIssue(
       fuenteId,
       cfg,

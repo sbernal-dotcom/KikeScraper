@@ -757,9 +757,14 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
         const pagedUrl = pageNum === 1 ? listadoUrl : `${listadoUrl}.${pageNum}`;
         if (pageNum > 1) console.log(`  → página ${pageNum}: ${pagedUrl}`);
 
+        // 2026-07-24: 25s → 45s. El cron matutino (03:00 Panamá) toca el
+        // sitio en horas de baja actividad — encuentra24 responde 200 en
+        // <2s en tests directos pero durante el cron un `page.goto` de 25s
+        // no alcanza (Cloudflare / lazy assets). 45s da margen sin quedar
+        // colgado eternamente.
         const res = await page.goto(pagedUrl, {
           waitUntil: "domcontentloaded",
-          timeout: 25_000,
+          timeout: 45_000,
         });
         if (!res || res.status() >= 400) {
           console.warn(`  Listado respondió ${res?.status() ?? "??"} — corto.`);
