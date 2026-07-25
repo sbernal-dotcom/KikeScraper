@@ -55,11 +55,13 @@ const USER_AGENT =
 const MAX_PAGES_PER_LIST = 50;
 const MAX_EMPTY_PAGES = 2;
 // 2026-07-08: concurrency 3 → 5. Cada detail hace fetch + pipeline IA (Groq).
-// 2026-07-23: bajado 5 → 3 tras observar cascada de 429s en Railway. El free
-// tier de Groq (6000 TPM) se saturaba con burst de 5 requests × ~500 tokens.
-// Con 3 mantenemos throughput razonable sin agotar retries; el sitio también
-// respira mejor.
-const DETAIL_CONCURRENCY = 3;
+// 2026-07-23: bajado 5 → 3 tras observar cascada de 429s en Railway.
+// 2026-07-24: bajado 3 → 1. Con 3 y retries generosos (5 intentos, cap 60s)
+// el cron matutino seguía atascado 16h: 716 rate-limits, 403 URLs procesadas,
+// sin terminar. La ventana de 6000 TPM se saturaba aún con 3 concurrentes
+// porque InmoPanama tiene 1000+ detalles. Con 1 el throughput baja pero cada
+// llamada respeta el rate limit y el pipeline TERMINA. Mejor lento que colgado.
+const DETAIL_CONCURRENCY = 1;
 const UPSERT_CONCURRENCY = 5;
 
 const TARGET: "json" | "supabase" = process.argv.includes("--supabase")
