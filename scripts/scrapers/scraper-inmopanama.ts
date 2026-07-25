@@ -8,12 +8,21 @@
  *   - Listing: /venta-propiedades-panama?page=N (y alquiler-...).
  *   - Detail: /{slug}_p-{ID}.htm.
  *
- * Datos del detalle (no hay JSON-LD ni microdata):
- *   - Precio: <span class="ib-prop-main-price">$X,XXX</span>
- *   - Operación: <span class="ib-prop-op-badge">En Venta|En Alquiler</span>
- *   - Título: <h2 class="ib-prop-info-card-title">…</h2>
- *   - Zona (texto): <div class="ib-prop-info-card-location">…[svg]… ZONA — …</div>
- *   - Specs: <li><span>5 Dorm.</span></li>, <span>6 Baños</span>, <span>942 m²</span>
+ * Datos del detalle (no hay JSON-LD ni microdata). Dos templates:
+ *
+ *   Nuevo (2026-07, activo):
+ *     - Tabla de facts uniforme: <div class="nb-quick-fact-cell"><div class="nb-quick-fact-label">Precio</div><div class="nb-quick-fact-value">$225,000</div></div>
+ *     - Título: <h1 class="nb-prop-title">…</h1>
+ *     - Operación: <span class="nb-badge-op">En Venta|En Alquiler</span>
+ *     - Zona: <div class="nb-prop-location-line">…</div>
+ *     - Descripción: <div class="nb-desc-full-content">…</div> (o nb-desc-preview)
+ *
+ *   Viejo (pre 2026-07, fallback):
+ *     - Precio: <span class="ib-prop-main-price">$X,XXX</span>
+ *     - Operación: <span class="ib-prop-op-badge">En Venta|En Alquiler</span>
+ *     - Título: <h2 class="ib-prop-info-card-title">…</h2>
+ *     - Zona: <div class="ib-prop-info-card-location">…[svg]… ZONA — …</div>
+ *     - Specs: <li><span>5 Dorm.</span></li>, <span>6 Baños</span>, <span>942 m²</span>
  *
  * NO trae lat/lng (el sitio dice "Ubicación no disponible") → 100% geocoding
  * por zona textual. Esperamos perder ~50-70% por falta de match.
@@ -285,28 +294,115 @@ function extractAfterClass(html: string, className: string): string | null {
   return cleaned || null;
 }
 
+// 2026-07-25: rediseño del sitio. InmoPanama migró todas las clases
+// `ib-prop-*` (2024-25) a `nb-*` (nueva plantilla). Todos los selectores
+// viejos fallaron simultáneamente y el cron pasó a insertar 0 propiedades
+// de la fuente más grande. Nuevo diseño: los datos "duros" (precio,
+// habitaciones, área, etc.) están agrupados en `nb-quick-fact-cell` con
+// pares label→value uniformes. Extraemos la tabla completa y buscamos
+// por label — así aunque agreguen/quiten campos el scraper sobrevive.
+//
+// Mantenemos los extractores viejos como fallback por si el sitio revierte
+// o coexisten templates. El orden es: nuevo → viejo → null.
+function normalizeLabel(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "") // sin acentos
+    .replace(/[:.]/g, "")
+    .trim();
+}
+
+/**
+ * Parsea todos los `nb-quick-fact-cell` del HTML y devuelve
+ * un mapa `label_normalizado → value_raw`. Ejemplos de labels:
+ *   "precio", "habitaciones", "banos", "area", "mantenimiento",
+ *   "ano construccion", "estacionamiento", "condicion".
+ */
+function parseQuickFacts(html: string): Map<string, string> {
+  const facts = new Map<string, string>();
+  const re =
+    /<div\s+class="[^"]*nb-quick-fact-cell[^"]*"[^>]*>\s*<div\s+class="nb-quick-fact-label"[^>]*>\s*([^<]+?)\s*<\/div>\s*<div\s+class="nb-quick-fact-value"[^>]*>\s*([^<]+?)\s*<\/div>/gi;
+  for (const m of html.matchAll(re)) {
+    const label = normalizeLabel(m[1]);
+    const value = m[2].trim();
+    if (label && value) facts.set(label, value);
+  }
+  return facts;
+}
+
+/**
+ * Detalles adicionales están en `nb-prop-detail-item` con label + value.
+ * Es la sección "Detalles de la Propiedad" (contiene "Tipo", "Operación",
+ * "Referencia", etc.). Usamos el mismo patrón label→value.
+ */
+function parsePropDetails(html: string): Map<string, string> {
+  const details = new Map<string, string>();
+  const re =
+    /<div\s+class="[^"]*nb-prop-detail-item[^"]*"[^>]*>\s*<div\s+class="nb-prop-detail-label"[^>]*>\s*([^<]+?)\s*<\/div>\s*<div\s+class="nb-prop-detail-value"[^>]*>\s*([^<]+?)\s*<\/div>/gi;
+  for (const m of html.matchAll(re)) {
+    const label = normalizeLabel(m[1]);
+    const value = m[2].trim();
+    if (label && value) details.set(label, value);
+  }
+  return details;
+}
+
 function extractLocationText(html: string): string | null {
-  // El ib-prop-info-card-location tiene formato:
-  //   [SVG icon] "Zona Texto — Subzona ..."
-  // Tomamos antes de "—" / "-" / "|" si existe, esa suele ser la zona principal.
-  const raw = extractAfterClass(html, "ib-prop-info-card-location");
+  // Nuevo (2026-07): `<div class="nb-prop-location-line">TEXTO[/svg]</div>`.
+  // No usamos extractAfterClass porque toma 1500 chars y come divs
+  // hermanos (el location line es corto y va justo antes de las quick-facts).
+  // Regex directo hasta el </div> que balancea (sin divs anidados).
+  let raw: string | null = null;
+  // Realmente es un <p>, no <div>: `<p class="nb-prop-location-line">…</p>`.
+  // Uso regex genérico por tag para no romper si el sitio cambia el elemento.
+  const nuevo = html.match(
+    /<(p|div|span)\s+class="[^"]*nb-prop-location-line[^"]*"[^>]*>([\s\S]*?)<\/\1>/i,
+  );
+  if (nuevo) {
+    raw = nuevo[2]
+      .replace(/<svg[\s\S]*?<\/svg>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&aacute;/gi, "á")
+      .replace(/&amp;/g, "&")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+  // Fallback viejo: `ib-prop-info-card-location` con formato [SVG] "Zona — Subzona".
+  if (!raw) raw = extractAfterClass(html, "ib-prop-info-card-location");
   if (!raw) return null;
-  // Split por dashes em / en / pipe
+  // Split por dashes em / en / pipe — nos quedamos con la primera parte.
   const parts = raw.split(/\s+[—–\-|]\s+/);
   return parts[0]?.trim() ?? raw;
 }
 
-function extractFeatures(html: string): {
+function extractFeatures(
+  html: string,
+  qf: Map<string, string>,
+): {
   habitaciones: number | null;
   banos: number | null;
   area_m2: number | null;
+  estacionamientos: number | null;
 } {
+  // Nuevo (2026-07): sacar de la tabla parseada.
+  const hFromQf = qf.get("habitaciones") ?? qf.get("recamaras") ?? qf.get("dormitorios");
+  const bFromQf = qf.get("banos") ?? qf.get("bathrooms");
+  const aFromQf = qf.get("area") ?? qf.get("area total") ?? qf.get("m2");
+  const eFromQf = qf.get("estacionamiento") ?? qf.get("estacionamientos") ?? qf.get("parking");
+
+  if (hFromQf || bFromQf || aFromQf || eFromQf) {
+    return {
+      habitaciones: toNumber(hFromQf),
+      banos: toNumber(bFromQf),
+      area_m2: toNumber(aFromQf?.replace(/m\s*[²2]/i, "")),
+      estacionamientos: toNumber(eFromQf),
+    };
+  }
+
+  // Fallback viejo: parsear el texto libre del bloque de features.
   const features = extractAfterClass(html, "ib-prop-info-card-features");
   const text = features ?? "";
-  // Patrones:
-  //   "5 Dorm." / "5 Dormitorios" / "5 Hab."
-  //   "6 Baños" / "6 Bath"
-  //   "942 m²"
   const habs = text.match(/(\d+)\s*(?:dorm|hab|recám)/i);
   const bans = text.match(/(\d+(?:[.,]\d)?)\s*ba(?:ñ|n)os?/i);
   const area = text.match(/(\d+(?:[.,]\d+)?)\s*m\s*[²2]/i);
@@ -314,7 +410,67 @@ function extractFeatures(html: string): {
     habitaciones: toNumber(habs?.[1]),
     banos: toNumber(bans?.[1]),
     area_m2: toNumber(area?.[1]),
+    estacionamientos: null,
   };
+}
+
+/**
+ * Extrae precio. Nuevo: quick-fact con label "precio". Viejo:
+ * <span class="ib-prop-main-price">. Fallback final: primer "$X,XXX"
+ * en JSON-LD o metadatos (raro pero cubre casos borde).
+ */
+function extractPrecio(html: string, qf: Map<string, string>): number | null {
+  const nuevoRaw = qf.get("precio");
+  if (nuevoRaw) {
+    const n = toNumber(nuevoRaw);
+    if (n) return n;
+  }
+  const viejoRaw =
+    html.match(/class="ib-prop-main-price"[^>]*>\s*([^<]+?)\s*</i)?.[1] ?? null;
+  return toNumber(viejoRaw);
+}
+
+function extractTitulo(html: string): string | null {
+  // Nuevo: <h1 class="nb-prop-title">TÍTULO</h1>
+  const nuevo = html.match(/<h1[^>]*class="[^"]*nb-prop-title[^"]*"[^>]*>\s*([^<]+?)\s*<\/h1>/i)?.[1];
+  if (nuevo) return nuevo.trim();
+  // Viejo: class="ib-prop-info-card-title"
+  const viejo = extractAfterClass(html, "ib-prop-info-card-title");
+  if (viejo) return viejo;
+  // Última resorte: <title> del documento (quitando " | InmoPanama").
+  return (
+    html.match(/<title>([^<]+)<\/title>/i)?.[1]?.replace(/\s*\|.*$/, "").trim() ??
+    null
+  );
+}
+
+function extractOperacion(
+  html: string,
+  details: Map<string, string>,
+): "venta" | "alquiler" | null {
+  // Nuevo (2026-07): <span class="nb-badge-op">En Venta|En Alquiler</span>
+  const badgeNuevo =
+    html.match(/class="[^"]*nb-badge-op[^"]*"[^>]*>\s*([^<]+?)\s*</i)?.[1] ?? "";
+  // Fallback: label "operacion" en detalles.
+  const detalle = details.get("operacion") ?? "";
+  // Fallback antiguo.
+  const badgeViejo =
+    html.match(/class="ib-prop-op-badge"[^>]*>\s*([^<]+?)\s*</i)?.[1] ?? "";
+  const combined = `${badgeNuevo} ${detalle} ${badgeViejo}`.toLowerCase();
+  if (/alquiler|rent/.test(combined)) return "alquiler";
+  if (/venta|sale/.test(combined)) return "venta";
+  return null;
+}
+
+function extractDescripcion(html: string): string {
+  // Nuevo: nb-desc-full-content (o nb-desc-preview). Fallback viejo y meta.
+  return (
+    extractAfterClass(html, "nb-desc-full-content") ??
+    extractAfterClass(html, "nb-desc-preview") ??
+    extractAfterClass(html, "ib-prop-description") ??
+    html.match(/<meta\s+name="description"\s+content="([^"]+)"/i)?.[1] ??
+    ""
+  );
 }
 
 async function scrapeListPage(
@@ -349,37 +505,20 @@ async function scrapeDetail(
     return null;
   }
 
-  // Título
-  const titulo =
-    extractAfterClass(html, "ib-prop-info-card-title") ??
-    (html.match(/<title>([^<]+)<\/title>/i)?.[1]?.replace(/\s*\|.*$/, "").trim() ??
-      null);
+  // Parseo una sola vez las tablas quick-fact + detail (nuevo diseño 2026-07).
+  // Se pasan a los extractores que las necesiten.
+  const qf = parseQuickFacts(html);
+  const details = parsePropDetails(html);
 
-  // Precio
-  const precioRaw =
-    html.match(/class="ib-prop-main-price"[^>]*>\s*([^<]+?)\s*</i)?.[1] ?? null;
-  const precio = toNumber(precioRaw);
-
-  // Operación — verificar contra lo que vino del listing
-  const opBadge =
-    html.match(/class="ib-prop-op-badge"[^>]*>\s*([^<]+?)\s*</i)?.[1] ?? "";
-  const tipoOperacion: "venta" | "alquiler" = /alquiler|rent/i.test(opBadge)
-    ? "alquiler"
-    : /venta|sale/i.test(opBadge)
-      ? "venta"
-      : tipoFromList;
-
-  // Specs
-  const { habitaciones, banos, area_m2 } = extractFeatures(html);
-
-  // Zona (texto)
+  const titulo = extractTitulo(html);
+  const precio = extractPrecio(html, qf);
+  const opFromHtml = extractOperacion(html, details);
+  const tipoOperacion: "venta" | "alquiler" = opFromHtml ?? tipoFromList;
+  const { habitaciones, banos, area_m2, estacionamientos: estacFromHtml } =
+    extractFeatures(html, qf);
   const zona = extractLocationText(html);
-
   // Descripción solo en memoria (regla del proyecto).
-  const descRaw =
-    extractAfterClass(html, "ib-prop-description") ??
-    html.match(/<meta\s+name="description"\s+content="([^"]+)"/i)?.[1] ??
-    "";
+  const descRaw = extractDescripcion(html);
 
   // inmopanama explícitamente dice "Ubicación no disponible" — nunca da
   // lat/lng en el source. Pipeline siempre: edificio → cache → web → zona.
@@ -401,7 +540,7 @@ async function scrapeDetail(
     area_m2,
     habitaciones,
     banos,
-    estacionamientos: null,
+    estacionamientos: estacFromHtml,
     zona,
     lat: geo.lat,
     lng: geo.lng,
@@ -426,7 +565,7 @@ async function scrapeDetail(
     area_m2: base.area_m2,
     habitaciones: base.habitaciones,
     banos: base.banos,
-    estacionamientos: null,
+    estacionamientos: base.estacionamientos,
     zona: base.zona,
   };
   const enriq = await enriquecerConIA(ficha, descripcionTemp);
