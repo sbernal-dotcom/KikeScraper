@@ -35,7 +35,9 @@
     "limpiar-cache-duplicado": "tsx scripts/scrapers/limpiar-cache-duplicado.ts",
     "limpiar-cache-duplicado:apply": "tsx scripts/scrapers/limpiar-cache-duplicado.ts --apply",
     "backfill:precision": "tsx scripts/scrapers/backfill-precision-null.ts",
-    "backfill:precision:apply": "tsx scripts/scrapers/backfill-precision-null.ts --apply"
+    "backfill:precision:apply": "tsx scripts/scrapers/backfill-precision-null.ts --apply",
+    "revivir:inmo": "tsx scripts/scrapers/revivir-inmopanama.ts",
+    "revivir:inmo:apply": "tsx scripts/scrapers/revivir-inmopanama.ts --apply"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
