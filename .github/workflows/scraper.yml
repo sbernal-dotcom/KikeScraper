@@ -1,10 +1,13 @@
 name: scraper
 
 on:
-  schedule:
-    # 1×/día a las 08:00 UTC = 03:00 hora Panamá. Off-peak para
-    # encuentra24 y bajo riesgo de coincidir con anti-bot heuristics.
-    - cron: "0 8 * * *"
+  # 2026-07-26: schedule desactivado — el cron corre en Railway (Docker
+  # con cron nativo, sin límite de 2000 min/mes). Dejamos workflow_dispatch
+  # como back-up manual por si Railway está caído o queremos disparar
+  # una corrida de emergencia desde la UI de GitHub.
+  #
+  # schedule:
+  #   - cron: "0 8 * * *"  # 08:00 UTC = 03:00 hora Panamá
   workflow_dispatch: # botón manual en la UI de Actions
 
 # Evita que dos corridas se pisen si una se pasa de duración.
