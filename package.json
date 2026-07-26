@@ -33,7 +33,9 @@
     "archivar-en-mar": "tsx scripts/scrapers/archivar-props-en-mar.ts",
     "archivar-en-mar:apply": "tsx scripts/scrapers/archivar-props-en-mar.ts --apply",
     "limpiar-cache-duplicado": "tsx scripts/scrapers/limpiar-cache-duplicado.ts",
-    "limpiar-cache-duplicado:apply": "tsx scripts/scrapers/limpiar-cache-duplicado.ts --apply"
+    "limpiar-cache-duplicado:apply": "tsx scripts/scrapers/limpiar-cache-duplicado.ts --apply",
+    "backfill:precision": "tsx scripts/scrapers/backfill-precision-null.ts",
+    "backfill:precision:apply": "tsx scripts/scrapers/backfill-precision-null.ts --apply"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
