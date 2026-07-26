@@ -85,6 +85,21 @@ export const ZONAS_PANAMA: Record<string, ZonaCentro> = {
   "panamá pacífico": { lat: 8.9248, lng: -79.6049 },
   "panama pacifico": { lat: 8.9248, lng: -79.6049 },
 
+  // Corregimientos que aparecían en anuncios sin match (2026-07-26).
+  // "Carrasquilla" (corregimiento del distrito Panamá, entre San
+  // Francisco y Río Abajo).
+  carrasquilla: { lat: 9.0000, lng: -79.5089 },
+  // "El Bosque" (barrio/urbanización en Betania) — Nominatim confunde
+  // con homónimos de Chorrera.
+  "el bosque": { lat: 9.0022, lng: -79.5333 },
+  // "Las Cumbres" (corregimiento al norte del distrito Panamá,
+  // cerca de la Transístmica).
+  "las cumbres": { lat: 9.0958, lng: -79.5372 },
+  // "Volcán" (poblado del distrito Bugaba, provincia de Chiriquí) —
+  // destino de segunda residencia en tierras altas.
+  volcán: { lat: 8.7708, lng: -82.6317 },
+  volcan: { lat: 8.7708, lng: -82.6317 },
+
   // "Cerro Azul" (corregimiento E de Ciudad de Panamá, urbanización
   // residencial en la cordillera) — Nominatim cae en Cerro Azul de
   // Chiriquí (~8.79, -82.40), 400 km al oeste.
