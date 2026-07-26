@@ -74,14 +74,39 @@ async function headUrl(url: string): Promise<HeadResult> {
     if (res.status === 200) return { kind: "vive", status: 200 };
     if (res.status === 404 || res.status === 410)
       return { kind: "muerta", status: res.status };
-    // 3xx: redirect a "propiedad no disponible" — probable muerta.
+    // 3xx: solo lo consideramos viva si el redirect es a la misma URL
+    // canonical (mismo path). Cualquier otra cosa cuenta como muerta.
+    //
+    // Casos reales observados en InmoPanama (2026-07-26):
+    //   /prop_p-XYZ.htm → /venta-propiedades-panama?prop_unavailable=XYZ
+    //   → esto es MUERTA (propiedad no disponible)
+    //   → antes lo pasábamos como viva por error, reactivando 1000 URLs
+    //   muertas. Ahora es opt-in: si el location contiene el mismo path
+    //   original o difiere solo en query/hash, es canonical → viva.
+    //   Cualquier otro redirect → muerta.
     if (res.status >= 300 && res.status < 400) {
-      const loc = (res.headers.get("location") ?? "").toLowerCase();
-      if (/no-encontrad|not-found|listado|inicio|home|\/$/.test(loc)) {
+      const loc = (res.headers.get("location") ?? "").trim();
+      if (!loc) return { kind: "muerta", status: res.status };
+      // Extraer el path del URL original
+      let origPath: string;
+      try {
+        origPath = new URL(url).pathname;
+      } catch {
         return { kind: "muerta", status: res.status };
       }
-      // Redirect razonable (canonical) → contamos como viva.
-      return { kind: "vive", status: res.status };
+      // Location puede ser relativo o absoluto
+      let redirPath: string;
+      try {
+        redirPath = loc.startsWith("http")
+          ? new URL(loc).pathname
+          : loc.split("?")[0];
+      } catch {
+        return { kind: "muerta", status: res.status };
+      }
+      // Vive solo si mismo path (permitir cambio de query/hash)
+      return origPath === redirPath
+        ? { kind: "vive", status: res.status }
+        : { kind: "muerta", status: res.status };
     }
     return { kind: "otro", status: res.status, message: `HTTP ${res.status}` };
   } catch (err) {
