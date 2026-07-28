@@ -605,25 +605,34 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
         break;
       }
       const nuevos = urls.filter((u) => !seenUrls.has(u));
-      console.log(`    ${urls.length} en la página, ${nuevos.length} nuevos`);
-      if (nuevos.length === 0) {
+      nuevos.forEach((u) => seenUrls.add(u));
+
+      const procesables = nuevos.filter((u) => !skipUrls.has(u));
+      const yaEnDb = nuevos.length - procesables.length;
+      console.log(
+        `    ${urls.length} en la página, ${nuevos.length} nuevos p/run, ${procesables.length} nuevos p/DB (${yaEnDb} ya guardados)`,
+      );
+
+      // 2026-07-28: fix bug de raíz — el corte temprano se disparaba solo
+      // cuando la página no traía URLs nuevas p/run. Pero con 2500+ URLs
+      // en skipUrls (DB), las últimas 30-40 páginas siempre traían URLs
+      // "nuevas p/run" pero TODAS ya en DB → nunca cortaba, procesaba las
+      // 50 páginas siempre, ~50min innecesarios por corrida.
+      //
+      // Ahora cortamos cuando `procesables.length === 0` (no hay nada
+      // nuevo que insertar). Como InmoPanama lista recientes primero,
+      // ver N páginas sin ninguna nueva significa que ya barrimos todo
+      // el material nuevo del día.
+      if (procesables.length === 0) {
         consecutiveEmpty++;
         if (consecutiveEmpty >= MAX_EMPTY_PAGES) {
-          console.log(`    ${MAX_EMPTY_PAGES} págs vacías — corto.`);
+          console.log(`    ${MAX_EMPTY_PAGES} págs sin nuevas p/DB — corto.`);
           break;
         }
         continue;
       }
       consecutiveEmpty = 0;
-      nuevos.forEach((u) => seenUrls.add(u));
 
-      const procesables = nuevos.filter((u) => {
-        if (skipUrls.has(u)) {
-          console.log(`    (skip ya en DB) ${u}`);
-          return false;
-        }
-        return true;
-      });
       const batch = await chunkedParallel(procesables, DETAIL_CONCURRENCY, (u) =>
         scrapeDetail(u, tipo).catch((err) => {
           console.warn(`    Error en ${u}: ${(err as Error).message}`);
@@ -753,26 +762,83 @@ async function runJsonMode() {
   );
 }
 
+// Estado compartido entre runSupabaseMode y el SIGTERM handler. Sirve
+// para que — si el pipeline nos mata con SIGTERM antes de terminar —
+// igual escribamos scraper_runs con lo procesado hasta ese momento.
+// Sin esto, un timeout externo nos deja sin observability (no aparece
+// la fila del run en scraper_runs y no sabemos qué pasó).
+type RunState = {
+  startedAt: string;
+  supa: ReturnType<typeof createScraperClient>;
+  found: number;
+  inserted: number;
+  errors: number;
+  writing: boolean;
+  written: boolean;
+};
+let runState: RunState | null = null;
+
+async function writeRunOnce(notes: string): Promise<void> {
+  if (!runState || runState.written || runState.writing) return;
+  runState.writing = true;
+  const status = runState.errors > 0 && runState.inserted === 0 ? "error" : "ok";
+  try {
+    const { error } = await runState.supa.from("scraper_runs").insert({
+      fuente_id: FUENTE_ID,
+      started_at: runState.startedAt,
+      finished_at: new Date().toISOString(),
+      status,
+      found: runState.found,
+      inserted: runState.inserted,
+      updated: 0,
+      errors: runState.errors,
+      notes,
+    });
+    if (error) console.warn(`  scraper_runs: ${error.message}`);
+    runState.written = true;
+  } catch (err) {
+    console.warn(`  scraper_runs falló: ${(err as Error).message}`);
+  }
+}
+
+// Al recibir SIGTERM del pipeline (`timeout` de bash envía SIGTERM
+// primero y espera --kill-after=30s antes de SIGKILL), aprovechamos
+// esos 30s para escribir scraper_runs con lo que llevamos.
+process.on("SIGTERM", () => {
+  console.warn("\n⚠ SIGTERM recibido — escribiendo scraper_runs antes de salir...");
+  hitDeadline = true;
+  const notes = "inmopanama (agregador) — cortado por SIGTERM del pipeline";
+  // Fire-and-forget: el `timeout --kill-after=30s` nos deja tiempo real
+  // para completar el insert (Supabase es <1s típicamente).
+  void writeRunOnce(notes).finally(() => process.exit(0));
+});
+
 async function runSupabaseMode() {
   const supa = createScraperClient();
-  const startedAt = new Date().toISOString();
   console.log("Modo Supabase: upsert por url_original.");
+  runState = {
+    startedAt: new Date().toISOString(),
+    supa,
+    found: 0,
+    inserted: 0,
+    errors: 0,
+    writing: false,
+    written: false,
+  };
+
   const skipUrls = await fetchExistingUrls(supa);
   console.log(`En DB: ${skipUrls.size} (se saltan).`);
   const allNew = await scrapeAll(skipUrls);
   console.log(`\nNuevos: ${allNew.length}`);
+  runState.found = allNew.length;
 
-  let inserted = 0;
-  let errors = 0;
   const rows: Array<{ a: AnuncioRaw; row: Record<string, unknown> }> = [];
   for (const a of allNew) {
     const row = toDbRow(a);
     if (!row) {
-      {
-        const falta = [a.precio == null && "precio", a.lat == null && "lat", a.lng == null && "lng"].filter(Boolean).join(",");
-        console.warn(`  ✗ saltado (falta: ${falta}): ${a.url_original}`);
-      }
-      errors++;
+      const falta = [a.precio == null && "precio", a.lat == null && "lat", a.lng == null && "lng"].filter(Boolean).join(",");
+      console.warn(`  ✗ saltado (falta: ${falta}): ${a.url_original}`);
+      runState.errors++;
       continue;
     }
     rows.push({ a, row });
@@ -783,31 +849,19 @@ async function runSupabaseMode() {
       .upsert(row, { onConflict: "url_original" });
     if (error) {
       console.warn(`  ✗ upsert falló (${a.url_original}): ${error.message}`);
-      errors++;
+      runState!.errors++;
     } else {
-      inserted++;
+      runState!.inserted++;
     }
     return null;
   });
 
-  const status = errors > 0 && inserted === 0 ? "error" : "ok";
   const notes = hitDeadline
     ? `inmopanama (agregador) — cortado por hard timeout ${MAX_RUNTIME_MS / 60000}min`
     : "inmopanama (agregador)";
-  const { error: runErr } = await supa.from("scraper_runs").insert({
-    fuente_id: FUENTE_ID,
-    started_at: startedAt,
-    finished_at: new Date().toISOString(),
-    status,
-    found: allNew.length,
-    inserted,
-    updated: 0,
-    errors,
-    notes,
-  });
-  if (runErr) console.warn(`  scraper_runs: ${runErr.message}`);
+  await writeRunOnce(notes);
   console.log(
-    `\nUpsert — insertados: ${inserted}, errores: ${errors}, status: ${status}.`,
+    `\nUpsert — insertados: ${runState.inserted}, errores: ${runState.errors}, status: ${runState.errors > 0 && runState.inserted === 0 ? "error" : "ok"}.`,
   );
 }
 
