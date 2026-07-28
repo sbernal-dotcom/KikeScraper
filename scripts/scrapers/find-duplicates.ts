@@ -63,6 +63,7 @@ type Prop = {
   lng: number;
   area_m2: number | null;
   precio: number | null;
+  habitaciones: number | null;
   tipo_operacion: string;
   categoria: string;
   fuente_id: string;
@@ -85,6 +86,22 @@ type Match = { score: number; motivo: string } | null;
 function matches(a: Prop, b: Prop): Match {
   if (a.tipo_operacion !== b.tipo_operacion) return null;
   if (a.categoria !== b.categoria) return null;
+
+  // Filtro estricto por habitaciones: si AMBOS tienen dato y son
+  // distintas, no pueden ser el mismo inmueble aunque compartan coord,
+  // área y precio (caso típico: pisos distintos del mismo edificio con
+  // precio y área similares). Si uno o los dos son null, no bloquea
+  // (soft-match — muchos scrapers no siempre extraen habitaciones).
+  //
+  // Sin este filtro veíamos 2-hab agrupado con 3-hab en Costa del Este
+  // porque la coord era del edificio y el precio caía dentro del ±15%.
+  if (
+    a.habitaciones != null &&
+    b.habitaciones != null &&
+    a.habitaciones !== b.habitaciones
+  ) {
+    return null;
+  }
 
   const dist = haversine(a, b);
   if (dist > MAX_DIST_M) return null;
@@ -163,7 +180,7 @@ async function main() {
     const { data, error } = await supa
       .from("propiedades")
       .select(
-        "id, lat, lng, area_m2, precio, tipo_operacion, categoria, fuente_id, created_at",
+        "id, lat, lng, area_m2, precio, habitaciones, tipo_operacion, categoria, fuente_id, created_at",
       )
       .eq("estado_anuncio", "activo")
       .range(from, from + PAGE_SIZE - 1);

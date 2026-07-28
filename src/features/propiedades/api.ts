@@ -207,20 +207,62 @@ export async function fetchOportunidades(): Promise<Oportunidad[]> {
 export async function fetchPropiedades(): Promise<Propiedad[]> {
   const supabase = createClient();
 
-  // Dedupe (0009/0010): trae los IDs marcados como duplicado y excluye.
-  // Lista pequeña (~cientos); una roundtrip extra es aceptable y evita
-  // tener que reemplazar la query principal por una vista (perderíamos
-  // los joins automáticos a fuentes/anuncios).
+  // Dedupe (0009/0010): trae los pares (duplicado → canónica) para (a)
+  // excluir los duplicados del listado principal y (b) adjuntarlos como
+  // `otrosAnuncios` de la canónica para que la card muestre "también
+  // publicado en X" con el precio de cada fuente.
   //
-  // Cast manual: types.ts no se ha regenerado tras 0009 (pendiente en
-  // bitacora). Una vez regenerado, este cast puede quitarse.
+  // La tabla `anuncios` (0001_init.sql) está vacía en producción: ningún
+  // scraper la escribe. `propiedades_duplicados` es la fuente real de
+  // verdad para cross-source.
   const { data: dupRows, error: dupErr } = await supabase
     .from("propiedades_duplicados")
-    .select("propiedad_id");
+    .select("propiedad_id, canonica_id");
   if (dupErr) throw dupErr;
-  const dupIds = ((dupRows ?? []) as Array<{ propiedad_id: string }>).map(
-    (r) => r.propiedad_id,
-  );
+  const dupPairs = (dupRows ?? []) as Array<{
+    propiedad_id: string;
+    canonica_id: string;
+  }>;
+  const dupToCan = new Map<string, string>();
+  dupPairs.forEach((r) => dupToCan.set(r.propiedad_id, r.canonica_id));
+  const dupIds = Array.from(dupToCan.keys());
+
+  // Trae los datos de los duplicados por separado para armar los
+  // `AnuncioAdicional` de la canónica. Query aislada = evita el join
+  // ambiguo (propiedades_duplicados tiene 2 FKs a propiedades) y
+  // mantiene el SELECT principal limpio.
+  const otrosByCanId = new Map<string, AnuncioAdicional[]>();
+  if (dupIds.length > 0) {
+    const { data: dupData, error: dupDataErr } = await supabase
+      .from("propiedades")
+      .select(
+        "id, fuente_id, url_original, precio, moneda, fecha_deteccion, fuente:fuentes!fuente_id(id, nombre)",
+      )
+      .in("id", dupIds);
+    if (dupDataErr) throw dupDataErr;
+    for (const d of (dupData ?? []) as Array<{
+      id: string;
+      fuente_id: string;
+      url_original: string;
+      precio: number | string | null;
+      moneda: Moneda | null;
+      fecha_deteccion: string | null;
+      fuente: { id: string; nombre: string } | null;
+    }>) {
+      const canId = dupToCan.get(d.id);
+      if (!canId) continue;
+      const arr = otrosByCanId.get(canId) ?? [];
+      arr.push({
+        fuenteId: d.fuente_id,
+        fuenteNombre: d.fuente?.nombre ?? d.fuente_id,
+        urlOriginal: d.url_original,
+        precio: toNumber(d.precio),
+        moneda: d.moneda ?? undefined,
+        fechaDeteccion: d.fecha_deteccion ?? undefined,
+      });
+      otrosByCanId.set(canId, arr);
+    }
+  }
 
   // Mismo filtro que vw_oportunidades para mantener paridad mapa ↔ análisis,
   // + estado_anuncio='activo' (lifecycle, 0004_lifecycle.sql): las que
@@ -244,5 +286,16 @@ export async function fetchPropiedades(): Promise<Propiedad[]> {
 
   if (error) throw error;
   const rows = (data ?? []) as unknown as DbPropiedad[];
-  return rows.map(mapPropiedad);
+  return rows.map((r) => {
+    const p = mapPropiedad(r);
+    const extras = otrosByCanId.get(p.id);
+    if (extras && extras.length > 0) {
+      // Merge: `mapPropiedad` ya sembró desde tabla `anuncios` (vacía en
+      // prod, pero podría llenarse en el futuro). Concat sin dedupe por
+      // urlOriginal — si el mismo url termina en ambos lados es un bug
+      // aguas arriba, y verlo doble es más útil que ocultarlo.
+      p.otrosAnuncios = [...(p.otrosAnuncios ?? []), ...extras];
+    }
+    return p;
+  });
 }
