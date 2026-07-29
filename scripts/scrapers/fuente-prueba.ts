@@ -863,19 +863,69 @@ async function runJsonMode() {
   );
 }
 
+// SIGTERM handler para no perder scraper_runs cuando el pipeline nos
+// mata por hard timeout externo (2026-07-29: encuentra24 y PE no dejaron
+// fila cuando run-pipeline.sh los cortó a los 30/10 min).
+type RunState = {
+  startedAt: string;
+  supa: ReturnType<typeof createScraperClient>;
+  found: number;
+  inserted: number;
+  errors: number;
+  writing: boolean;
+  written: boolean;
+};
+let runState: RunState | null = null;
+
+async function writeRunOnce(notes: string): Promise<void> {
+  if (!runState || runState.written || runState.writing) return;
+  runState.writing = true;
+  const status = runState.errors > 0 && runState.inserted === 0 ? "error" : "ok";
+  try {
+    const { error } = await runState.supa.from("scraper_runs").insert({
+      fuente_id: FUENTE_ID,
+      started_at: runState.startedAt,
+      finished_at: new Date().toISOString(),
+      status,
+      found: runState.found,
+      inserted: runState.inserted,
+      updated: 0,
+      errors: runState.errors,
+      notes,
+    });
+    if (error) console.warn(`  scraper_runs: ${error.message}`);
+    runState.written = true;
+  } catch (err) {
+    console.warn(`  scraper_runs falló: ${(err as Error).message}`);
+  }
+}
+
+process.on("SIGTERM", () => {
+  console.warn("\n⚠ SIGTERM recibido — escribiendo scraper_runs antes de salir...");
+  const notes = "encuentra24 — cortado por SIGTERM del pipeline";
+  void writeRunOnce(notes).finally(() => process.exit(0));
+});
+
 async function runSupabaseMode() {
   const supa = createScraperClient();
-  const startedAt = new Date().toISOString();
   console.log("Modo Supabase: upsert por url_original + registro en scraper_runs.");
+  runState = {
+    startedAt: new Date().toISOString(),
+    supa,
+    found: 0,
+    inserted: 0,
+    errors: 0,
+    writing: false,
+    written: false,
+  };
 
   const skipUrls = await fetchExistingUrls(supa);
   console.log(`Propiedades existentes en DB: ${skipUrls.size} (se saltan).`);
 
   const allNew = await scrapeAll(skipUrls);
   console.log(`\nNuevos scrapeados: ${allNew.length}`);
+  runState.found = allNew.length;
 
-  let inserted = 0;
-  let errors = 0;
   const rows: Array<{ a: AnuncioRaw; row: Record<string, unknown> }> = [];
   for (const a of allNew) {
     const row = toDbRow(a);
@@ -884,7 +934,7 @@ async function runSupabaseMode() {
         const falta = [a.precio == null && "precio", a.lat == null && "lat", a.lng == null && "lng"].filter(Boolean).join(",");
         console.warn(`  ✗ saltado (falta: ${falta}): ${a.url_original}`);
       }
-      errors++;
+      runState.errors++;
       continue;
     }
     rows.push({ a, row });
@@ -896,31 +946,19 @@ async function runSupabaseMode() {
       .upsert(row, { onConflict: "url_original" });
     if (error) {
       console.warn(`  ✗ upsert falló (${a.url_original}): ${error.message}`);
-      errors++;
+      runState!.errors++;
     } else {
-      inserted++;
+      runState!.inserted++;
     }
     return null;
   });
 
   // Como scrapeAll salta los url_original ya presentes, todos los escritos
   // son nuevos (updated=0). El refresco de existentes se hará en otra corrida.
-  const status = errors > 0 && inserted === 0 ? "error" : "ok";
-  const { error: runErr } = await supa.from("scraper_runs").insert({
-    fuente_id: FUENTE_ID,
-    started_at: startedAt,
-    finished_at: new Date().toISOString(),
-    status,
-    found: allNew.length,
-    inserted,
-    updated: 0,
-    errors,
-    notes: `listados: ${LISTADOS.map((l) => l.url).join(", ")}`,
-  });
-  if (runErr) console.warn(`  No se pudo registrar scraper_run: ${runErr.message}`);
-
+  await writeRunOnce(`listados: ${LISTADOS.map((l) => l.url).join(", ")}`);
+  const status = runState.errors > 0 && runState.inserted === 0 ? "error" : "ok";
   console.log(
-    `\nUpsert terminado — insertados: ${inserted}, errores: ${errors}, status: ${status}.`,
+    `\nUpsert terminado — insertados: ${runState.inserted}, errores: ${runState.errors}, status: ${status}.`,
   );
 }
 

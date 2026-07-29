@@ -78,7 +78,11 @@ const UPSERT_CONCURRENCY = 5;
 // esta cota garantiza que jamás una corrida vuelva a consumir el trial
 // de Railway. Si la deadline expira, terminamos limpio: guardamos lo
 // procesado y registramos en scraper_runs con notes="timeout".
-const MAX_RUNTIME_MS = 90 * 60 * 1000; // 90 min
+// 45 min: DENTRO del cap del pipeline (T_INMO=50m). Antes era 90m, o sea
+// el pipeline siempre mataba con SIGTERM (corte "sucio", sin progreso
+// registrado por scrapeAll). Con 45m internos cortamos limpio antes de
+// que el pipeline meta la mano.
+const MAX_RUNTIME_MS = 45 * 60 * 1000;
 let deadline = 0;
 let hitDeadline = false;
 function isExpired(): boolean {
@@ -640,6 +644,11 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
         }),
       );
       results.push(...batch);
+      // Actualizar contadores en tiempo real para que el SIGTERM handler
+      // capture progreso aunque nos maten a mitad de camino. Antes
+      // `runState.found = allNew.length` corría SOLO al terminar
+      // scrapeAll; si el pipeline mataba antes, quedaba en 0.
+      if (runState) runState.found = results.length;
       if (isExpired()) break outer;
       await jitter(300, 700);
     }
@@ -807,7 +816,10 @@ async function writeRunOnce(notes: string): Promise<void> {
 process.on("SIGTERM", () => {
   console.warn("\n⚠ SIGTERM recibido — escribiendo scraper_runs antes de salir...");
   hitDeadline = true;
-  const notes = "inmopanama (agregador) — cortado por SIGTERM del pipeline";
+  const progreso = runState
+    ? ` (progreso: found=${runState.found} ins=${runState.inserted} err=${runState.errors})`
+    : "";
+  const notes = `inmopanama (agregador) — cortado por SIGTERM del pipeline${progreso}`;
   // Fire-and-forget: el `timeout --kill-after=30s` nos deja tiempo real
   // para completar el insert (Supabase es <1s típicamente).
   void writeRunOnce(notes).finally(() => process.exit(0));
