@@ -152,8 +152,26 @@ export async function geocodeConEdificio(
   // Centroide de la zona (si conocida) para validar coords del web search.
   // Esto evita que pesquemos coords aleatorias de listings vecinos en
   // páginas que listan múltiples propiedades.
-  const zona = extr.zona ?? zonaFallback;
-  const zonaCentro = zona ? centroFromTable(zona) : null;
+  //
+  // Preferir extr.zona (más específica cuando existe en tabla). Pero si
+  // el centro de extr.zona es null y zonaFallback SÍ resuelve, usar el
+  // fallback — Savitat 2026-07-29: la IA extraía "Área Bancaria" para
+  // una prop cuyo streetAddress era "Marbella, Bella Vista" (SÍ está en
+  // la tabla), tirando la coord real por la borda.
+  let zona = extr.zona ?? zonaFallback;
+  let zonaCentro = zona ? centroFromTable(zona) : null;
+  if (
+    !zonaCentro &&
+    extr.zona &&
+    zonaFallback &&
+    zonaFallback !== extr.zona
+  ) {
+    const fbCentro = centroFromTable(zonaFallback);
+    if (fbCentro) {
+      zona = zonaFallback;
+      zonaCentro = fbCentro;
+    }
+  }
   const validator = makeZoneValidator(zonaCentro);
 
   // 2. Edificio

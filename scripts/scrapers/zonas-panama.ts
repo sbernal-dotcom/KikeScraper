@@ -100,6 +100,20 @@ export const ZONAS_PANAMA: Record<string, ZonaCentro> = {
   volcán: { lat: 8.7708, lng: -82.6317 },
   volcan: { lat: 8.7708, lng: -82.6317 },
 
+  // Zonas agregadas 2026-07-29 tras diagnóstico de Savitat (114 URLs
+  // fallidas por sin_geo). Cada una es un lugar habitable frecuente en
+  // el inventario que Savitat publica sin geo en JSON-LD.
+  //
+  // "Costa Sur" (barrio residencial del corregimiento Ancón, distrito
+  // Panamá) — al sur del Corredor Sur, junto a Amador.
+  "costa sur": { lat: 8.9560, lng: -79.5522 },
+  // "Penonomé" (cabecera del distrito y provincia Coclé).
+  penonomé: { lat: 8.5194, lng: -80.3583 },
+  penonome: { lat: 8.5194, lng: -80.3583 },
+  // "Los Algarrobos" (corregimiento del distrito David, Chiriquí) —
+  // Nominatim puede confundir con caseríos homónimos.
+  "los algarrobos": { lat: 8.4831, lng: -82.4356 },
+
   // "Cerro Azul" (corregimiento E de Ciudad de Panamá, urbanización
   // residencial en la cordillera) — Nominatim cae en Cerro Azul de
   // Chiriquí (~8.79, -82.40), 400 km al oeste.
