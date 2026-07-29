@@ -19,6 +19,7 @@ export type Dictionary = {
     properties: string;
     sources: string;
     analysis: string;
+    history: string;
     about: string;
     soon: string;
     open_nav: string;
@@ -132,6 +133,40 @@ export type Dictionary = {
     filter_score_min: string;
     filter_zone: string;
   };
+  history: {
+    title: string;
+    subtitle: string;
+    kpi_total_runs: string;
+    kpi_total_runs_caption: string;
+    kpi_ok_pct: string;
+    kpi_ok_pct_caption: string;
+    kpi_last_run: string;
+    kpi_last_run_caption: string;
+    kpi_new_today: string;
+    kpi_new_today_caption: string;
+    column_date: string;
+    column_source: string;
+    column_start: string;
+    column_duration: string;
+    column_status: string;
+    column_found: string;
+    column_inserted: string;
+    column_updated: string;
+    column_errors: string;
+    column_notes: string;
+    status_ok: string;
+    status_error: string;
+    day_header_runs: string;
+    day_header_inserted: string;
+    day_header_errors: string;
+    no_data: string;
+    minutes_short: string;
+    load_error: string;
+    filter_all_sources: string;
+    filter_days_7: string;
+    filter_days_30: string;
+    filter_days_90: string;
+  };
 };
 
 const es: Dictionary = {
@@ -148,6 +183,7 @@ const es: Dictionary = {
     properties: "Propiedades",
     sources: "Fuentes",
     analysis: "Análisis",
+    history: "Historial",
     about: "Acerca de",
     soon: "Pronto",
     open_nav: "Abrir navegación",
@@ -294,6 +330,40 @@ const es: Dictionary = {
     filter_score_min: "Score mínimo",
     filter_zone: "Zona",
   },
+  history: {
+    title: "Historial del scraper",
+    subtitle: "Cada corrida por fuente: qué scrapeó y en cuánto tiempo",
+    kpi_total_runs: "Corridas registradas",
+    kpi_total_runs_caption: "en el rango",
+    kpi_ok_pct: "% OK",
+    kpi_ok_pct_caption: "sin errores duros",
+    kpi_last_run: "Última corrida",
+    kpi_last_run_caption: "hace",
+    kpi_new_today: "Nuevas hoy",
+    kpi_new_today_caption: "insertadas 24h",
+    column_date: "Fecha",
+    column_source: "Fuente",
+    column_start: "Inicio",
+    column_duration: "Duración",
+    column_status: "Estado",
+    column_found: "Encontradas",
+    column_inserted: "Nuevas",
+    column_updated: "Actualizadas",
+    column_errors: "Errores",
+    column_notes: "Notas",
+    status_ok: "OK",
+    status_error: "Error",
+    day_header_runs: "corridas",
+    day_header_inserted: "nuevas",
+    day_header_errors: "errores",
+    no_data: "Aún no hay corridas registradas en el rango seleccionado.",
+    minutes_short: "min",
+    load_error: "No se pudo cargar el historial.",
+    filter_all_sources: "Todas las fuentes",
+    filter_days_7: "7 días",
+    filter_days_30: "30 días",
+    filter_days_90: "90 días",
+  },
 };
 
 const en: Dictionary = {
@@ -310,6 +380,7 @@ const en: Dictionary = {
     properties: "Properties",
     sources: "Sources",
     analysis: "Analytics",
+    history: "History",
     about: "About",
     soon: "Soon",
     open_nav: "Open navigation",
@@ -455,6 +526,40 @@ const en: Dictionary = {
     kpi_top_zone_caption: "properties",
     filter_score_min: "Min score",
     filter_zone: "Area",
+  },
+  history: {
+    title: "Scraper history",
+    subtitle: "Every run per source: what it scraped and how long it took",
+    kpi_total_runs: "Runs logged",
+    kpi_total_runs_caption: "in range",
+    kpi_ok_pct: "% OK",
+    kpi_ok_pct_caption: "no hard errors",
+    kpi_last_run: "Last run",
+    kpi_last_run_caption: "ago",
+    kpi_new_today: "New today",
+    kpi_new_today_caption: "inserted 24h",
+    column_date: "Date",
+    column_source: "Source",
+    column_start: "Start",
+    column_duration: "Duration",
+    column_status: "Status",
+    column_found: "Found",
+    column_inserted: "New",
+    column_updated: "Updated",
+    column_errors: "Errors",
+    column_notes: "Notes",
+    status_ok: "OK",
+    status_error: "Error",
+    day_header_runs: "runs",
+    day_header_inserted: "new",
+    day_header_errors: "errors",
+    no_data: "No runs logged in the selected range yet.",
+    minutes_short: "min",
+    load_error: "Could not load history.",
+    filter_all_sources: "All sources",
+    filter_days_7: "7 days",
+    filter_days_30: "30 days",
+    filter_days_90: "90 days",
   },
 };
 
