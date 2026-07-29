@@ -156,9 +156,10 @@ export type Dictionary = {
     column_notes: string;
     status_ok: string;
     status_error: string;
-    day_header_runs: string;
-    day_header_inserted: string;
-    day_header_errors: string;
+    run_header_sources: string;
+    run_header_total: string;
+    run_header_inserted: string;
+    run_header_errors: string;
     no_data: string;
     minutes_short: string;
     load_error: string;
@@ -353,9 +354,10 @@ const es: Dictionary = {
     column_notes: "Notas",
     status_ok: "OK",
     status_error: "Error",
-    day_header_runs: "corridas",
-    day_header_inserted: "nuevas",
-    day_header_errors: "errores",
+    run_header_sources: "fuentes",
+    run_header_total: "total",
+    run_header_inserted: "nuevas",
+    run_header_errors: "errores",
     no_data: "Aún no hay corridas registradas en el rango seleccionado.",
     minutes_short: "min",
     load_error: "No se pudo cargar el historial.",
@@ -550,9 +552,10 @@ const en: Dictionary = {
     column_notes: "Notes",
     status_ok: "OK",
     status_error: "Error",
-    day_header_runs: "runs",
-    day_header_inserted: "new",
-    day_header_errors: "errors",
+    run_header_sources: "sources",
+    run_header_total: "total",
+    run_header_inserted: "new",
+    run_header_errors: "errors",
     no_data: "No runs logged in the selected range yet.",
     minutes_short: "min",
     load_error: "Could not load history.",

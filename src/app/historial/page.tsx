@@ -57,7 +57,7 @@ export default function HistorialPage() {
   );
 
   const kpis = useMemo(() => computeKpis(filtered), [filtered]);
-  const byDay = useMemo(() => groupByDay(filtered), [filtered]);
+  const byRun = useMemo(() => groupByRun(filtered), [filtered]);
 
   return (
     <div className="flex h-dvh flex-col">
@@ -166,29 +166,39 @@ export default function HistorialPage() {
             </div>
           ) : (
             <div className="space-y-6">
-              {byDay.map(({ date, items }) => {
+              {byRun.map(({ start, end, items }) => {
                 const inserted = items.reduce((s, r) => s + r.inserted, 0);
                 const errors = items.reduce((s, r) => s + r.errors, 0);
+                const totalMin = Math.round(
+                  (new Date(end).getTime() - new Date(start).getTime()) / 60000,
+                );
                 return (
-                  <section key={date} className="space-y-2">
+                  <section key={start} className="space-y-2">
                     <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/60 pb-2">
                       <h2 className="text-sm font-semibold tracking-tight">
-                        {formatDayHeader(date)}
+                        {formatRunHeader(start)}
                       </h2>
                       <div className="flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-wider text-muted-foreground">
                         <span>
                           <b className="text-foreground">{items.length}</b>{" "}
-                          {dict.history.day_header_runs}
+                          {dict.history.run_header_sources}
+                        </span>
+                        <span>
+                          <b className="text-foreground tabular-nums">
+                            {totalMin}
+                            {dict.history.minutes_short}
+                          </b>{" "}
+                          {dict.history.run_header_total}
                         </span>
                         <span>
                           <b style={{ color: "#D6FF00" }}>{inserted}</b>{" "}
-                          {dict.history.day_header_inserted}
+                          {dict.history.run_header_inserted}
                         </span>
                         <span>
                           <b className={errors > 0 ? "text-destructive" : ""}>
                             {errors}
                           </b>{" "}
-                          {dict.history.day_header_errors}
+                          {dict.history.run_header_errors}
                         </span>
                       </div>
                     </header>
@@ -370,30 +380,53 @@ function computeKpis(runs: ScraperRun[]) {
   return { totalRuns, okRuns, lastRunAgoMin, newTodayInserted };
 }
 
-function groupByDay(runs: ScraperRun[]): Array<{ date: string; items: ScraperRun[] }> {
-  const map = new Map<string, ScraperRun[]>();
-  for (const r of runs) {
-    const day = r.startedAt.slice(0, 10);
-    const arr = map.get(day) ?? [];
-    arr.push(r);
-    map.set(day, arr);
+// Agrupa por CORRIDA del pipeline (no por día calendario). Heurístico:
+// si entre el fin de un run y el inicio del siguiente pasan >GAP_MIN
+// minutos, son corridas distintas. El cron diario más una manual el
+// mismo día → 2 tablas separadas (antes se mostraban mezcladas y por
+// eso aparecía inmopanama repetido en un mismo bloque).
+function groupByRun(
+  runs: ScraperRun[],
+): Array<{ start: string; end: string; items: ScraperRun[] }> {
+  const GAP_MIN = 30;
+  if (runs.length === 0) return [];
+  const asc = [...runs].sort((a, b) => a.startedAt.localeCompare(b.startedAt));
+  const groups: ScraperRun[][] = [];
+  for (const r of asc) {
+    const last = groups[groups.length - 1];
+    if (!last) {
+      groups.push([r]);
+      continue;
+    }
+    const prev = last[last.length - 1];
+    const prevEnd = prev.finishedAt ?? prev.startedAt;
+    const gapMin =
+      (new Date(r.startedAt).getTime() - new Date(prevEnd).getTime()) / 60000;
+    if (gapMin <= GAP_MIN) {
+      last.push(r);
+    } else {
+      groups.push([r]);
+    }
   }
-  return Array.from(map.entries())
-    .sort(([a], [b]) => b.localeCompare(a))
-    .map(([date, items]) => ({
-      date,
-      items: items.sort((a, b) => b.startedAt.localeCompare(a.startedAt)),
-    }));
+  return groups
+    .map((items) => ({
+      start: items[0].startedAt,
+      end: items[items.length - 1].finishedAt ?? items[items.length - 1].startedAt,
+      items,
+    }))
+    .reverse(); // más reciente primero
 }
 
-function formatDayHeader(dateIso: string): string {
-  const d = new Date(`${dateIso}T00:00:00Z`);
-  return d.toLocaleDateString(undefined, {
+function formatRunHeader(startIso: string): string {
+  const d = new Date(startIso);
+  const dateStr = d.toLocaleDateString(undefined, {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
   });
+  const timeStr = startIso.slice(11, 16);
+  return `${dateStr} · ${timeStr} UTC`;
 }
 
 function formatAgo(min: number, short: string): string {
