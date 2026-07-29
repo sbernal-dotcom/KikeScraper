@@ -122,7 +122,7 @@ export type MapPin = {
   count: number;
   /** Todos los items de este pin están archivados/vendidos/retirados.
    *  El pin se pinta en rojo apagado para señalar "ya no está en el
-   *  mercado" antes de que salga del mapa (TTL 7 días). */
+   *  mercado" antes de que salga del mapa (TTL 3 días). */
   allArchived?: boolean;
 };
 
@@ -409,17 +409,13 @@ export function MapView({
           filter: none;
         }
         /* Pines "archivados" (ya no están disponibles pero mostrados
-           <=7 días como memoria visual). Rojo oscuro apagado + tag
-           circular blanca en el centro para diferenciarse del rojo
-           normal de venta. La card explica el motivo. */
+           <=3 días como memoria visual). Rojo oscuro apagado, sin
+           borde, para diferenciarse del rojo normal de venta.
+           La card explica el motivo. */
         .mii-marker--archived {
           --mii-fill: #7a1010;
           --mii-glow: 180, 30, 30;
           opacity: 0.55;
-        }
-        .mii-marker--archived svg path {
-          stroke: rgba(255, 255, 255, 0.7);
-          stroke-width: 1;
         }
         .mii-marker--archived:hover {
           opacity: 0.85;

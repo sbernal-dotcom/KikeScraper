@@ -271,11 +271,11 @@ export async function fetchPropiedades(): Promise<Propiedad[]> {
   // Mismo filtro que vw_oportunidades para mantener paridad mapa ↔ análisis.
   // Muestra:
   //  - todas las 'activo'
-  //  - archivadas/vendidas/etc en los últimos 7 días (pin rojo apagado
+  //  - archivadas/vendidas/etc en los últimos 3 días (pin rojo apagado
   //    + banner "Ya no está disponible" en la card). Así el user ve
   //    cuándo algo salió del mercado antes de que desaparezca del mapa.
   const archivedCutoff = new Date(
-    Date.now() - 7 * 24 * 3600 * 1000,
+    Date.now() - 3 * 24 * 3600 * 1000,
   ).toISOString();
   let query = supabase
     .from("propiedades")
