@@ -114,6 +114,34 @@ export const ZONAS_PANAMA: Record<string, ZonaCentro> = {
   // Nominatim puede confundir con caseríos homónimos.
   "los algarrobos": { lat: 8.4831, lng: -82.4356 },
 
+  // Zonas agregadas 2026-07-30 tras diagnóstico Savitat 21:10 UTC:
+  // 71 URLs fallidas en 1 corrida, mayoritariamente por streetAddress
+  // ausente de la tabla. Cada entry es un lugar que aparece ≥1 vez.
+  //
+  // Calle 50 (avenida principal del área bancaria/financiera de PTY).
+  "calle 50": { lat: 8.9840, lng: -79.5188 },
+  // Área Bancaria (superset de Marbella/Obarrio/Bella Vista, coord
+  // media del cuadrante). Frecuente en oficinas y locales.
+  "área bancaria": { lat: 8.9825, lng: -79.5200 },
+  "area bancaria": { lat: 8.9825, lng: -79.5200 },
+  // Transístmica (avenida N-S que conecta PTY con Colón). Los anuncios
+  // suelen decir "Milla 9", "Milla 10". Anclamos al tramo urbano.
+  transístmica: { lat: 9.0350, lng: -79.5330 },
+  transistmica: { lat: 9.0350, lng: -79.5330 },
+  // Tocumen (corregimiento este de PTY, cerca del aeropuerto).
+  tocumen: { lat: 9.0725, lng: -79.3960 },
+  // Mañanitas (corregimiento este PTY, Vía Tocumen).
+  mañanitas: { lat: 9.0806, lng: -79.3800 },
+  mananitas: { lat: 9.0806, lng: -79.3800 },
+  // Chepo (cabecera del distrito Chepo, provincia Panamá).
+  chepo: { lat: 9.1731, lng: -79.1010 },
+  // San Carlos (playa y cabecera del distrito San Carlos, Panamá
+  // Oeste). NO confundir con corregimiento homónimo del distrito Panamá.
+  "san carlos": { lat: 8.4694, lng: -79.9503 },
+  // Nueva Gorgona (playa del distrito Chame, Panamá Oeste). Ya estaba
+  // en LANDMARKS de isOnLand pero faltaba aquí para geocoding.
+  "nueva gorgona": { lat: 8.5347, lng: -79.8942 },
+
   // "Cerro Azul" (corregimiento E de Ciudad de Panamá, urbanización
   // residencial en la cordillera) — Nominatim cae en Cerro Azul de
   // Chiriquí (~8.79, -82.40), 400 km al oeste.

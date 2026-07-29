@@ -526,9 +526,14 @@ async function scrapeDetail(
 
   // inmopanama explícitamente dice "Ubicación no disponible" — nunca da
   // lat/lng en el source. Pipeline siempre: edificio → cache → web → zona.
-  // Pasamos la categoría: terrenos/casas activan zona-fallback automático.
+  // allowZoneFallback:true (2026-07-30) porque el 28% de las URLs eran
+  // apartamentos/oficinas/locales sin edificio identificable pero CON
+  // zona conocida (Bella Vista, Calle 50, etc.) — antes se descartaban
+  // silenciosos. Ahora quedan con precision="zona-declarada" y el badge
+  // "Ubicación aproximada" en la card avisa al usuario.
   const geo = await geocodeConEdificio(titulo, descRaw, url, zona, {
     categoria: categoriaFromTitle(titulo ?? "", url),
+    allowZoneFallback: true,
   });
   if (!geo) {
     console.log(`  geocode → sin resultado — saltando`);
