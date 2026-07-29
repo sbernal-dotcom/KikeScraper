@@ -37,7 +37,8 @@
     "backfill:precision": "tsx scripts/scrapers/backfill-precision-null.ts",
     "backfill:precision:apply": "tsx scripts/scrapers/backfill-precision-null.ts --apply",
     "revivir:inmo": "tsx scripts/scrapers/revivir-inmopanama.ts",
-    "revivir:inmo:apply": "tsx scripts/scrapers/revivir-inmopanama.ts --apply"
+    "revivir:inmo:apply": "tsx scripts/scrapers/revivir-inmopanama.ts --apply",
+    "alerta": "tsx scripts/scrapers/pipeline-alerta.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

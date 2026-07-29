@@ -82,6 +82,11 @@ run_step "archivar-en-mar" \$T_POST npm run archivar-en-mar:apply
 run_step "limpiar-cache"   \$T_POST npm run limpiar-cache-duplicado:apply
 run_step "presunta-venta"  \$T_POST npm run presunta-venta:apply
 
+# --- Alerta automática: detecta anomalías y manda email si hay ---
+# Siempre corre al final. Silenciosa si todo OK. Nunca falla duro
+# (exit 0 garantizado dentro del script).
+run_step "alerta"          \$T_POST npm run alerta
+
 echo "=== \$(date -u +%Y-%m-%dT%H:%M:%SZ) — pipeline END ==="
 PIPELINE_EOF
 
