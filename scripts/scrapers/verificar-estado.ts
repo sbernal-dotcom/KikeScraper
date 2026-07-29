@@ -704,6 +704,7 @@ async function main() {
         inserted: 0,
         updated: vivas + noEncontradas + erroresVerificacion,
         errors: 0,
+        archived: archivadas,
         notes: `verificar-estado | vivas:${vivas} no_encontradas:${noEncontradas} errores:${erroresVerificacion} archivadas:${archivadas} posibles:${posiblesInactivas}`,
       })
       .eq("id", runId);

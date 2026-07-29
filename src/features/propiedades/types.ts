@@ -12,7 +12,14 @@ export type Moneda = "USD" | "PAB";
 
 export type Condicion = "nueva" | "usada";
 
-export type EstadoAnuncio = "activo" | "vendido" | "alquilado" | "retirado";
+export type EstadoAnuncio =
+  | "activo"
+  | "vendido"
+  | "alquilado"
+  | "retirado"
+  | "archivado"
+  | "posible_inactivo"
+  | "error_verificacion";
 
 export type PrecisionUbicacion = "exacta" | "zona-declarada" | "aproximada";
 
@@ -94,4 +101,11 @@ export interface Propiedad {
   fechaPublicacion: string;
   fechaDeteccion: string;
   fechaActualizacion: string;
+  /** Razón humana de la última transición (ej. "vendido detectado por
+   *  scraper", "404 en verificación"). Solo relevante cuando
+   *  estadoAnuncio !== "activo". */
+  motivoEstado?: string;
+  /** Última vez que verificar-estado tocó esta fila. Se usa como
+   *  fecha aproximada de "cuándo se archivó" en la card. */
+  fechaUltimaRevision?: string;
 }

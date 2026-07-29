@@ -10,6 +10,7 @@ export type ScraperRun = {
   inserted: number;
   updated: number;
   errors: number;
+  archived: number;
   notes: string | null;
   startedAt: string;
   finishedAt: string | null;
@@ -24,6 +25,7 @@ type DbRow = {
   inserted: number | null;
   updated: number | null;
   errors: number | null;
+  archived: number | null;
   notes: string | null;
   started_at: string;
   finished_at: string | null;
@@ -46,6 +48,7 @@ function map(r: DbRow): ScraperRun {
     inserted: r.inserted ?? 0,
     updated: r.updated ?? 0,
     errors: r.errors ?? 0,
+    archived: r.archived ?? 0,
     notes: r.notes,
     startedAt: r.started_at,
     finishedAt: r.finished_at,
@@ -59,7 +62,7 @@ export async function fetchScraperRuns(days = 30): Promise<ScraperRun[]> {
   const { data, error } = await supabase
     .from("scraper_runs")
     .select(
-      "id, fuente_id, status, found, inserted, updated, errors, notes, started_at, finished_at",
+      "id, fuente_id, status, found, inserted, updated, errors, archived, notes, started_at, finished_at",
     )
     .gte("started_at", since)
     .order("started_at", { ascending: false });

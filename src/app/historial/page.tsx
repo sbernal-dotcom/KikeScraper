@@ -169,6 +169,7 @@ export default function HistorialPage() {
               {byRun.map(({ start, end, items }) => {
                 const inserted = items.reduce((s, r) => s + r.inserted, 0);
                 const errors = items.reduce((s, r) => s + r.errors, 0);
+                const archived = items.reduce((s, r) => s + r.archived, 0);
                 const totalMin = Math.round(
                   (new Date(end).getTime() - new Date(start).getTime()) / 60000,
                 );
@@ -193,6 +194,12 @@ export default function HistorialPage() {
                         <span>
                           <b style={{ color: "#D6FF00" }}>{inserted}</b>{" "}
                           {dict.history.run_header_inserted}
+                        </span>
+                        <span>
+                          <b className={archived > 0 ? "text-destructive" : ""}>
+                            {archived}
+                          </b>{" "}
+                          {dict.history.run_header_archived}
                         </span>
                         <span>
                           <b className={errors > 0 ? "text-destructive" : ""}>
@@ -245,6 +252,9 @@ function RunsTable({ runs }: { runs: ScraperRun[] }) {
             <th className="px-3 py-2 text-right font-medium">
               {dict.history.column_errors}
             </th>
+            <th className="px-3 py-2 text-right font-medium">
+              {dict.history.column_archived}
+            </th>
             <th className="px-3 py-2 text-left font-medium">
               {dict.history.column_notes}
             </th>
@@ -287,6 +297,14 @@ function RunsTable({ runs }: { runs: ScraperRun[] }) {
                   }
                 >
                   {r.errors}
+                </td>
+                <td
+                  className={
+                    "px-3 py-2 text-right tabular-nums " +
+                    (r.archived > 0 ? "font-semibold text-destructive" : "text-muted-foreground")
+                  }
+                >
+                  {r.archived}
                 </td>
                 <td className="max-w-[280px] px-3 py-2 text-muted-foreground">
                   <span className="line-clamp-2" title={r.notes ?? undefined}>

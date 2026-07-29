@@ -78,6 +78,8 @@ export type Dictionary = {
     other_listings_count: string;
     location_approximate: string;
     location_approximate_hint: string;
+    unavailable_banner: string;
+    unavailable_since: string;
   };
   domain: {
     operation: Record<"venta" | "alquiler", string>;
@@ -92,7 +94,16 @@ export type Dictionary = {
       string
     >;
     condition: Record<"nueva" | "usada", string>;
-    status: Record<"activo" | "vendido" | "alquilado" | "retirado", string>;
+    status: Record<
+      | "activo"
+      | "vendido"
+      | "alquilado"
+      | "retirado"
+      | "archivado"
+      | "posible_inactivo"
+      | "error_verificacion",
+      string
+    >;
   };
   tags: Record<string, string>;
   compare: {
@@ -153,6 +164,7 @@ export type Dictionary = {
     column_inserted: string;
     column_updated: string;
     column_errors: string;
+    column_archived: string;
     column_notes: string;
     status_ok: string;
     status_error: string;
@@ -160,6 +172,7 @@ export type Dictionary = {
     run_header_total: string;
     run_header_inserted: string;
     run_header_errors: string;
+    run_header_archived: string;
     no_data: string;
     minutes_short: string;
     load_error: string;
@@ -245,6 +258,8 @@ const es: Dictionary = {
     location_approximate: "Ubicación aproximada",
     location_approximate_hint:
       "El pin muestra el centroide de la zona — el edificio exacto no está confirmado.",
+    unavailable_banner: "Ya no está disponible",
+    unavailable_since: "desde",
   },
   domain: {
     operation: { venta: "en venta", alquiler: "en alquiler" },
@@ -263,6 +278,9 @@ const es: Dictionary = {
       vendido: "Vendido",
       alquilado: "Alquilado",
       retirado: "Retirado",
+      archivado: "Archivado",
+      posible_inactivo: "Posiblemente inactivo",
+      error_verificacion: "Error de verificación",
     },
   },
   tags: {
@@ -351,6 +369,7 @@ const es: Dictionary = {
     column_inserted: "Nuevas",
     column_updated: "Actualizadas",
     column_errors: "Errores",
+    column_archived: "Eliminadas",
     column_notes: "Notas",
     status_ok: "OK",
     status_error: "Error",
@@ -358,6 +377,7 @@ const es: Dictionary = {
     run_header_total: "total",
     run_header_inserted: "nuevas",
     run_header_errors: "errores",
+    run_header_archived: "eliminadas",
     no_data: "Aún no hay corridas registradas en el rango seleccionado.",
     minutes_short: "min",
     load_error: "No se pudo cargar el historial.",
@@ -443,6 +463,8 @@ const en: Dictionary = {
     location_approximate: "Approximate location",
     location_approximate_hint:
       "The pin shows the zone centroid — the exact building is not confirmed.",
+    unavailable_banner: "No longer available",
+    unavailable_since: "since",
   },
   domain: {
     operation: { venta: "for sale", alquiler: "for rent" },
@@ -461,6 +483,9 @@ const en: Dictionary = {
       vendido: "Sold",
       alquilado: "Rented",
       retirado: "Withdrawn",
+      archivado: "Archived",
+      posible_inactivo: "Possibly inactive",
+      error_verificacion: "Verification error",
     },
   },
   tags: {
@@ -549,6 +574,7 @@ const en: Dictionary = {
     column_inserted: "New",
     column_updated: "Updated",
     column_errors: "Errors",
+    column_archived: "Removed",
     column_notes: "Notes",
     status_ok: "OK",
     status_error: "Error",
@@ -556,6 +582,7 @@ const en: Dictionary = {
     run_header_total: "total",
     run_header_inserted: "new",
     run_header_errors: "errors",
+    run_header_archived: "removed",
     no_data: "No runs logged in the selected range yet.",
     minutes_short: "min",
     load_error: "Could not load history.",

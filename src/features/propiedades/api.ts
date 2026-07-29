@@ -42,6 +42,8 @@ type DbPropiedad = {
   distrito: string | null;
   corregimiento: string | null;
   precision_ubicacion: PrecisionUbicacion | null;
+  motivo_estado: string | null;
+  fecha_ultima_revision: string | null;
   area_m2: number | string | null;
   habitaciones: number | null;
   banos: number | null;
@@ -112,6 +114,8 @@ function mapPropiedad(p: DbPropiedad): Propiedad {
     fechaPublicacion: p.fecha_publicacion ?? "",
     fechaDeteccion: p.fecha_deteccion,
     fechaActualizacion: p.fecha_actualizacion,
+    motivoEstado: p.motivo_estado ?? undefined,
+    fechaUltimaRevision: p.fecha_ultima_revision ?? undefined,
   };
 }
 
@@ -264,17 +268,24 @@ export async function fetchPropiedades(): Promise<Propiedad[]> {
     }
   }
 
-  // Mismo filtro que vw_oportunidades para mantener paridad mapa ↔ análisis,
-  // + estado_anuncio='activo' (lifecycle, 0004_lifecycle.sql): las que
-  // están como posible_inactivo / error_verificacion / archivado se
-  // ocultan del mapa pero quedan en DB como historial.
+  // Mismo filtro que vw_oportunidades para mantener paridad mapa ↔ análisis.
+  // Muestra:
+  //  - todas las 'activo'
+  //  - archivadas/vendidas/etc en los últimos 7 días (pin rojo apagado
+  //    + banner "Ya no está disponible" en la card). Así el user ve
+  //    cuándo algo salió del mercado antes de que desaparezca del mapa.
+  const archivedCutoff = new Date(
+    Date.now() - 7 * 24 * 3600 * 1000,
+  ).toISOString();
   let query = supabase
     .from("propiedades")
     .select(SELECT)
-    .eq("estado_anuncio", "activo")
     .not("precio", "is", null)
     .not("area_m2", "is", null)
-    .gt("area_m2", 0);
+    .gt("area_m2", 0)
+    .or(
+      `estado_anuncio.eq.activo,and(estado_anuncio.neq.activo,fecha_ultima_revision.gte.${archivedCutoff})`,
+    );
 
   if (dupIds.length > 0) {
     query = query.not("id", "in", `(${dupIds.join(",")})`);

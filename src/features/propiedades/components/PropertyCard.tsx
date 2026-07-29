@@ -164,6 +164,28 @@ export function PropertyCard({
         </Button>
       </header>
 
+      {propiedad.estadoAnuncio !== "activo" ? (
+        <div
+          className={cn(
+            "flex flex-col gap-0.5 border-b border-destructive/40 bg-destructive/10 text-destructive",
+            compact ? "px-3 py-2 text-[11px]" : "px-5 py-2.5 text-xs",
+          )}
+        >
+          <div className="font-semibold uppercase tracking-wider">
+            {dict.card.unavailable_banner} · {labels.estado(propiedad.estadoAnuncio)}
+          </div>
+          {propiedad.motivoEstado ? (
+            <div className="opacity-90">{propiedad.motivoEstado}</div>
+          ) : null}
+          {propiedad.fechaUltimaRevision ? (
+            <div className="text-[10px] opacity-70">
+              {dict.card.unavailable_since}{" "}
+              {new Date(propiedad.fechaUltimaRevision).toLocaleDateString()}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       {/* Imagen satelital — mismo enfoque que PropertyGridCard. Mapbox
          Static genera la vista del lugar; el pin rojo marca el edificio
          exacto. ToS-friendly (no scrapeamos fotos del source). `key`

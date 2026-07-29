@@ -73,6 +73,7 @@ export function HomeContent() {
         tipoOperacion: first.tipoOperacion,
         isPreview: items.some((i) => i.id.startsWith("preview:")),
         count: items.length,
+        allArchived: items.every((i) => i.estadoAnuncio !== "activo"),
       });
       clusterMap.set(pinId, items);
     }
