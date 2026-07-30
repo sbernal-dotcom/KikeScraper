@@ -169,6 +169,73 @@ export const ZONAS_PANAMA: Record<string, ZonaCentro> = {
   "24 de diciembre": { lat: 9.0997, lng: -79.4064 },
   "veinticuatro de diciembre": { lat: 9.0997, lng: -79.4064 },
 
+  // Batch 2026-07-30 tras dry-run de MLS Acobir (117 fallos) y Savitat
+  // (26 fallos). Zonas identificadas caso a caso en los outputs.
+  //
+  // === Corregimientos y barrios del distrito Panamá ===
+  "santa ana": { lat: 8.9542, lng: -79.5364 },
+  "la pulida": { lat: 9.0067, lng: -79.5397 },
+  "villa lucre": { lat: 9.0431, lng: -79.4772 },
+  "villa inés": { lat: 9.0472, lng: -79.4550 },
+  "villa ines": { lat: 9.0472, lng: -79.4550 },
+  "hato pintado": { lat: 8.9861, lng: -79.5250 },
+  cárdenas: { lat: 8.9694, lng: -79.5719 },
+  cardenas: { lat: 8.9694, lng: -79.5719 },
+  chilibre: { lat: 9.1500, lng: -79.6167 },
+  "san isidro": { lat: 9.0333, lng: -79.4833 },
+  "los ángeles": { lat: 9.0333, lng: -79.5333 },
+  "los angeles": { lat: 9.0333, lng: -79.5333 },
+  chanis: { lat: 9.0083, lng: -79.4700 },
+  paitilla: { lat: 8.9809, lng: -79.5189 }, // alias de punta paitilla
+  "punta darién": { lat: 8.9764, lng: -79.4931 },
+  "punta darien": { lat: 8.9764, lng: -79.4931 },
+
+  // === Avenidas y calles frecuentes ===
+  "avenida central": { lat: 8.9531, lng: -79.5378 },
+  "avenida cincuentenario": { lat: 8.9861, lng: -79.4917 },
+  cincuentenario: { lat: 8.9861, lng: -79.4917 },
+  "avenida la rotonda": { lat: 9.0111, lng: -79.4653 },
+  "la rotonda": { lat: 9.0111, lng: -79.4653 },
+  "avenida 12 de octubre": { lat: 8.9861, lng: -79.5250 },
+  "12 de octubre": { lat: 8.9861, lng: -79.5250 },
+  "fernández de córdoba": { lat: 9.0028, lng: -79.5111 },
+  "fernandez de cordoba": { lat: 9.0028, lng: -79.5111 },
+  "vía fernández de córdoba": { lat: 9.0028, lng: -79.5111 },
+  "via fernandez de cordoba": { lat: 9.0028, lng: -79.5111 },
+  "vía brasil": { lat: 8.9906, lng: -79.5194 },
+  "via brasil": { lat: 8.9906, lng: -79.5194 },
+
+  // === Panamá Oeste ===
+  chorrera: { lat: 8.8811, lng: -79.7833 }, // alias de la chorrera
+  "la chorrera": { lat: 8.8811, lng: -79.7833 },
+  capira: { lat: 8.7500, lng: -79.8667 },
+  arraiján: { lat: 8.9500, lng: -79.6500 },
+  arraijan: { lat: 8.9500, lng: -79.6500 },
+  // Los Andes: corregimiento del distrito de La Chorrera.
+  "los andes": { lat: 8.8794, lng: -79.7975 },
+  // Alias de vía panamericana sin acento/artículo.
+  panamericana: { lat: 8.8811, lng: -79.7833 },
+  // Beltania: typo frecuente de Betania en anuncios de MLS.
+  beltania: { lat: 9.0085, lng: -79.5333 },
+  // Calles numeradas del área bancaria/San Francisco.
+  "calle 57": { lat: 8.9853, lng: -79.5175 },
+  "calle 67": { lat: 8.9861, lng: -79.5142 },
+  "calle 74": { lat: 8.9875, lng: -79.5108 },
+  // Altos de Quiteño (Boquerón, Chiriquí — tierras altas).
+  "altos de quiteño": { lat: 8.5000, lng: -82.5333 },
+  "altos de quiteno": { lat: 8.5000, lng: -82.5333 },
+
+  // === Colón ===
+  cativa: { lat: 9.4497, lng: -79.7847 },
+  sabanitas: { lat: 9.3892, lng: -79.7969 },
+  villalobos: { lat: 9.3494, lng: -79.9081 },
+
+  // === Coclé ===
+  "santa clara": { lat: 8.4028, lng: -80.1194 },
+
+  // === Veraguas ===
+  santiago: { lat: 8.1000, lng: -80.9833 }, // cabecera de Veraguas
+
   // "Cerro Azul" (corregimiento E de Ciudad de Panamá, urbanización
   // residencial en la cordillera) — Nominatim cae en Cerro Azul de
   // Chiriquí (~8.79, -82.40), 400 km al oeste.
