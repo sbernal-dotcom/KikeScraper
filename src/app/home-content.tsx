@@ -91,18 +91,6 @@ export function HomeContent() {
     return ids;
   }, [pins, clusters, matchedSet]);
 
-  const zonasDisponibles = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          propiedades
-            .map((p) => p.ubicacion.corregimiento)
-            .filter(Boolean) as string[],
-        ),
-      ).sort(),
-    [propiedades],
-  );
-
   const fuentesDisponibles = useMemo(
     () =>
       Array.from(
@@ -293,7 +281,6 @@ export function HomeContent() {
           <AnalyticsFilterPanel
             filters={filters}
             onChange={setFilters}
-            zonasDisponibles={zonasDisponibles}
             fuentesDisponibles={fuentesDisponibles}
           />
         </SheetContent>

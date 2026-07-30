@@ -27,14 +27,6 @@ export default function AnalisisPage() {
   const { filters, setFilters, activeCount: activos } = useAnalyticsFiltersCtx();
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const zonasDisponibles = useMemo(
-    () =>
-      Array.from(
-        new Set(data.map((o) => o.corregimiento).filter(Boolean) as string[]),
-      ).sort(),
-    [data],
-  );
-
   const fuentesDisponibles = useMemo(
     () =>
       Array.from(new Set(data.map((o) => o.fuenteNombre).filter(Boolean))).sort(),
@@ -164,7 +156,6 @@ export default function AnalisisPage() {
           <AnalyticsFilterPanel
             filters={filters}
             onChange={setFilters}
-            zonasDisponibles={zonasDisponibles}
             fuentesDisponibles={fuentesDisponibles}
           />
         </SheetContent>

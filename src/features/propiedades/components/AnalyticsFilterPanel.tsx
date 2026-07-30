@@ -20,7 +20,6 @@ import type {
 type Props = {
   filters: AnalyticsFilters;
   onChange: (next: AnalyticsFilters) => void;
-  zonasDisponibles: string[];
   fuentesDisponibles: string[];
   className?: string;
 };
@@ -39,7 +38,6 @@ const SCORE_MIN_OPTIONS = [50, 70, 90];
 export function AnalyticsFilterPanel({
   filters,
   onChange,
-  zonasDisponibles,
   fuentesDisponibles,
   className,
 }: Props) {
@@ -48,7 +46,7 @@ export function AnalyticsFilterPanel({
   const activos = countActiveAnalyticsFilters(filters);
 
   const toggleArray = <
-    K extends "operacion" | "categoria" | "confianza" | "zonas" | "fuentes",
+    K extends "operacion" | "categoria" | "confianza" | "fuentes",
   >(
     key: K,
     value: AnalyticsFilters[K][number],
@@ -172,25 +170,6 @@ export function AnalyticsFilterPanel({
                     onClick={() => toggleArray("fuentes", f)}
                   >
                     {f}
-                  </Pill>
-                ))}
-              </div>
-            </Group>
-          </>
-        ) : null}
-
-        {zonasDisponibles.length > 0 ? (
-          <>
-            <Separator />
-            <Group label={dict.analytics.filter_zone}>
-              <div className="flex flex-wrap gap-1.5">
-                {zonasDisponibles.map((z) => (
-                  <Pill
-                    key={z}
-                    active={filters.zonas.includes(z)}
-                    onClick={() => toggleArray("zonas", z)}
-                  >
-                    {z}
                   </Pill>
                 ))}
               </div>

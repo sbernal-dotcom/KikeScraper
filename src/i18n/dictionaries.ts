@@ -142,7 +142,6 @@ export type Dictionary = {
     kpi_top_zone: string;
     kpi_top_zone_caption: string;
     filter_score_min: string;
-    filter_zone: string;
   };
   scraper_info: {
     title: string;
@@ -397,7 +396,6 @@ const es: Dictionary = {
     kpi_top_zone: "Zona más activa",
     kpi_top_zone_caption: "propiedades",
     filter_score_min: "Score mínimo",
-    filter_zone: "Zona",
   },
   scraper_info: {
     title: "Cómo funciona el scraper",
@@ -656,7 +654,6 @@ const en: Dictionary = {
     kpi_top_zone: "Most active area",
     kpi_top_zone_caption: "properties",
     filter_score_min: "Min score",
-    filter_zone: "Area",
   },
   scraper_info: {
     title: "How the scraper works",

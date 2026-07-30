@@ -52,7 +52,7 @@ export function useAnalyticsFiltersCtx() {
 
 /**
  * Filter a Propiedad[] using the subset of analytics filters that apply to
- * raw properties (operacion / categoria / zona). Score and confidence are
+ * raw properties (operacion / categoria / fuente). Score and confidence are
  * derived metrics from vw_oportunidades and are NOT applied here — the map
  * keeps showing terrenos and any rows missing from the oportunidades view.
  */
@@ -60,21 +60,12 @@ export function applyMapFilters(
   items: Propiedad[],
   f: AnalyticsFilters,
 ): Propiedad[] {
-  if (
-    !f.operacion.length &&
-    !f.categoria.length &&
-    !f.zonas.length &&
-    !f.fuentes.length
-  )
+  if (!f.operacion.length && !f.categoria.length && !f.fuentes.length)
     return items;
   return items.filter((p) => {
     if (f.operacion.length && !f.operacion.includes(p.tipoOperacion))
       return false;
     if (f.categoria.length && !f.categoria.includes(p.categoria)) return false;
-    if (f.zonas.length) {
-      const z = p.ubicacion.corregimiento;
-      if (!z || !f.zonas.includes(z)) return false;
-    }
     if (f.fuentes.length && !f.fuentes.includes(p.fuenteNombre)) return false;
     return true;
   });
