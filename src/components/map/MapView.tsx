@@ -374,10 +374,12 @@ export function MapView({
           --mii-fill: ${MARKER_COLOR_ALQUILER};
           --mii-glow: 0, 98, 255;
         }
-        /* Pin cluster: magenta distintivo (sobreescribe color de operación). */
+        /* Pin cluster (2+ propiedades en la misma coord): rojo brillante
+           distintivo. Sobreescribe el color de operación para que se
+           destaque en zonas con mucho inventario. */
         .mii-marker--cluster {
           --mii-fill: ${MARKER_COLOR_CLUSTER};
-          --mii-glow: 221, 0, 255;
+          --mii-glow: 239, 68, 68;
         }
         /* Pines preview ("NUEVO"): el badge va DENTRO del SVG, así que
            necesitan más altura. Mantenemos el ancho/aspecto para que el
