@@ -10,23 +10,118 @@
  * Si tocás los scripts, tocá también estos números.
  */
 
-export const PIPELINE_CONFIG = {
-  globalTimeoutMin: 180, // 3h
+export type PipelineStep = {
+  key: string;
+  label: string;
+  timeoutMin: number;
+  order: number;
+  descripcion: string;
+};
+
+export const PIPELINE_CONFIG: {
+  globalTimeoutMin: number;
+  steps: PipelineStep[];
+} = {
+  globalTimeoutMin: 180,
   steps: [
-    { key: "encuentra24", label: "Encuentra24", timeoutMin: 30, order: 1 },
-    { key: "acobir", label: "Acobir (proyectos nuevos)", timeoutMin: 10, order: 2 },
-    { key: "panamaequity", label: "Panama Equity", timeoutMin: 10, order: 3 },
-    { key: "mlsacobir", label: "MLS Acobir", timeoutMin: 45, order: 4 },
-    { key: "savitat", label: "Savitat", timeoutMin: 25, order: 5 },
-    { key: "verify", label: "Verify (pase 2: ¿siguen vivas?)", timeoutMin: 30, order: 6 },
-    { key: "inmopanama", label: "InmoPanama (agregador)", timeoutMin: 50, order: 7 },
-    { key: "dedupe", label: "Dedupe cross-source", timeoutMin: 10, order: 8 },
-    { key: "archivar-en-mar", label: "Archivar pines en mar", timeoutMin: 10, order: 9 },
-    { key: "limpiar-cache", label: "Limpiar cache duplicado", timeoutMin: 10, order: 10 },
-    { key: "presunta-venta", label: "Marcar presuntas ventas", timeoutMin: 10, order: 11 },
-    { key: "alerta", label: "Auto-alerta por email", timeoutMin: 10, order: 12 },
+    {
+      key: "encuentra24",
+      label: "Encuentra24",
+      timeoutMin: 30,
+      order: 1,
+      descripcion:
+        "Scrapea el portal Encuentra24 (Playwright). Recorre listados de venta y alquiler, extrae precio/área/zona/edificio y hace upsert en Supabase. Prioridad alta para dedupe: es el listing más amplio del país.",
+    },
+    {
+      key: "acobir",
+      label: "Acobir (proyectos nuevos)",
+      timeoutMin: 10,
+      order: 2,
+      descripcion:
+        "Cámara de bienes raíces — solo proyectos brand-new. Máx 10 páginas de listado. Poco volumen (5-15 nuevos por corrida) pero data de alta calidad.",
+    },
+    {
+      key: "panamaequity",
+      label: "Panama Equity",
+      timeoutMin: 10,
+      order: 3,
+      descripcion:
+        "Bróker boutique con inventario curado. Máx 25 páginas, concurrency 3. Datos limpios y ya viene con lat/lng.",
+    },
+    {
+      key: "mlsacobir",
+      label: "MLS Acobir",
+      timeoutMin: 45,
+      order: 4,
+      descripcion:
+        "Sistema MLS gremial verificado. Máx 100 páginas. Frágil desde IP de Railway (a veces bloquea) — falla ~1 de cada 3 corridas.",
+    },
+    {
+      key: "savitat",
+      label: "Savitat",
+      timeoutMin: 25,
+      order: 5,
+      descripcion:
+        "CBRE Panamá afiliado. Discovery via sitemap.xml. Cap interno 60min. JSON-LD trae geo directo cuando existe; si no, pipeline edificio→zona.",
+    },
+    {
+      key: "verify",
+      label: "Verify (pase 2: ¿siguen vivas?)",
+      timeoutMin: 30,
+      order: 6,
+      descripcion:
+        "Chequea las URLs YA en DB que NO aparecieron en el pase 1 de hoy. Hace GET a cada una: 200 → sigue viva, 404/410/redirect raro → incrementa contador de fallos. Con ≥7 fallos consecutivos la marca como archivado.",
+    },
+    {
+      key: "inmopanama",
+      label: "InmoPanama (agregador)",
+      timeoutMin: 50,
+      order: 7,
+      descripcion:
+        "Agregador — sin lat/lng en el source, 100% pipeline geocoding. El más lento. Cap interno 45min. Corre AL FINAL para no bloquear a los otros si crashea.",
+    },
+    {
+      key: "dedupe",
+      label: "Dedupe cross-source",
+      timeoutMin: 10,
+      order: 8,
+      descripcion:
+        "Detecta la misma propiedad publicada en varios portales (misma coord + área ±8% + precio ±15% + habitaciones iguales). Marca duplicados en tabla propiedades_duplicados: el frontend muestra la canónica y las demás como 'también publicado en'.",
+    },
+    {
+      key: "archivar-en-mar",
+      label: "Archivar pines en mar",
+      timeoutMin: 10,
+      order: 9,
+      descripcion:
+        "Chequea coords vs polígono continental de Panamá + landmarks costeros. Cualquier pin que caiga en mar abierto pasa a estado 'archivado' (probablemente geocoding malo).",
+    },
+    {
+      key: "limpiar-cache",
+      label: "Limpiar cache duplicado",
+      timeoutMin: 10,
+      order: 10,
+      descripcion:
+        "Purga entradas viejas de edificio_coords_cache que apuntan a coords marcadas como en mar, para que la próxima corrida re-busque el edificio en vez de reusar el mal dato.",
+    },
+    {
+      key: "presunta-venta",
+      label: "Marcar presuntas ventas",
+      timeoutMin: 10,
+      order: 11,
+      descripcion:
+        "Heurística: si una prop lleva >45 días sin re-aparecer en los listados y el precio bajó al final, se marca como 'presunta venta' (vendido probable). Ayuda a limpiar el mapa de listings que quedaron colgados.",
+    },
+    {
+      key: "alerta",
+      label: "Auto-alerta por email",
+      timeoutMin: 10,
+      order: 12,
+      descripcion:
+        "Analiza la corrida completa. Si hay anomalías (fuente sin scraper_run, ≥50% errores, pipeline >2.5h) manda un email vía Resend a abilendesign@gmail.com. Silencio si todo OK.",
+    },
   ],
-} as const;
+};
 
 export type FuenteId =
   | "encuentra24"

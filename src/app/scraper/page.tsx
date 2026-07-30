@@ -11,12 +11,19 @@ import {
   Database,
   ExternalLink,
   Globe2,
+  Info,
   Layers,
   Sparkles,
   Timer,
 } from "lucide-react";
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useDict } from "@/i18n/LocaleProvider";
 import {
   CACHES,
@@ -122,37 +129,58 @@ export default function ScraperPage() {
             title={dict.scraper_info.section_pipeline}
             hint={`${dict.scraper_info.section_pipeline_hint} · cap ${PIPELINE_CONFIG.globalTimeoutMin}m`}
           >
-            <div className="overflow-x-auto rounded-xl border border-border/60 bg-card/40">
-              <table className="w-full text-xs">
-                <thead className="border-b border-border/60 text-[10px] uppercase tracking-wider text-muted-foreground">
-                  <tr>
-                    <th className="px-3 py-2 text-left font-medium">#</th>
-                    <th className="px-3 py-2 text-left font-medium">
-                      {dict.scraper_info.col_step}
-                    </th>
-                    <th className="px-3 py-2 text-right font-medium">
-                      {dict.scraper_info.col_timeout}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {PIPELINE_CONFIG.steps.map((s) => (
-                    <tr
-                      key={s.key}
-                      className="border-b border-border/40 last:border-0"
-                    >
-                      <td className="px-3 py-1.5 text-muted-foreground tabular-nums">
-                        {s.order}
-                      </td>
-                      <td className="px-3 py-1.5">{s.label}</td>
-                      <td className="px-3 py-1.5 text-right tabular-nums">
-                        {s.timeoutMin} min
-                      </td>
+            <TooltipProvider delay={150}>
+              <div className="overflow-x-auto rounded-xl border border-border/60 bg-card/40">
+                <table className="w-full text-xs">
+                  <thead className="border-b border-border/60 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-medium">#</th>
+                      <th className="px-3 py-2 text-left font-medium">
+                        {dict.scraper_info.col_step}
+                      </th>
+                      <th className="w-8 px-3 py-2 text-left font-medium">
+                        <span className="sr-only">info</span>
+                      </th>
+                      <th className="px-3 py-2 text-right font-medium">
+                        {dict.scraper_info.col_timeout}
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {PIPELINE_CONFIG.steps.map((s) => (
+                      <tr
+                        key={s.key}
+                        className="border-b border-border/40 last:border-0"
+                      >
+                        <td className="px-3 py-1.5 text-muted-foreground tabular-nums">
+                          {s.order}
+                        </td>
+                        <td className="px-3 py-1.5">{s.label}</td>
+                        <td className="px-3 py-1.5">
+                          <Tooltip>
+                            <TooltipTrigger
+                              className="inline-flex size-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                              aria-label={`${s.label} — descripción`}
+                            >
+                              <Info className="size-3.5" />
+                            </TooltipTrigger>
+                            <TooltipContent
+                              side="right"
+                              className="max-w-sm text-left text-[11px] leading-relaxed"
+                            >
+                              {s.descripcion}
+                            </TooltipContent>
+                          </Tooltip>
+                        </td>
+                        <td className="px-3 py-1.5 text-right tabular-nums">
+                          {s.timeoutMin} min
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </TooltipProvider>
           </Section>
 
           {/* FUENTES */}
