@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import {
   AlertTriangle,
+  Brain,
   Building2,
   CheckCircle2,
   Clock3,
   Cog,
   Database,
+  ExternalLink,
   Globe2,
   Layers,
   Sparkles,
@@ -19,6 +21,7 @@ import { useDict } from "@/i18n/LocaleProvider";
 import {
   CACHES,
   FUENTES,
+  IA_SERVICIOS,
   LIFECYCLE_TTL_DIAS_MAPA,
   PIPELINE_CONFIG,
   VERIFY_CONFIG,
@@ -119,6 +122,9 @@ export default function ScraperPage() {
             title={dict.scraper_info.section_pipeline}
             hint={`${dict.scraper_info.section_pipeline_hint} · cap ${PIPELINE_CONFIG.globalTimeoutMin}m`}
           >
+            <p className="mb-2 text-[11px] leading-relaxed text-muted-foreground">
+              {dict.scraper_info.pipeline_note}
+            </p>
             <div className="overflow-x-auto rounded-xl border border-border/60 bg-card/40">
               <table className="w-full text-xs">
                 <thead className="border-b border-border/60 text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -301,6 +307,88 @@ export default function ScraperPage() {
                   </div>
                 </div>
               ) : null}
+            </div>
+          </Section>
+
+          {/* IA + APIs externas */}
+          <Section
+            icon={<Brain className="size-4" />}
+            title={dict.scraper_info.section_ai}
+            hint={dict.scraper_info.section_ai_hint}
+          >
+            <div className="grid gap-3 sm:grid-cols-2">
+              {IA_SERVICIOS.map((s) => (
+                <article
+                  key={s.nombre}
+                  className="rounded-xl border border-border/60 bg-card/40 px-4 py-3"
+                >
+                  <header className="mb-2 flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2 font-semibold tracking-tight">
+                        {s.nombre}
+                        <span
+                          className={
+                            "inline-flex items-center rounded-full border px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wider " +
+                            (s.activo
+                              ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
+                              : "border-muted-foreground/40 bg-muted-foreground/10 text-muted-foreground")
+                          }
+                        >
+                          {s.activo ? dict.scraper_info.ai_on : dict.scraper_info.ai_off}
+                        </span>
+                      </div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        {s.proveedor}
+                      </div>
+                    </div>
+                    <a
+                      href={s.docsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 text-muted-foreground hover:text-foreground"
+                      aria-label="docs"
+                    >
+                      <ExternalLink className="size-3.5" />
+                    </a>
+                  </header>
+                  <p className="mb-2 text-[11px] leading-tight text-muted-foreground">
+                    {s.proposito}
+                  </p>
+                  <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[11px]">
+                    {s.modelo ? (
+                      <>
+                        <dt className="text-muted-foreground uppercase tracking-wider text-[10px]">
+                          {dict.scraper_info.ai_model}
+                        </dt>
+                        <dd>
+                          <code className="rounded bg-muted px-1.5 py-0.5 text-[10px]">
+                            {s.modelo}
+                          </code>
+                        </dd>
+                      </>
+                    ) : null}
+                    <dt className="text-muted-foreground uppercase tracking-wider text-[10px]">
+                      {dict.scraper_info.ai_usage}
+                    </dt>
+                    <dd className="text-muted-foreground">{s.usoEnPipeline}</dd>
+                    <dt className="text-muted-foreground uppercase tracking-wider text-[10px]">
+                      {dict.scraper_info.ai_cost}
+                    </dt>
+                    <dd className="tabular-nums font-medium">{s.costoEstimado}</dd>
+                    <dt className="text-muted-foreground uppercase tracking-wider text-[10px]">
+                      {dict.scraper_info.ai_env}
+                    </dt>
+                    <dd>
+                      <code className="text-[10px]">{s.envVar}</code>
+                    </dd>
+                  </dl>
+                  {!s.activo && s.activoNota ? (
+                    <div className="mt-2 border-t border-border/40 pt-2 text-[10px] text-muted-foreground">
+                      {s.activoNota}
+                    </div>
+                  ) : null}
+                </article>
+              ))}
             </div>
           </Section>
 

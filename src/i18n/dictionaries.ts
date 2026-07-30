@@ -157,8 +157,17 @@ export type Dictionary = {
     kpi_pipeline_cap_caption: string;
     section_pipeline: string;
     section_pipeline_hint: string;
+    pipeline_note: string;
     col_step: string;
     col_timeout: string;
+    section_ai: string;
+    section_ai_hint: string;
+    ai_on: string;
+    ai_off: string;
+    ai_model: string;
+    ai_usage: string;
+    ai_cost: string;
+    ai_env: string;
     section_sources: string;
     section_sources_hint: string;
     col_active: string;
@@ -405,8 +414,18 @@ const es: Dictionary = {
     kpi_pipeline_cap_caption: "hard timeout global",
     section_pipeline: "Pipeline diario",
     section_pipeline_hint: "orden y timeouts",
+    pipeline_note:
+      "InmoPanama corre AL FINAL (después de verify) porque es el paso más lento y frágil (agregador sin lat/lng, dependiente de Groq): si crashea o llega al timeout, no bloquea a los otros ni deja el verify sin hacer. Verify no depende de InmoPanama — chequea propiedades que ya están en DB.",
     col_step: "Paso",
     col_timeout: "Timeout",
+    section_ai: "IA y servicios externos",
+    section_ai_hint: "modelos, uso y costo",
+    ai_on: "Activo",
+    ai_off: "Off",
+    ai_model: "Modelo",
+    ai_usage: "Uso",
+    ai_cost: "Costo",
+    ai_env: "Env var",
     section_sources: "Fuentes",
     section_sources_hint: "6 sitios · scrape diario",
     col_active: "activas",
@@ -657,8 +676,18 @@ const en: Dictionary = {
     kpi_pipeline_cap_caption: "global hard timeout",
     section_pipeline: "Daily pipeline",
     section_pipeline_hint: "order and timeouts",
+    pipeline_note:
+      "InmoPanama runs LAST (after verify) because it's the slowest and most fragile step (aggregator with no lat/lng, Groq-dependent): if it crashes or hits timeout, it doesn't block the others nor leave verify undone. Verify doesn't depend on InmoPanama — it only checks props already in DB.",
     col_step: "Step",
     col_timeout: "Timeout",
+    section_ai: "AI & external services",
+    section_ai_hint: "models, usage and cost",
+    ai_on: "On",
+    ai_off: "Off",
+    ai_model: "Model",
+    ai_usage: "Usage",
+    ai_cost: "Cost",
+    ai_env: "Env var",
     section_sources: "Sources",
     section_sources_hint: "6 sites · daily scrape",
     col_active: "active",

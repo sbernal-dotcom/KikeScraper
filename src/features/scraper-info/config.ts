@@ -167,3 +167,85 @@ export const CACHES = {
 };
 
 export const LIFECYCLE_TTL_DIAS_MAPA = 3;
+
+export type IAServicio = {
+  nombre: string;
+  proveedor: string;
+  modelo: string | null;
+  proposito: string;
+  usoEnPipeline: string;
+  costoEstimado: string;
+  activo: boolean;
+  activoNota?: string;
+  envVar: string;
+  docsUrl: string;
+};
+
+export const IA_SERVICIOS: IAServicio[] = [
+  {
+    nombre: "Groq",
+    proveedor: "Groq Cloud",
+    modelo: "llama-3.1-8b-instant",
+    proposito: "Extraer edificio, proyecto y zona del título + descripción del anuncio.",
+    usoEnPipeline:
+      "Se llama 1 vez por URL nueva (con cache SHA-256 titulo+desc). Todos los scrapers lo usan.",
+    costoEstimado: "$0 · free tier (6000 tokens/min, 14400 req/día)",
+    activo: true,
+    envVar: "GROQ_API_KEY",
+    docsUrl: "https://console.groq.com",
+  },
+  {
+    nombre: "Google Gemini",
+    proveedor: "Google AI Studio",
+    modelo: "gemini-flash-lite-latest",
+    proposito:
+      "Generar resumen bilingüe ES/EN y tags de características para cada anuncio.",
+    usoEnPipeline:
+      "Deshabilitado en producción. Cuando esté ON, se llama 1 vez por URL nueva.",
+    costoEstimado: "$0 · free tier",
+    activo: false,
+    activoNota: "AI_SUMMARY_ENABLED=false — se prende cuando queramos resúmenes",
+    envVar: "GEMINI_API_KEY",
+    docsUrl: "https://ai.google.dev",
+  },
+  {
+    nombre: "Mapbox",
+    proveedor: "Mapbox",
+    modelo: null,
+    proposito:
+      "Renderizar el mapa interactivo, imágenes satelitales en cards y geocoder de búsqueda.",
+    usoEnPipeline:
+      "Frontend only. No corre en el scraper — se llama desde el navegador del user.",
+    costoEstimado: "$0 · free tier (50k map loads/mes)",
+    activo: true,
+    envVar: "NEXT_PUBLIC_MAPBOX_TOKEN",
+    docsUrl: "https://mapbox.com",
+  },
+  {
+    nombre: "Nominatim (OSM)",
+    proveedor: "OpenStreetMap",
+    modelo: null,
+    proposito:
+      "Geocoding backup cuando la tabla ZONAS_PANAMA no tiene la zona.",
+    usoEnPipeline:
+      "Se llama solo si el edificio/zona no se resuelve por tabla local ni cache.",
+    costoEstimado: "$0 · gratis (rate limit: 1 req/s)",
+    activo: true,
+    envVar: "—",
+    docsUrl: "https://nominatim.org",
+  },
+  {
+    nombre: "Resend",
+    proveedor: "Resend",
+    modelo: null,
+    proposito:
+      "Enviar el email de auto-alerta al final del cron si hay anomalías.",
+    usoEnPipeline:
+      "Se llama 1 vez al final del pipeline si hay ≥1 anomalía. Silencio si todo OK.",
+    costoEstimado: "$0 · free tier (3000 emails/mes)",
+    activo: true,
+    envVar: "RESEND_API_KEY",
+    docsUrl: "https://resend.com",
+  },
+];
+
