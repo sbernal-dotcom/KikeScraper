@@ -206,11 +206,10 @@ export const ZONAS_PANAMA: Record<string, ZonaCentro> = {
   "via brasil": { lat: 8.9906, lng: -79.5194 },
 
   // === Panamá Oeste ===
-  chorrera: { lat: 8.8811, lng: -79.7833 }, // alias de la chorrera
-  "la chorrera": { lat: 8.8811, lng: -79.7833 },
+  // Nota: la chorrera, arraiján/arraijan ya están definidos más abajo
+  // en el bloque original. Solo agregamos alias/nuevos aquí.
+  chorrera: { lat: 8.8811, lng: -79.7833 }, // alias sin artículo
   capira: { lat: 8.7500, lng: -79.8667 },
-  arraiján: { lat: 8.9500, lng: -79.6500 },
-  arraijan: { lat: 8.9500, lng: -79.6500 },
   // Los Andes: corregimiento del distrito de La Chorrera.
   "los andes": { lat: 8.8794, lng: -79.7975 },
   // Alias de vía panamericana sin acento/artículo.

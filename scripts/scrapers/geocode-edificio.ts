@@ -21,6 +21,7 @@ import { type SupabaseClient } from "@supabase/supabase-js";
 
 import { isOnLand } from "../../src/lib/geo/panama-land";
 import { buscarEdificioWeb, type Validator } from "./buscar-edificio-web";
+import { nominatimPanama } from "./nominatim";
 // SupabaseClient se usa solo como tipo del singleton.
 import {
   extraerEdificio,
@@ -235,6 +236,34 @@ export async function geocodeConEdificio(
       precision: "zona-declarada",
       source,
     };
+  }
+
+  // 5. Nominatim como último recurso ANTES de descartar (2026-07-30).
+  // Solo si tenemos zonaCentro válido — el validator de proximidad
+  // (30km) evita que Nominatim devuelva un homónimo en otra provincia
+  // (ej. "La Pulida" tiene un hit en Darién a 350km del barrio real).
+  // Sin zonaCentro no arriesgamos: preferimos no-pin sobre pin-mal.
+  if (zonaCentro && (extr.edificio || extr.proyecto)) {
+    const nombreQuery = extr.edificio ?? extr.proyecto;
+    const query = zona
+      ? `${nombreQuery}, ${zona}, Panamá`
+      : `${nombreQuery}, Panamá`;
+    const nomRes = await nominatimPanama(query, {
+      zonaCentro,
+      maxDistanceKm: 30,
+    });
+    if (nomRes) {
+      const distStr = nomRes.distanceFromCenterKm?.toFixed(1) ?? "?";
+      console.log(
+        `  geocode → nominatim "${query}" (${nomRes.lat.toFixed(4)},${nomRes.lng.toFixed(4)}) · ${distStr}km del centro`,
+      );
+      return {
+        lat: nomRes.lat,
+        lng: nomRes.lng,
+        precision: "aproximada",
+        source: "nominatim",
+      };
+    }
   }
 
   // STRICT MODE (2026-06-25): policy "edificio o nada" para las fuentes
