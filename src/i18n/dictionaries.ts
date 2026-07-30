@@ -20,6 +20,7 @@ export type Dictionary = {
     sources: string;
     analysis: string;
     history: string;
+    scraper: string;
     about: string;
     soon: string;
     open_nav: string;
@@ -144,6 +145,48 @@ export type Dictionary = {
     filter_score_min: string;
     filter_zone: string;
   };
+  scraper_info: {
+    title: string;
+    subtitle: string;
+    kpi_active: string;
+    kpi_active_caption: string;
+    kpi_recent_archived: string;
+    kpi_last_run: string;
+    kpi_duration_caption: string;
+    kpi_pipeline_cap: string;
+    kpi_pipeline_cap_caption: string;
+    section_pipeline: string;
+    section_pipeline_hint: string;
+    col_step: string;
+    col_timeout: string;
+    section_sources: string;
+    section_sources_hint: string;
+    col_active: string;
+    meta_discovery: string;
+    meta_max_pages: string;
+    meta_detail_concurrency: string;
+    meta_pipeline_timeout: string;
+    meta_internal_cap: string;
+    meta_uses_groq: string;
+    last_run_ago: string;
+    status_ok: string;
+    status_error: string;
+    section_verify: string;
+    section_verify_hint: string;
+    verify_range: string;
+    verify_state: string;
+    verify_effect: string;
+    verify_last: string;
+    section_caches: string;
+    section_caches_hint: string;
+    failed_urls_breakdown: string;
+    section_lifecycle: string;
+    section_lifecycle_hint: string;
+    lifecycle_l1: string;
+    lifecycle_l2: string;
+    lifecycle_l3: string;
+    lifecycle_l4: string;
+  };
   history: {
     title: string;
     subtitle: string;
@@ -198,6 +241,7 @@ const es: Dictionary = {
     sources: "Fuentes",
     analysis: "Análisis",
     history: "Historial",
+    scraper: "Scraper",
     about: "Acerca de",
     soon: "Pronto",
     open_nav: "Abrir navegación",
@@ -349,6 +393,52 @@ const es: Dictionary = {
     filter_score_min: "Score mínimo",
     filter_zone: "Zona",
   },
+  scraper_info: {
+    title: "Cómo funciona el scraper",
+    subtitle: "Configuración actual, fuentes activas y estado en vivo",
+    kpi_active: "Propiedades activas",
+    kpi_active_caption: "en el mapa hoy",
+    kpi_recent_archived: "Archivadas recientes",
+    kpi_last_run: "Última corrida",
+    kpi_duration_caption: "duración total",
+    kpi_pipeline_cap: "Cap del pipeline",
+    kpi_pipeline_cap_caption: "hard timeout global",
+    section_pipeline: "Pipeline diario",
+    section_pipeline_hint: "orden y timeouts",
+    col_step: "Paso",
+    col_timeout: "Timeout",
+    section_sources: "Fuentes",
+    section_sources_hint: "6 sitios · scrape diario",
+    col_active: "activas",
+    meta_discovery: "descubrimiento",
+    meta_max_pages: "páginas máx",
+    meta_detail_concurrency: "concurrency",
+    meta_pipeline_timeout: "timeout pipeline",
+    meta_internal_cap: "cap interno",
+    meta_uses_groq: "usa Groq",
+    last_run_ago: "última corrida hace",
+    status_ok: "OK",
+    status_error: "Error",
+    section_verify: "Verify (pase 2)",
+    section_verify_hint: "¿siguen vivas?",
+    verify_range: "Fallos consecutivos",
+    verify_state: "Estado",
+    verify_effect: "Efecto",
+    verify_last: "Último resultado",
+    section_caches: "Caches",
+    section_caches_hint: "ahorran Groq + web-search",
+    failed_urls_breakdown: "URLs fallidas por fuente / motivo",
+    section_lifecycle: "Ciclo de vida",
+    section_lifecycle_hint: "cuando una propiedad desaparece",
+    lifecycle_l1:
+      "El scraper (pase 1) marca como vistas las URLs que aparecen hoy.",
+    lifecycle_l2:
+      "Verify (pase 2) consulta las no vistas. Si dan 404/410/redirect raro, incrementa contador de fallos consecutivos.",
+    lifecycle_l3:
+      "Cuando una prop pasa a archivado/vendido, sigue visible en el mapa (pin rojo apagado + banner en la card) por",
+    lifecycle_l4:
+      "Pasado el TTL desaparece del mapa pero queda en DB como historial.",
+  },
   history: {
     title: "Historial del scraper",
     subtitle: "Cada corrida por fuente: qué scrapeó y en cuánto tiempo",
@@ -403,6 +493,7 @@ const en: Dictionary = {
     sources: "Sources",
     analysis: "Analytics",
     history: "History",
+    scraper: "Scraper",
     about: "About",
     soon: "Soon",
     open_nav: "Open navigation",
@@ -553,6 +644,51 @@ const en: Dictionary = {
     kpi_top_zone_caption: "properties",
     filter_score_min: "Min score",
     filter_zone: "Area",
+  },
+  scraper_info: {
+    title: "How the scraper works",
+    subtitle: "Current config, active sources and live status",
+    kpi_active: "Active listings",
+    kpi_active_caption: "on the map today",
+    kpi_recent_archived: "Recently archived",
+    kpi_last_run: "Last run",
+    kpi_duration_caption: "total duration",
+    kpi_pipeline_cap: "Pipeline cap",
+    kpi_pipeline_cap_caption: "global hard timeout",
+    section_pipeline: "Daily pipeline",
+    section_pipeline_hint: "order and timeouts",
+    col_step: "Step",
+    col_timeout: "Timeout",
+    section_sources: "Sources",
+    section_sources_hint: "6 sites · daily scrape",
+    col_active: "active",
+    meta_discovery: "discovery",
+    meta_max_pages: "max pages",
+    meta_detail_concurrency: "concurrency",
+    meta_pipeline_timeout: "pipeline timeout",
+    meta_internal_cap: "internal cap",
+    meta_uses_groq: "uses Groq",
+    last_run_ago: "last run",
+    status_ok: "OK",
+    status_error: "Error",
+    section_verify: "Verify (pass 2)",
+    section_verify_hint: "still live?",
+    verify_range: "Consecutive fails",
+    verify_state: "State",
+    verify_effect: "Effect",
+    verify_last: "Last result",
+    section_caches: "Caches",
+    section_caches_hint: "save Groq + web-search calls",
+    failed_urls_breakdown: "Failed URLs by source / reason",
+    section_lifecycle: "Lifecycle",
+    section_lifecycle_hint: "when a listing disappears",
+    lifecycle_l1: "The scraper (pass 1) marks URLs seen today as alive.",
+    lifecycle_l2:
+      "Verify (pass 2) checks the ones not seen. On 404/410/weird redirect it increments a consecutive-fail counter.",
+    lifecycle_l3:
+      "When a listing turns archived/sold, it stays on the map (dimmed red pin + card banner) for",
+    lifecycle_l4:
+      "Past TTL it disappears from the map but stays in DB as history.",
   },
   history: {
     title: "Scraper history",

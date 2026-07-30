@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Building2,
+  Cog,
   History,
   Info,
   Map as MapIcon,
@@ -31,7 +32,7 @@ import { LastScrapeBadge } from "./LastScrapeBadge";
 import { MapModeToggle } from "./MapModeToggle";
 
 type NavItem = {
-  key: "map" | "properties" | "analysis" | "history" | "about";
+  key: "map" | "properties" | "analysis" | "history" | "scraper" | "about";
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   comingSoon?: boolean;
@@ -42,6 +43,7 @@ const primaryNav: NavItem[] = [
   { key: "properties", href: "/propiedades", icon: Building2 },
   { key: "analysis", href: "/analisis", icon: TrendingUp },
   { key: "history", href: "/historial", icon: History },
+  { key: "scraper", href: "/scraper", icon: Cog },
 ];
 
 const secondaryNav: NavItem[] = [
