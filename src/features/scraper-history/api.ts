@@ -59,13 +59,31 @@ function map(r: DbRow): ScraperRun {
 export async function fetchScraperRuns(days = 30): Promise<ScraperRun[]> {
   const supabase = createClient();
   const since = new Date(Date.now() - days * 24 * 3600 * 1000).toISOString();
-  const { data, error } = await supabase
+
+  // Intento primero con `archived` (migración 0017). Si la columna aún
+  // no está aplicada en la instancia, degradamos limpio a sin archived
+  // en vez de romper toda la página.
+  const withArchived = await supabase
     .from("scraper_runs")
     .select(
       "id, fuente_id, status, found, inserted, updated, errors, archived, notes, started_at, finished_at",
     )
     .gte("started_at", since)
     .order("started_at", { ascending: false });
-  if (error) throw error;
-  return (data ?? []).map((r) => map(r as DbRow));
+
+  if (!withArchived.error) {
+    return (withArchived.data ?? []).map((r) => map(r as DbRow));
+  }
+
+  // Fallback: retry sin `archived`. La UI mostrará 0 en esa columna
+  // hasta que se aplique la migración 0017 en Supabase.
+  const fallback = await supabase
+    .from("scraper_runs")
+    .select(
+      "id, fuente_id, status, found, inserted, updated, errors, notes, started_at, finished_at",
+    )
+    .gte("started_at", since)
+    .order("started_at", { ascending: false });
+  if (fallback.error) throw fallback.error;
+  return (fallback.data ?? []).map((r) => map(r as DbRow));
 }
