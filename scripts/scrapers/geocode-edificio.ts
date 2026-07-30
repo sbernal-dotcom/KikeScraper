@@ -158,6 +158,11 @@ export async function geocodeConEdificio(
   // fallback — Savitat 2026-07-29: la IA extraía "Área Bancaria" para
   // una prop cuyo streetAddress era "Marbella, Bella Vista" (SÍ está en
   // la tabla), tirando la coord real por la borda.
+  //
+  // Además (2026-07-30) — si nada resuelve, tratamos cada parte de la
+  // zona compuesta por separado. "Utive, Pacora" → prueba "Utive"
+  // y luego "Pacora" (probablemente la ciudad SÍ está en tabla aunque
+  // el corregimiento no).
   let zona = extr.zona ?? zonaFallback;
   let zonaCentro = zona ? centroFromTable(zona) : null;
   if (
@@ -170,6 +175,19 @@ export async function geocodeConEdificio(
     if (fbCentro) {
       zona = zonaFallback;
       zonaCentro = fbCentro;
+    }
+  }
+  if (!zonaCentro) {
+    const candidatos = [zonaFallback, extr.zona]
+      .filter((z): z is string => !!z && z.includes(","))
+      .flatMap((z) => z.split(",").map((p) => p.trim()).filter(Boolean));
+    for (const c of candidatos) {
+      const parte = centroFromTable(c);
+      if (parte) {
+        zona = c;
+        zonaCentro = parte;
+        break;
+      }
     }
   }
   const validator = makeZoneValidator(zonaCentro);

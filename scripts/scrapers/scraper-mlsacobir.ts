@@ -33,6 +33,10 @@ import { preflightCheck } from "./preflight-check";
 import { validarConMapbox } from "./mapbox-validate";
 import { createScraperClient } from "./supabase-admin";
 import { type TagCerrado } from "./tags-caracteristicas";
+import {
+  fetchUrlsFallidasRecientes,
+  marcarUrlFallida,
+} from "./urls-fallidas";
 import { centroFromTable } from "./zonas-panama";
 
 loadEnv({ path: ".env.local" });
@@ -381,14 +385,19 @@ async function scrapeDetail(url: string): Promise<AnuncioRaw | null> {
 
   // mlsacobir no publica lat/lng en el source → pipeline siempre.
   // Pipeline edificio→cache→web→zona. Si nada, descarta.
+  // allowZoneFallback:true (2026-07-30) — antes descartaba silencioso
+  // los apartamentos/oficinas sin edificio identificable aunque
+  // publicaran zona conocida. Queda como "zona-declarada" y el badge
+  // "Ubicación aproximada" avisa al usuario.
   const descRaw = readOg(html, "description") ?? "";
-  // Pasamos la categoría: terrenos/casas activan zona-fallback automático.
   const slugForCategoria = url.match(/\/propiedades\/([^/]+)/)?.[1] ?? "";
   const geo = await geocodeConEdificio(titulo, descRaw, url, zona, {
     categoria: categoriaFromSlug(slugForCategoria),
+    allowZoneFallback: true,
   });
   if (!geo) {
     console.log(`  geocode → sin resultado — saltando`);
+    marcarUrlFallida(FUENTE_ID, url, "sin_geo", "pipeline edificio→cache→web→zona sin resultado");
     return null;
   }
   if (zona) await validarConMapbox(zona, { lat: geo.lat, lng: geo.lng });
@@ -446,6 +455,13 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
     return [];
   }
 
+  // Cache de URLs que ya fallaron en corridas recientes (TTL 30 días).
+  // Antes: MLS re-scrapeaba las mismas URLs muertas cada día y cada una
+  // consumía 1 llamada Groq + intento de geocode fallido → 30-80% error
+  // rate crónico. Ahora las saltamos hasta que el TTL las libere.
+  const urlsFallidas = await fetchUrlsFallidasRecientes(FUENTE_ID);
+  console.log(`Cache de URLs fallidas: ${urlsFallidas.size} (se saltan)`);
+
   const seenUrls = new Set<string>();
   const results: AnuncioRaw[] = [];
   let consecutiveEmpty = 0;
@@ -474,7 +490,9 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
 
     const procesables = nuevos.filter((u) => {
       if (skipUrls.has(u)) {
-        console.log(`  (skip ya en DB) ${u}`);
+        return false;
+      }
+      if (urlsFallidas.has(u)) {
         return false;
       }
       return true;

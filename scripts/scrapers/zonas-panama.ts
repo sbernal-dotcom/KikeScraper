@@ -142,6 +142,33 @@ export const ZONAS_PANAMA: Record<string, ZonaCentro> = {
   // en LANDMARKS de isOnLand pero faltaba aquí para geocoding.
   "nueva gorgona": { lat: 8.5347, lng: -79.8942 },
 
+  // Zonas agregadas 2026-07-30 tras diagnóstico Savitat/MLS Acobir.
+  // Muchas de estas son distritos rurales, avenidas o zonas costeras
+  // que aparecen frecuentemente en el inventario pero no estaban.
+  pacora: { lat: 9.0672, lng: -79.2892 },
+  utive: { lat: 9.1128, lng: -79.2833 }, // corregimiento de Pacora
+  // Colón (provincia + distrito + ciudad — usamos centro de la ciudad).
+  colón: { lat: 9.3550, lng: -79.9027 },
+  colon: { lat: 9.3550, lng: -79.9027 },
+  // Aguadulce (cabecera del distrito Aguadulce, Coclé).
+  aguadulce: { lat: 8.2478, lng: -80.5461 },
+  // El Roble (corregimiento de Aguadulce, Coclé).
+  "el roble": { lat: 8.2686, lng: -80.5433 },
+  // Vía Frangipani (calle en zona Costa del Este / Panamá Este).
+  "vía frangipani": { lat: 9.0159, lng: -79.4708 },
+  "via frangipani": { lat: 9.0159, lng: -79.4708 },
+  // Zona Franca / Zona Libre — la principal es la de Colón.
+  "zona franca": { lat: 9.3550, lng: -79.8850 },
+  "zona libre": { lat: 9.3550, lng: -79.8850 },
+  // Milla 8 (tramo de la Transístmica en Alcalde Díaz).
+  "milla 8": { lat: 9.0389, lng: -79.5375 },
+  // Vía Panamericana (autopista principal — usamos tramo Chorrera-PTY).
+  "vía panamericana": { lat: 8.8811, lng: -79.7833 },
+  "via panamericana": { lat: 8.8811, lng: -79.7833 },
+  // Mañanitas ya está — pero también aparece "24 de Diciembre" (corregimiento).
+  "24 de diciembre": { lat: 9.0997, lng: -79.4064 },
+  "veinticuatro de diciembre": { lat: 9.0997, lng: -79.4064 },
+
   // "Cerro Azul" (corregimiento E de Ciudad de Panamá, urbanización
   // residencial en la cordillera) — Nominatim cae en Cerro Azul de
   // Chiriquí (~8.79, -82.40), 400 km al oeste.
