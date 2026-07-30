@@ -235,14 +235,20 @@ export async function fetchPropiedades(): Promise<Propiedad[]> {
   // `AnuncioAdicional` de la canónica. Query aislada = evita el join
   // ambiguo (propiedades_duplicados tiene 2 FKs a propiedades) y
   // mantiene el SELECT principal limpio.
+  //
+  // Chunked: con ~700+ dupIds, .in("id", [...]) genera una URL de 25KB+
+  // que PostgREST rechaza con "Bad Request". Troceamos en batches de
+  // 200 para mantener cada request <8KB.
   const otrosByCanId = new Map<string, AnuncioAdicional[]>();
-  if (dupIds.length > 0) {
+  const CHUNK = 200;
+  for (let i = 0; i < dupIds.length; i += CHUNK) {
+    const slice = dupIds.slice(i, i + CHUNK);
     const { data: dupData, error: dupDataErr } = await supabase
       .from("propiedades")
       .select(
         "id, fuente_id, url_original, precio, moneda, fecha_deteccion, fuente:fuentes!fuente_id(id, nombre)",
       )
-      .in("id", dupIds);
+      .in("id", slice);
     if (dupDataErr) throw dupDataErr;
     for (const d of (dupData ?? []) as Array<{
       id: string;
@@ -277,7 +283,13 @@ export async function fetchPropiedades(): Promise<Propiedad[]> {
   const archivedCutoff = new Date(
     Date.now() - 3 * 24 * 3600 * 1000,
   ).toISOString();
-  let query = supabase
+  // NOTA: NO usamos .not("id", "in", "(...)") aquí. Con 700+ dupIds
+  // esa URL supera 25KB y falla con "Bad Request" o 414 URI Too Long
+  // en algunos CDN/proxies (Vercel Edge, en particular). En vez de eso
+  // traemos TODAS las filas y filtramos en cliente con el Set — es una
+  // lista de ~3k, la iteración es instantánea.
+  const dupIdSet = new Set(dupIds);
+  const query = supabase
     .from("propiedades")
     .select(SELECT)
     .not("precio", "is", null)
@@ -287,26 +299,24 @@ export async function fetchPropiedades(): Promise<Propiedad[]> {
       `estado_anuncio.eq.activo,and(estado_anuncio.neq.activo,fecha_ultima_revision.gte.${archivedCutoff})`,
     );
 
-  if (dupIds.length > 0) {
-    query = query.not("id", "in", `(${dupIds.join(",")})`);
-  }
-
   const { data, error } = await query.order("fecha_deteccion", {
     ascending: false,
   });
 
   if (error) throw error;
   const rows = (data ?? []) as unknown as DbPropiedad[];
-  return rows.map((r) => {
-    const p = mapPropiedad(r);
-    const extras = otrosByCanId.get(p.id);
-    if (extras && extras.length > 0) {
-      // Merge: `mapPropiedad` ya sembró desde tabla `anuncios` (vacía en
-      // prod, pero podría llenarse en el futuro). Concat sin dedupe por
-      // urlOriginal — si el mismo url termina en ambos lados es un bug
-      // aguas arriba, y verlo doble es más útil que ocultarlo.
-      p.otrosAnuncios = [...(p.otrosAnuncios ?? []), ...extras];
-    }
-    return p;
-  });
+  return rows
+    .filter((r) => !dupIdSet.has(r.id))
+    .map((r) => {
+      const p = mapPropiedad(r);
+      const extras = otrosByCanId.get(p.id);
+      if (extras && extras.length > 0) {
+        // Merge: `mapPropiedad` ya sembró desde tabla `anuncios` (vacía en
+        // prod, pero podría llenarse en el futuro). Concat sin dedupe por
+        // urlOriginal — si el mismo url termina en ambos lados es un bug
+        // aguas arriba, y verlo doble es más útil que ocultarlo.
+        p.otrosAnuncios = [...(p.otrosAnuncios ?? []), ...extras];
+      }
+      return p;
+    });
 }
