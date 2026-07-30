@@ -401,9 +401,9 @@ export function MapView({
         }
         /* Pines fuera del filtro: visibles pero apagados y no interactuables. */
         .mii-marker--dimmed {
-          opacity: 0.18;
+          opacity: 0.08;
           pointer-events: none;
-          filter: grayscale(0.7);
+          filter: grayscale(1) brightness(0.6);
         }
         .mii-marker--dimmed svg {
           filter: none;
