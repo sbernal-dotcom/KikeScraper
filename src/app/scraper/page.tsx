@@ -122,9 +122,6 @@ export default function ScraperPage() {
             title={dict.scraper_info.section_pipeline}
             hint={`${dict.scraper_info.section_pipeline_hint} · cap ${PIPELINE_CONFIG.globalTimeoutMin}m`}
           >
-            <p className="mb-2 text-[11px] leading-relaxed text-muted-foreground">
-              {dict.scraper_info.pipeline_note}
-            </p>
             <div className="overflow-x-auto rounded-xl border border-border/60 bg-card/40">
               <table className="w-full text-xs">
                 <thead className="border-b border-border/60 text-[10px] uppercase tracking-wider text-muted-foreground">

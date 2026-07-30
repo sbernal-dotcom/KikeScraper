@@ -157,7 +157,6 @@ export type Dictionary = {
     kpi_pipeline_cap_caption: string;
     section_pipeline: string;
     section_pipeline_hint: string;
-    pipeline_note: string;
     col_step: string;
     col_timeout: string;
     section_ai: string;
@@ -414,8 +413,6 @@ const es: Dictionary = {
     kpi_pipeline_cap_caption: "hard timeout global",
     section_pipeline: "Pipeline diario",
     section_pipeline_hint: "orden y timeouts",
-    pipeline_note:
-      "InmoPanama corre AL FINAL (después de verify) porque es el paso más lento y frágil (agregador sin lat/lng, dependiente de Groq): si crashea o llega al timeout, no bloquea a los otros ni deja el verify sin hacer. Verify no depende de InmoPanama — chequea propiedades que ya están en DB.",
     col_step: "Paso",
     col_timeout: "Timeout",
     section_ai: "IA y servicios externos",
@@ -676,8 +673,6 @@ const en: Dictionary = {
     kpi_pipeline_cap_caption: "global hard timeout",
     section_pipeline: "Daily pipeline",
     section_pipeline_hint: "order and timeouts",
-    pipeline_note:
-      "InmoPanama runs LAST (after verify) because it's the slowest and most fragile step (aggregator with no lat/lng, Groq-dependent): if it crashes or hits timeout, it doesn't block the others nor leave verify undone. Verify doesn't depend on InmoPanama — it only checks props already in DB.",
     col_step: "Step",
     col_timeout: "Timeout",
     section_ai: "AI & external services",
