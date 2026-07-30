@@ -21,7 +21,6 @@ export type Dictionary = {
     analysis: string;
     history: string;
     scraper: string;
-    about: string;
     soon: string;
     open_nav: string;
     language: string;
@@ -250,7 +249,6 @@ const es: Dictionary = {
     analysis: "Análisis",
     history: "Historial",
     scraper: "Scraper",
-    about: "Acerca de",
     soon: "Pronto",
     open_nav: "Abrir navegación",
     language: "Idioma",
@@ -510,7 +508,6 @@ const en: Dictionary = {
     analysis: "Analytics",
     history: "History",
     scraper: "Scraper",
-    about: "About",
     soon: "Soon",
     open_nav: "Open navigation",
     language: "Language",

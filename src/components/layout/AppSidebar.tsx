@@ -6,7 +6,6 @@ import {
   Building2,
   Cog,
   History,
-  Info,
   Map as MapIcon,
   TrendingUp,
 } from "lucide-react";
@@ -32,7 +31,7 @@ import { LastScrapeBadge } from "./LastScrapeBadge";
 import { MapModeToggle } from "./MapModeToggle";
 
 type NavItem = {
-  key: "map" | "properties" | "analysis" | "history" | "scraper" | "about";
+  key: "map" | "properties" | "analysis" | "history" | "scraper";
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   comingSoon?: boolean;
@@ -44,10 +43,6 @@ const primaryNav: NavItem[] = [
   { key: "analysis", href: "/analisis", icon: TrendingUp },
   { key: "history", href: "/historial", icon: History },
   { key: "scraper", href: "/scraper", icon: Cog },
-];
-
-const secondaryNav: NavItem[] = [
-  { key: "about", href: "/acerca", icon: Info, comingSoon: true },
 ];
 
 export function AppSidebar() {
@@ -86,21 +81,12 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="h-6 text-[10px]">
-            {dict.nav.section_project}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {secondaryNav.map((item) => (
-                <NavMenuItem
-                  key={item.href}
-                  item={item}
-                  active={pathname === item.href}
-                />
-              ))}
-            </SidebarMenu>
-            {preview.enabled && preview.count > 0 ? (
+        {preview.enabled && preview.count > 0 ? (
+          <SidebarGroup>
+            <SidebarGroupLabel className="h-6 text-[10px]">
+              {dict.nav.section_project}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
               <div
                 className="mx-2 mt-2 rounded-md border px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider"
                 style={{
@@ -112,9 +98,9 @@ export function AppSidebar() {
               >
                 Preview · {preview.count} scrapeados
               </div>
-            ) : null}
-          </SidebarGroupContent>
-        </SidebarGroup>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ) : null}
       </SidebarContent>
 
       <SidebarFooter className="border-t">
