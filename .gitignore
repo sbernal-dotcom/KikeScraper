@@ -60,3 +60,4 @@ supabase/.temp
 
 # Claude Code local settings
 .claude/
+scrape-preview-*.json
