@@ -22,6 +22,7 @@
     "scrape:coords": "tsx scripts/scrapers/recalcular-coords.ts",
     "scrape:backfill-ia": "tsx scripts/scrapers/backfill-ia.ts",
     "scrape:verify": "tsx scripts/scrapers/verificar-estado.ts",
+    "refresh:precios": "tsx scripts/scrapers/refresh-precios.ts",
     "dedupe": "tsx scripts/scrapers/find-duplicates.ts",
     "dedupe:prod": "tsx scripts/scrapers/find-duplicates.ts --supabase",
     "backfill:edificios": "tsx scripts/scrapers/backfill-edificio-coords.ts",

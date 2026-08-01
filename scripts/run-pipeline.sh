@@ -29,6 +29,7 @@ T_MLS=45m
 T_SAV=25m
 T_VER=30m
 T_INMO=50m
+T_REFRESH=20m
 T_POST=10m
 
 # --- Bloque principal del pipeline. Se ejecuta bajo `timeout` global ---
@@ -44,6 +45,7 @@ T_MLS=$T_MLS
 T_SAV=$T_SAV
 T_VER=$T_VER
 T_INMO=$T_INMO
+T_REFRESH=$T_REFRESH
 T_POST=$T_POST
 
 run_step() {
@@ -75,6 +77,11 @@ run_step "verify"        \$T_VER  npm run scrape:verify
 
 # --- Scraper bottleneck al final (independiente del verify) ---
 run_step "inmopanama"    \$T_INMO npm run scrape:inmo:prod
+
+# --- Refresh liviano: actualiza precio/área/hab de TODAS las activas
+# sin tocar IA. Detecta cambios que los scrapers no ven (filtran las
+# URLs ya en DB para no re-consumir Groq). Solo HTTP + parseo.
+run_step "refresh-precios" \$T_REFRESH npm run refresh:precios
 
 # --- Post-passes (dedupe + limpieza + presunta venta) ---
 run_step "dedupe"          \$T_POST npm run dedupe:prod
