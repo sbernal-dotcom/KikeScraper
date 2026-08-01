@@ -753,6 +753,46 @@ function toDbRow(a: AnuncioRaw): Record<string, unknown> | null {
   };
 }
 
+/**
+ * Refresh rotativo: agarra las N URLs activas de InmoPanama con la
+ * `fecha_ultima_revision` más antigua para re-scrapearlas.
+ *
+ * Motivo: el scraper filtra URLs ya en DB para no re-procesar 2500+
+ * cada corrida (rate limit Groq). Consecuencia: cambios de precio/área
+ * en anuncios ya guardados NUNCA se reflejan.
+ *
+ * Estrategia: cada corrida re-visita las N más viejas. Con 483 activas
+ * y N=50, rotamos por todo el inventario en ~10 corridas (~10 días).
+ * Cada refresh es una URL más al processing, +~3-5min al total del cron.
+ *
+ * Devuelve Map<url, fecha_deteccion_original> para que al upsertar
+ * NO sobreescribamos la fecha original con hoy.
+ */
+const REFRESH_TARGETS = 50;
+async function fetchRefreshTargets(
+  supa: ReturnType<typeof createScraperClient>,
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  const { data, error } = await supa
+    .from("propiedades")
+    .select("url_original, fecha_deteccion")
+    .eq("fuente_id", FUENTE_ID)
+    .eq("estado_anuncio", "activo")
+    .order("fecha_ultima_revision", { ascending: true, nullsFirst: true })
+    .limit(REFRESH_TARGETS);
+  if (error) {
+    console.warn(`  fetchRefreshTargets: ${error.message}`);
+    return map;
+  }
+  for (const r of (data ?? []) as Array<{
+    url_original: string;
+    fecha_deteccion: string | null;
+  }>) {
+    map.set(r.url_original, r.fecha_deteccion ?? new Date().toISOString());
+  }
+  return map;
+}
+
 async function fetchExistingUrls(
   supa: ReturnType<typeof createScraperClient>,
 ): Promise<Set<string>> {
@@ -840,7 +880,9 @@ type RunState = {
   supa: ReturnType<typeof createScraperClient>;
   found: number;
   inserted: number;
+  updated: number;
   errors: number;
+  refreshUrls: Set<string>;
   writing: boolean;
   written: boolean;
 };
@@ -849,7 +891,10 @@ let runState: RunState | null = null;
 async function writeRunOnce(notes: string): Promise<void> {
   if (!runState || runState.written || runState.writing) return;
   runState.writing = true;
-  const status = runState.errors > 0 && runState.inserted === 0 ? "error" : "ok";
+  const status =
+    runState.errors > 0 && runState.inserted === 0 && runState.updated === 0
+      ? "error"
+      : "ok";
   try {
     const { error } = await runState.supa.from("scraper_runs").insert({
       fuente_id: FUENTE_ID,
@@ -858,7 +903,7 @@ async function writeRunOnce(notes: string): Promise<void> {
       status,
       found: runState.found,
       inserted: runState.inserted,
-      updated: 0,
+      updated: runState.updated,
       errors: runState.errors,
       notes,
     });
@@ -876,7 +921,7 @@ process.on("SIGTERM", () => {
   console.warn("\n⚠ SIGTERM recibido — escribiendo scraper_runs antes de salir...");
   hitDeadline = true;
   const progreso = runState
-    ? ` (progreso: found=${runState.found} ins=${runState.inserted} err=${runState.errors})`
+    ? ` (progreso: found=${runState.found} ins=${runState.inserted} upd=${runState.updated} err=${runState.errors})`
     : "";
   const notes = `inmopanama (agregador) — cortado por SIGTERM del pipeline${progreso}`;
   // Fire-and-forget: el `timeout --kill-after=30s` nos deja tiempo real
@@ -892,15 +937,30 @@ async function runSupabaseMode() {
     supa,
     found: 0,
     inserted: 0,
+    updated: 0,
     errors: 0,
+    refreshUrls: new Set(),
     writing: false,
     written: false,
   };
 
   const skipUrls = await fetchExistingUrls(supa);
-  console.log(`En DB: ${skipUrls.size} (se saltan).`);
+  const refreshMap = await fetchRefreshTargets(supa);
+  // Sacar las URLs del refresh del skip set → el scraper las procesa
+  // como si fueran nuevas y el upsert las actualiza en DB.
+  for (const u of refreshMap.keys()) {
+    skipUrls.delete(u);
+    runState.refreshUrls.add(u);
+  }
+  console.log(
+    `En DB: ${skipUrls.size + refreshMap.size} (se saltan ${skipUrls.size}, se refrescan ${refreshMap.size} más viejas).`,
+  );
   const allNew = await scrapeAll(skipUrls);
-  console.log(`\nNuevos: ${allNew.length}`);
+  const nuevos = allNew.filter((a) => !refreshMap.has(a.url_original));
+  const refrescados = allNew.filter((a) => refreshMap.has(a.url_original));
+  console.log(
+    `\nNuevos: ${nuevos.length} — Refrescados: ${refrescados.length}`,
+  );
   runState.found = allNew.length;
 
   const rows: Array<{ a: AnuncioRaw; row: Record<string, unknown> }> = [];
@@ -912,6 +972,10 @@ async function runSupabaseMode() {
       runState.errors++;
       continue;
     }
+    // Refresh: preservar fecha_deteccion original — solo cambia
+    // fecha_actualizacion / fecha_ultima_vista / fecha_ultima_revision.
+    const fechaOriginal = refreshMap.get(a.url_original);
+    if (fechaOriginal) row.fecha_deteccion = fechaOriginal;
     rows.push({ a, row });
   }
   await chunkedParallel(rows, UPSERT_CONCURRENCY, async ({ a, row }) => {
@@ -921,6 +985,8 @@ async function runSupabaseMode() {
     if (error) {
       console.warn(`  ✗ upsert falló (${a.url_original}): ${error.message}`);
       runState!.errors++;
+    } else if (runState!.refreshUrls.has(a.url_original)) {
+      runState!.updated++;
     } else {
       runState!.inserted++;
     }
@@ -929,10 +995,14 @@ async function runSupabaseMode() {
 
   const notes = hitDeadline
     ? `inmopanama (agregador) — cortado por hard timeout ${MAX_RUNTIME_MS / 60000}min`
-    : "inmopanama (agregador)";
+    : `inmopanama (agregador) — refresh: ${runState.updated}/${runState.refreshUrls.size} más viejas`;
   await writeRunOnce(notes);
+  const okStatus =
+    runState.errors > 0 && runState.inserted === 0 && runState.updated === 0
+      ? "error"
+      : "ok";
   console.log(
-    `\nUpsert — insertados: ${runState.inserted}, errores: ${runState.errors}, status: ${runState.errors > 0 && runState.inserted === 0 ? "error" : "ok"}.`,
+    `\nUpsert — insertados: ${runState.inserted}, actualizados: ${runState.updated}, errores: ${runState.errors}, status: ${okStatus}.`,
   );
 }
 
