@@ -43,6 +43,11 @@ import {
   type FichaIA,
   type ResumenBilingue,
 } from "./ia";
+import {
+  contadorLlamadasSemanticas,
+  extraerCamposDesdeHtml,
+  type CamposSemanticos,
+} from "./extraer-html-ia";
 import { geocodeConEdificio } from "./geocode-edificio";
 import { preflightCheck } from "./preflight-check";
 import { createScraperClient } from "./supabase-admin";
@@ -532,14 +537,44 @@ async function scrapeDetail(
   const details = parsePropDetails(html);
 
   const titulo = extractTitulo(html);
-  const precio = extractPrecio(html, qf);
+  let precio = extractPrecio(html, qf);
   const opFromHtml = extractOperacion(html, details);
   const tipoOperacion: "venta" | "alquiler" = opFromHtml ?? tipoFromList;
-  const { habitaciones, banos, area_m2, estacionamientos: estacFromHtml } =
+  let { habitaciones, banos, area_m2, estacionamientos: estacFromHtml } =
     extractFeatures(html, qf);
   const zona = extractLocationText(html);
   // Descripción solo en memoria (regla del proyecto).
   const descRaw = extractDescripcion(html);
+
+  // Último fallback anti-cambio-de-HTML: si el precio (campo crítico que
+  // decide si el listing se guarda o se descarta) vino null de los 4
+  // extractores regex, le pedimos al LLM que lea el HTML directamente.
+  // Los otros campos (m2/hab/banos) se piden de yapa mientras estamos
+  // pagando la llamada — así también sobreviven cambios silenciosos.
+  //
+  // Se activa SOLO cuando precio es null. Si el listing tiene precio,
+  // asumimos que el HTML entero se parseó bien y no molestamos al LLM.
+  // Cap global de 100 llamadas por corrida vive en extraer-html-ia.ts.
+  if (precio == null) {
+    const pedidos: Array<keyof CamposSemanticos> = ["precio"];
+    if (area_m2 == null) pedidos.push("area_m2");
+    if (habitaciones == null) pedidos.push("habitaciones");
+    if (banos == null) pedidos.push("banos");
+    const semant = await extraerCamposDesdeHtml(
+      html,
+      url,
+      pedidos,
+      tipoOperacion,
+    );
+    if (semant.precio != null) {
+      precio = semant.precio;
+      console.log(`  precio ← IA semántico: ${precio}`);
+    }
+    if (area_m2 == null && semant.area_m2 != null) area_m2 = semant.area_m2;
+    if (habitaciones == null && semant.habitaciones != null)
+      habitaciones = semant.habitaciones;
+    if (banos == null && semant.banos != null) banos = semant.banos;
+  }
 
   // inmopanama explícitamente dice "Ubicación no disponible" — nunca da
   // lat/lng en el source. Pipeline siempre: edificio → cache → web → zona.
@@ -675,8 +710,10 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
       await jitter(300, 700);
     }
   }
+  const iaFallbacks = contadorLlamadasSemanticas();
   console.log(
-    `\n┌─ Resumen InmoPanama: ${seenUrls.size} URLs únicas, ${results.length} scrapeadas${hitDeadline ? " (cortado por timeout)" : ""}`,
+    `\n┌─ Resumen InmoPanama: ${seenUrls.size} URLs únicas, ${results.length} scrapeadas${hitDeadline ? " (cortado por timeout)" : ""}` +
+      (iaFallbacks > 0 ? ` — IA semántica: ${iaFallbacks} llamadas` : ""),
   );
   return results;
 }
