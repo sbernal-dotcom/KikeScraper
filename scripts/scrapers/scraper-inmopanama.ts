@@ -424,14 +424,31 @@ function extractFeatures(
  * en JSON-LD o metadatos (raro pero cubre casos borde).
  */
 function extractPrecio(html: string, qf: Map<string, string>): number | null {
+  // 1. Quick-fact con label "precio" (nb-* rediseño).
   const nuevoRaw = qf.get("precio");
   if (nuevoRaw) {
     const n = toNumber(nuevoRaw);
     if (n) return n;
   }
+  // 2. Directo del bloque nb-price-cell (por si el label no matcheó
+  //    en parseQuickFacts pero la clase específica sí existe).
+  const nbPriceCell = html.match(
+    /class="[^"]*nb-price-cell[^"]*"[\s\S]{0,500}?class="nb-quick-fact-value"[^>]*>\s*\$?\s*([\d,\.]+)/i,
+  )?.[1];
+  const nb = toNumber(nbPriceCell ?? null);
+  if (nb) return nb;
+  // 3. Diseño viejo <span class="ib-prop-main-price">.
   const viejoRaw =
     html.match(/class="ib-prop-main-price"[^>]*>\s*([^<]+?)\s*</i)?.[1] ?? null;
-  return toNumber(viejoRaw);
+  const viejo = toNumber(viejoRaw);
+  if (viejo) return viejo;
+  // 4. Fallback final: texto tipo "PRECIO DE VENTA: 3,500.00" o
+  //    "PRECIO DE ALQUILER: X" en descripción libre (visto en 2026-08-01
+  //    para muchos listings sin bloque estructurado).
+  const textoDesc = html.match(
+    /PRECIO\s+DE\s+(?:VENTA|ALQUILER)[:\s]+\$?\s*([\d,\.]+)/i,
+  )?.[1];
+  return toNumber(textoDesc ?? null);
 }
 
 function extractTitulo(html: string): string | null {

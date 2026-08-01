@@ -352,10 +352,30 @@ async function scrapeDetail(url: string): Promise<AnuncioRaw | null> {
   const image = Array.isArray(listing.image) ? listing.image[0] : listing.image;
 
   const offers = (listing.offers as Record<string, unknown> | undefined) ?? {};
-  const precio = toNumber((offers.price as string | number | null) ?? null);
+  let precio = toNumber((offers.price as string | number | null) ?? null);
   const moneda = ((offers.priceCurrency as string) ?? "USD") === "PAB"
     ? "PAB"
     : "USD";
+
+  // 2026-08-01: Savitat dejó de publicar offers.price para ~21% de los
+  // listings (galeras, oficinas, terrenos con "consultar precio").
+  // Fallback: extraer del HTML. Prioridad:
+  //   1) bloque estructurado <h4>Precio venta:</h4> <div>$X</div>
+  //   2) meta description "Venta: $X - ..." o "Alquiler: $X - ..."
+  // Solo si ninguno da, precio queda null (se descartará más abajo).
+  if (precio == null) {
+    const bloqueMatch = html.match(
+      /Precio\s+(?:venta|alquiler)[:\s]*<\/h4>\s*<div[^>]*>\s*\$?\s*([\d,\.]+)/i,
+    );
+    const metaMatch = html.match(
+      /<meta\s+name="description"[^>]*content="[^"]*?(?:Venta|Alquiler):\s*\$?\s*([\d,\.]+)/i,
+    );
+    precio =
+      toNumber(bloqueMatch?.[1] ?? null) ?? toNumber(metaMatch?.[1] ?? null);
+    if (precio != null) {
+      console.log(`  precio ← HTML fallback: $${precio}`);
+    }
+  }
 
   const address = (listing.address as Record<string, unknown> | undefined) ?? {};
   const zona =
