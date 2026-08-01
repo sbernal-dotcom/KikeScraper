@@ -29,6 +29,11 @@ import { join } from "path";
 import { config as loadEnv } from "dotenv";
 
 import { isOnLand } from "../../src/lib/geo/panama-land";
+import {
+  contadorLlamadasSemanticas,
+  extraerCamposDesdeHtml,
+  type CamposSemanticos,
+} from "./extraer-html-ia";
 import { geocodeConEdificio } from "./geocode-edificio";
 import { preflightCheck } from "./preflight-check";
 import {
@@ -390,14 +395,42 @@ async function scrapeDetail(url: string): Promise<AnuncioRaw | null> {
   let ubicacionFuente: string | null = null;
 
   // Del HTML fuera del JSON-LD
-  const area_m2 = extractAreaM2(html);
-  const { habitaciones, banos, estacionamientos } =
+  let area_m2 = extractAreaM2(html);
+  // eslint-disable-next-line prefer-const
+  let { habitaciones, banos, estacionamientos } =
     extractHabitacionesBanosEstacionamientos(html);
   const tipo = extractTipo(html);
   const slug = url.replace(`${BASE_URL}/properties/`, "");
 
   const categoria = categoriaFromTipoYSlug(tipo, slug);
   const tipoOperacion = tipoOperacionFromSlug(slug);
+
+  // Fallback semántico anti-cambio-de-HTML: si tras los 3 extractores
+  // (JSON-LD + bloque estructurado + meta description) el precio sigue
+  // null, le pedimos al LLM que lea el HTML directamente. Pasa cuando
+  // Savitat renombra las clases CSS o cambia el layout — sin este paso
+  // el listing se descarta y contamos error. Ver extraer-html-ia.ts
+  // para guardarraíles (cap 100/corrida, validación de rango, etc.).
+  if (precio == null) {
+    const pedidos: Array<keyof CamposSemanticos> = ["precio"];
+    if (area_m2 == null) pedidos.push("area_m2");
+    if (habitaciones == null) pedidos.push("habitaciones");
+    if (banos == null) pedidos.push("banos");
+    const semant = await extraerCamposDesdeHtml(
+      html,
+      url,
+      pedidos,
+      tipoOperacion,
+    );
+    if (semant.precio != null) {
+      precio = semant.precio;
+      console.log(`  precio ← IA semántico: $${precio}`);
+    }
+    if (area_m2 == null && semant.area_m2 != null) area_m2 = semant.area_m2;
+    if (habitaciones == null && semant.habitaciones != null)
+      habitaciones = semant.habitaciones;
+    if (banos == null && semant.banos != null) banos = semant.banos;
+  }
 
   // Validar coord del JSON-LD contra tierra/mar. Si mal, correr pipeline.
   if (lat != null && lng != null && !isOnLand(lat, lng)) {
@@ -524,8 +557,10 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
     },
   );
 
+  const iaFallbacks = contadorLlamadasSemanticas();
   console.log(
-    `\n┌─ Resumen Savitat: ${urls.length} URLs, ${results.length} scrapeadas`,
+    `\n┌─ Resumen Savitat: ${urls.length} URLs, ${results.length} scrapeadas` +
+      (iaFallbacks > 0 ? ` — IA semántica: ${iaFallbacks} llamadas` : ""),
   );
   return results;
 }
