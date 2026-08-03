@@ -5,24 +5,38 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 /**
- * Última corrida de cualquiera de los 3 scrapers de pase 1 (los que ingestan
- * propiedades nuevas: encuentra24, acobir, panamaequity). Excluye verificar-
- * estado y backfill-ia porque no traen anuncios nuevos.
+ * Resumen del último cron completo (no de la última fuente).
  *
- * Filtro por fuente_id (más robusto que matchear notes — antes el hook
- * solo veía encuentra24 y se quedaba viejo si solo se corría ACOBIR o PE).
+ * Antes esta hook devolvía solo la última fila de scraper_runs → si el
+ * cron corría 6 fuentes, la sidebar solo mostraba los números de la
+ * última (ej. "inmopanama +824") en vez del total del pipeline.
  *
- * RLS: la policy "anon read scraper_runs" permite leer desde anon.
+ * Ahora agrupamos las últimas corridas por proximidad temporal: filas
+ * separadas por menos de CRON_GAP_MIN pertenecen al mismo cron.
+ * Sumamos inserted + updated de todas las del último cron.
+ *
+ * `finishedAt` es la última fila del cron. `inserted`/`updated` son el
+ * total. `sources` cuántas fuentes participaron.
  */
 
-const SCRAPE_FUENTES = ["encuentra24", "acobir", "panamaequity", "mlsacobir", "inmopanama"];
+const CRON_GAP_MIN = 30;
+const LOOKBACK_HOURS = 6;
+
+const SCRAPE_FUENTES = [
+  "encuentra24",
+  "acobir",
+  "panamaequity",
+  "mlsacobir",
+  "inmopanama",
+  "savitat",
+];
 
 export type LastScraperRun = {
   finishedAt: string;
   inserted: number;
-  found: number;
+  updated: number;
   errors: number;
-  fuenteId: string;
+  sources: number;
 };
 
 export function useLastScraperRun(): LastScraperRun | null {
@@ -33,28 +47,51 @@ export function useLastScraperRun(): LastScraperRun | null {
     let cancelled = false;
     supabase
       .from("scraper_runs")
-      .select("finished_at, inserted, found, errors, fuente_id")
+      .select("started_at, finished_at, inserted, updated, errors, fuente_id")
       .in("fuente_id", SCRAPE_FUENTES)
       .not("finished_at", "is", null)
+      .gte(
+        "started_at",
+        new Date(Date.now() - LOOKBACK_HOURS * 3600_000).toISOString(),
+      )
       .order("started_at", { ascending: false })
-      .limit(1)
+      .limit(50)
       .then(({ data }) => {
         if (cancelled) return;
         type Row = {
+          started_at: string | null;
           finished_at: string | null;
           inserted: number | null;
-          found: number | null;
+          updated: number | null;
           errors: number | null;
           fuente_id: string | null;
         };
-        const row = (data?.[0] ?? null) as Row | null;
-        if (!row?.finished_at) return;
+        const rows = (data ?? []) as Row[];
+        if (!rows.length) return;
+        // Agrupar: mientras la fila siguiente esté a <CRON_GAP_MIN de la
+        // anterior, pertenece al mismo cron. Al primer gap grande, corto.
+        const cron: Row[] = [];
+        let lastStart = new Date(rows[0].started_at ?? 0).getTime();
+        for (const r of rows) {
+          const t = new Date(r.started_at ?? 0).getTime();
+          if (!cron.length || lastStart - t <= CRON_GAP_MIN * 60_000) {
+            cron.push(r);
+            lastStart = t;
+          } else {
+            break;
+          }
+        }
+        const inserted = cron.reduce((a, r) => a + (r.inserted ?? 0), 0);
+        const updated = cron.reduce((a, r) => a + (r.updated ?? 0), 0);
+        const errors = cron.reduce((a, r) => a + (r.errors ?? 0), 0);
+        // La más reciente por finished_at (la primera del array descendente).
+        const finishedAt = cron[0].finished_at ?? "";
         setRun({
-          finishedAt: row.finished_at,
-          inserted: row.inserted ?? 0,
-          found: row.found ?? 0,
-          errors: row.errors ?? 0,
-          fuenteId: row.fuente_id ?? "",
+          finishedAt,
+          inserted,
+          updated,
+          errors,
+          sources: cron.length,
         });
       });
     return () => {

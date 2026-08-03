@@ -29,7 +29,12 @@ export type Dictionary = {
     map_view_3d: string;
     last_scrape: string;
     last_scrape_new: string;
+    last_scrape_updated: string;
     last_scrape_never: string;
+    legend: string;
+    legend_venta: string;
+    legend_alquiler: string;
+    legend_cluster: string;
   };
   common: {
     of: string;
@@ -256,7 +261,12 @@ const es: Dictionary = {
     map_view_3d: "3D",
     last_scrape: "Último scrape",
     last_scrape_new: "nuevas",
+    last_scrape_updated: "actualizadas",
     last_scrape_never: "Sin corridas aún",
+    legend: "Leyenda",
+    legend_venta: "Venta",
+    legend_alquiler: "Alquiler",
+    legend_cluster: "Varios en un punto",
   },
   common: {
     of: "de",
@@ -514,7 +524,12 @@ const en: Dictionary = {
     map_view_3d: "3D",
     last_scrape: "Last scrape",
     last_scrape_new: "new",
+    last_scrape_updated: "updated",
     last_scrape_never: "No runs yet",
+    legend: "Legend",
+    legend_venta: "For sale",
+    legend_alquiler: "For rent",
+    legend_cluster: "Multiple at one point",
   },
   common: {
     of: "of",

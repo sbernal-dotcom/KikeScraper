@@ -38,7 +38,9 @@ export function LastScrapeBadge({ className }: { className?: string }) {
             <div className="text-foreground">{relative(run.finishedAt, locale)}</div>
             <div className="text-muted-foreground tabular-nums">
               +{run.inserted} {dict.nav.last_scrape_new}
-              {run.fuenteId ? ` · ${run.fuenteId}` : ""}
+              {run.updated > 0
+                ? ` · ${run.updated} ${dict.nav.last_scrape_updated}`
+                : ""}
             </div>
           </>
         ) : (

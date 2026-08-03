@@ -29,6 +29,7 @@ import { useDict } from "@/i18n/LocaleProvider";
 import { LanguageToggle } from "./LanguageToggle";
 import { LastScrapeBadge } from "./LastScrapeBadge";
 import { MapModeToggle } from "./MapModeToggle";
+import { MarkerLegend } from "./MarkerLegend";
 
 type NavItem = {
   key: "map" | "properties" | "analysis" | "history" | "scraper";
@@ -104,6 +105,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t">
+        {pathname === "/" ? <MarkerLegend /> : null}
         <LastScrapeBadge />
         <MapModeToggle />
         <LanguageToggle />
