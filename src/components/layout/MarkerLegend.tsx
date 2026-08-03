@@ -3,6 +3,7 @@
 import {
   MARKER_COLOR,
   MARKER_COLOR_ALQUILER,
+  MARKER_COLOR_ARCHIVED,
   MARKER_COLOR_CLUSTER,
 } from "@/lib/mapbox/config";
 import { useDict } from "@/i18n/LocaleProvider";
@@ -10,10 +11,13 @@ import { cn } from "@/lib/utils";
 
 export function MarkerLegend({ className }: { className?: string }) {
   const dict = useDict();
-  const items: Array<{ color: string; label: string }> = [
+  const items: Array<{ color: string; label: string; opacity?: number }> = [
     { color: MARKER_COLOR, label: dict.nav.legend_venta },
     { color: MARKER_COLOR_ALQUILER, label: dict.nav.legend_alquiler },
     { color: MARKER_COLOR_CLUSTER, label: dict.nav.legend_cluster },
+    // Opacidad 0.55 = mismo tratamiento que el pin en el mapa (archivados
+    // se muestran apagados para diferenciarlos de listings activos).
+    { color: MARKER_COLOR_ARCHIVED, label: dict.nav.legend_archived, opacity: 0.55 },
   ];
   return (
     <div className={cn("w-full px-1 py-0.5", className)}>
@@ -26,9 +30,14 @@ export function MarkerLegend({ className }: { className?: string }) {
             <span
               aria-hidden
               className="inline-block size-2.5 shrink-0 rounded-full"
-              style={{ background: it.color }}
+              style={{ background: it.color, opacity: it.opacity }}
             />
-            <span className="text-foreground">{it.label}</span>
+            <span
+              className="text-foreground"
+              style={it.opacity ? { opacity: 0.7 } : undefined}
+            >
+              {it.label}
+            </span>
           </div>
         ))}
       </div>

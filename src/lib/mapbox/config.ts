@@ -20,3 +20,4 @@ export const DEFAULT_ZOOM = 11;
 export const MARKER_COLOR = "#D6FF00";
 export const MARKER_COLOR_ALQUILER = "#FF7A00";
 export const MARKER_COLOR_CLUSTER = "#3B82F6";
+export const MARKER_COLOR_ARCHIVED = "#7a1010";

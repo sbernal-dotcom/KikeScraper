@@ -35,6 +35,7 @@ export type Dictionary = {
     legend_venta: string;
     legend_alquiler: string;
     legend_cluster: string;
+    legend_archived: string;
   };
   common: {
     of: string;
@@ -267,6 +268,7 @@ const es: Dictionary = {
     legend_venta: "Venta",
     legend_alquiler: "Alquiler",
     legend_cluster: "Varios en un punto",
+    legend_archived: "Ya no disponible",
   },
   common: {
     of: "de",
@@ -530,6 +532,7 @@ const en: Dictionary = {
     legend_venta: "For sale",
     legend_alquiler: "For rent",
     legend_cluster: "Multiple at one point",
+    legend_archived: "No longer listed",
   },
   common: {
     of: "of",

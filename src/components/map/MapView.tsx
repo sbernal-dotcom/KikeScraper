@@ -16,6 +16,7 @@ import {
   MAPBOX_TOKEN,
   MARKER_COLOR,
   MARKER_COLOR_ALQUILER,
+  MARKER_COLOR_ARCHIVED,
   MARKER_COLOR_CLUSTER,
   PANAMA_CITY_CENTER,
 } from "@/lib/mapbox/config";
@@ -413,7 +414,7 @@ export function MapView({
            borde, para diferenciarse del rojo normal de venta.
            La card explica el motivo. */
         .mii-marker--archived {
-          --mii-fill: #7a1010;
+          --mii-fill: ${MARKER_COLOR_ARCHIVED};
           --mii-glow: 180, 30, 30;
           opacity: 0.55;
         }
