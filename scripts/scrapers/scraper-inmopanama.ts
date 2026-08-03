@@ -83,11 +83,11 @@ const UPSERT_CONCURRENCY = 5;
 // esta cota garantiza que jamás una corrida vuelva a consumir el trial
 // de Railway. Si la deadline expira, terminamos limpio: guardamos lo
 // procesado y registramos en scraper_runs con notes="timeout".
-// 45 min: DENTRO del cap del pipeline (T_INMO=50m). Antes era 90m, o sea
-// el pipeline siempre mataba con SIGTERM (corte "sucio", sin progreso
-// registrado por scrapeAll). Con 45m internos cortamos limpio antes de
-// que el pipeline meta la mano.
-const MAX_RUNTIME_MS = 45 * 60 * 1000;
+// 40 min para scrapeAll (nuevas URLs del listado) + 8 min para el
+// refresh directo (URLs viejas por fecha_ultima_revision) = 48 min
+// wall-clock máximo → cabe en T_INMO=50m del pipeline. Antes era 45+0.
+const MAX_RUNTIME_MS = 40 * 60 * 1000;
+const REFRESH_BUDGET_MS = 8 * 60 * 1000;
 let deadline = 0;
 let hitDeadline = false;
 function isExpired(): boolean {
@@ -638,6 +638,39 @@ async function scrapeDetail(
   return { ...base, ...enriq };
 }
 
+/**
+ * Procesa las URLs del refresh directamente (fetch → detail → IA),
+ * SIN depender del listado paginado del sitio. Necesario porque las
+ * URLs del refresh son "las más viejas por fecha_ultima_revision" y
+ * casi siempre están en las últimas páginas del listado — el corte
+ * temprano de scrapeAll ("2 páginas sin procesables → break") las
+ * descarta antes de que las alcancemos.
+ *
+ * Bug histórico: entre 2026-08-01 y 2026-08-03 el refresh interno
+ * mostraba "0/50 más viejas" corrida tras corrida por este motivo.
+ *
+ * tipoOperacion se pasa como "venta" por default — scrapeDetail lo
+ * corrige leyendo del HTML (extractOperacion).
+ */
+async function scrapeRefreshDirect(
+  refreshMap: Map<string, string>,
+): Promise<AnuncioRaw[]> {
+  const urls = [...refreshMap.keys()];
+  if (urls.length === 0) return [];
+  console.log(`\n▶ Refresh directo: ${urls.length} URLs (las más viejas)`);
+  const results = await chunkedParallel(urls, DETAIL_CONCURRENCY, async (u) => {
+    if (isExpired()) return null;
+    const r = await scrapeDetail(u, "venta").catch((err) => {
+      console.warn(`    Error refresh ${u}: ${(err as Error).message}`);
+      return null;
+    });
+    await jitter(300, 700);
+    return r;
+  });
+  console.log(`  Refresh directo: ${results.length}/${urls.length} procesadas`);
+  return results;
+}
+
 async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
   deadline = Date.now() + MAX_RUNTIME_MS;
   hitDeadline = false;
@@ -946,20 +979,22 @@ async function runSupabaseMode() {
 
   const skipUrls = await fetchExistingUrls(supa);
   const refreshMap = await fetchRefreshTargets(supa);
-  // Sacar las URLs del refresh del skip set → el scraper las procesa
-  // como si fueran nuevas y el upsert las actualiza en DB.
-  for (const u of refreshMap.keys()) {
-    skipUrls.delete(u);
-    runState.refreshUrls.add(u);
-  }
+  // Registrar las URLs del refresh en el runState para clasificarlas
+  // como "updated" cuando entren al upsert. NO las sacamos del skipSet
+  // porque scrapeAll no las alcanzaría igual (están en páginas finales
+  // del listado y el corte temprano dispara antes). Las procesamos por
+  // separado con scrapeRefreshDirect.
+  for (const u of refreshMap.keys()) runState.refreshUrls.add(u);
   console.log(
-    `En DB: ${skipUrls.size + refreshMap.size} (se saltan ${skipUrls.size}, se refrescan ${refreshMap.size} más viejas).`,
+    `En DB: ${skipUrls.size} activas totales — se refrescan ${refreshMap.size} más viejas por separado.`,
   );
-  const allNew = await scrapeAll(skipUrls);
-  const nuevos = allNew.filter((a) => !refreshMap.has(a.url_original));
-  const refrescados = allNew.filter((a) => refreshMap.has(a.url_original));
+  // Pase 1: scrapear URLs nuevas del listado (con corte temprano).
+  const nuevosScrape = await scrapeAll(skipUrls);
+  // Pase 2: refresh directo de las N más viejas (sin corte temprano).
+  const refrescados = await scrapeRefreshDirect(refreshMap);
+  const allNew = [...nuevosScrape, ...refrescados];
   console.log(
-    `\nNuevos: ${nuevos.length} — Refrescados: ${refrescados.length}`,
+    `\nNuevos: ${nuevosScrape.length} — Refrescados: ${refrescados.length}`,
   );
   runState.found = allNew.length;
 

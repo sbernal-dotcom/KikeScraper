@@ -509,7 +509,12 @@ async function main() {
       console.warn(`\n⏱ Deadline alcanzado — se saltan las fuentes restantes.`);
       break;
     }
-    allStats.push(await procesarFuente(supa, f));
+    try {
+      allStats.push(await procesarFuente(supa, f));
+    } catch (err) {
+      console.error(`  [${f}] procesarFuente crasheó: ${(err as Error).message}`);
+      allStats.push({ fuente: f, total: 0, cambiados: 0, sinCambio: 0, errores: 1, no_encontrada: 0 });
+    }
   }
 
   const total = allStats.reduce((a, s) => a + s.total, 0);
@@ -526,8 +531,14 @@ async function main() {
     .map((s) => `${s.fuente}:${s.cambiados}/${s.total}`)
     .join(" ");
   const notes = `refresh-precios | ${detalle}`;
-  await supa.from("scraper_runs").insert({
-    fuente_id: "refresh-precios",
+  // Nota: scraper_runs.fuente_id tiene FK a `fuentes` — solo acepta los
+  // 6 valores del scraper. Reusamos "encuentra24" (mismo patrón que
+  // verificar-estado), y la fila se distingue por `notes` empezando en
+  // "refresh-precios |". Sin esto el insert falla con 23503 (FK
+  // violation) y el pase queda invisible en scraper_runs — que fue
+  // exactamente el bug 2026-08-01 → 2026-08-03.
+  const { error: insertErr } = await supa.from("scraper_runs").insert({
+    fuente_id: "encuentra24",
     started_at: startedAt,
     finished_at: new Date().toISOString(),
     status: errores > 0 && cambiados === 0 ? "error" : "ok",
@@ -537,6 +548,9 @@ async function main() {
     errors: errores,
     notes,
   });
+  if (insertErr) {
+    console.warn(`\n⚠ scraper_runs insert falló: ${insertErr.message}`);
+  }
 }
 
 main().catch((err) => {
