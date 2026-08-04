@@ -50,27 +50,52 @@ export function HomeContent() {
 
   // Agrupa propiedades por COORDENADA redondeada a 4 decimales (~11m).
   // Honra el contrato (paso 7): pin por ubicación, no por nombre de zona.
-  // Mezcla venta+alquiler que caen en el mismo punto. Pin con count>1 es
-  // un cluster; count=1 es una propiedad sola. `clusters` mapea pinId →
-  // propiedades de ese pin para el click handler.
+  // Mezcla venta+alquiler que caen en el mismo punto.
+  //
+  // Jitter para precision != "exacta": las propiedades sin edificio
+  // identificado caen todas al centroide de su zona (ej. 34 en "San
+  // Francisco") → mismo pixel → cluster gigante engañoso. Aplicamos un
+  // desplazamiento determinístico por-propiedad de ~±75m para que se
+  // dispersen visualmente. Es una hint visual — la card sigue mostrando
+  // el badge "Ubicación aproximada" para no engañar al usuario. Como el
+  // jitter es determinístico por id, no salta entre renders.
   const { pins, clusters } = useMemo(() => {
-    const byKey = new Map<string, Propiedad[]>();
+    const hash = (s: string): number => {
+      let h = 0;
+      for (let i = 0; i < s.length; i++) h = (h << 5) - h + s.charCodeAt(i);
+      return h;
+    };
+    const displayCoord = (p: Propiedad): { lat: number; lng: number } => {
+      if (p.ubicacion.precision === "exacta") return p.ubicacion;
+      // ±0.0007° ≈ ±77m — suficiente para separar pines sin sugerir
+      // precisión que no tenemos.
+      const RANGE = 0.0014;
+      const h1 = Math.abs(hash(p.id + ":lat")) % 1000;
+      const h2 = Math.abs(hash(p.id + ":lng")) % 1000;
+      const dLat = (h1 / 1000 - 0.5) * RANGE;
+      const dLng = (h2 / 1000 - 0.5) * RANGE;
+      return { lat: p.ubicacion.lat + dLat, lng: p.ubicacion.lng + dLng };
+    };
+
+    const byKey = new Map<string, Array<{ p: Propiedad; coord: { lat: number; lng: number } }>>();
     for (const p of propiedades) {
-      const key = `${p.ubicacion.lat.toFixed(4)}__${p.ubicacion.lng.toFixed(4)}`;
+      const coord = displayCoord(p);
+      const key = `${coord.lat.toFixed(4)}__${coord.lng.toFixed(4)}`;
       const existing = byKey.get(key);
-      if (existing) existing.push(p);
-      else byKey.set(key, [p]);
+      if (existing) existing.push({ p, coord });
+      else byKey.set(key, [{ p, coord }]);
     }
     const pinsArr: MapPin[] = [];
     const clusterMap = new Map<string, Propiedad[]>();
-    for (const [key, items] of byKey) {
-      const first = items[0];
-      const pinId = items.length > 1 ? `cluster:${key}` : first.id;
+    for (const [key, entries] of byKey) {
+      const items = entries.map((e) => e.p);
+      const first = entries[0];
+      const pinId = items.length > 1 ? `cluster:${key}` : first.p.id;
       pinsArr.push({
         id: pinId,
-        lat: first.ubicacion.lat,
-        lng: first.ubicacion.lng,
-        tipoOperacion: first.tipoOperacion,
+        lat: first.coord.lat,
+        lng: first.coord.lng,
+        tipoOperacion: first.p.tipoOperacion,
         isPreview: items.some((i) => i.id.startsWith("preview:")),
         count: items.length,
         allArchived: items.every((i) => i.estadoAnuncio !== "activo"),
