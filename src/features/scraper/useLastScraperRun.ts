@@ -20,7 +20,11 @@ import { createClient } from "@/lib/supabase/client";
  */
 
 const CRON_GAP_MIN = 30;
-const LOOKBACK_HOURS = 6;
+// 72h para tolerar cron pausado, deploys, o fin de semana. La agrupación
+// por gap corta al primer salto grande, así que traer más filas no altera
+// el resultado — solo garantiza que veamos algo si el último cron fue
+// hace 12-48h.
+const LOOKBACK_HOURS = 72;
 
 const SCRAPE_FUENTES = [
   "encuentra24",
@@ -47,7 +51,7 @@ export function useLastScraperRun(): LastScraperRun | null {
     let cancelled = false;
     supabase
       .from("scraper_runs")
-      .select("started_at, finished_at, inserted, updated, errors, fuente_id")
+      .select("started_at, finished_at, inserted, updated, errors, fuente_id, notes")
       .in("fuente_id", SCRAPE_FUENTES)
       .not("finished_at", "is", null)
       .gte(
@@ -65,6 +69,7 @@ export function useLastScraperRun(): LastScraperRun | null {
           updated: number | null;
           errors: number | null;
           fuente_id: string | null;
+          notes: string | null;
         };
         const rows = (data ?? []) as Row[];
         if (!rows.length) return;
@@ -81,9 +86,16 @@ export function useLastScraperRun(): LastScraperRun | null {
             break;
           }
         }
-        const inserted = cron.reduce((a, r) => a + (r.inserted ?? 0), 0);
-        const updated = cron.reduce((a, r) => a + (r.updated ?? 0), 0);
-        const errors = cron.reduce((a, r) => a + (r.errors ?? 0), 0);
+        // Excluir verify: bumping fecha_ultima_revision de 1000 filas NO
+        // es una actualización real de datos — mete un +1000 engañoso en
+        // el "updated". refresh-precios SÍ cuenta: sus updated son
+        // cambios de precio/área reales.
+        const isVerify = (r: Row) =>
+          (r.notes ?? "").startsWith("verificar-estado");
+        const contables = cron.filter((r) => !isVerify(r));
+        const inserted = contables.reduce((a, r) => a + (r.inserted ?? 0), 0);
+        const updated = contables.reduce((a, r) => a + (r.updated ?? 0), 0);
+        const errors = contables.reduce((a, r) => a + (r.errors ?? 0), 0);
         // La más reciente por finished_at (la primera del array descendente).
         const finishedAt = cron[0].finished_at ?? "";
         setRun({
@@ -91,7 +103,7 @@ export function useLastScraperRun(): LastScraperRun | null {
           inserted,
           updated,
           errors,
-          sources: cron.length,
+          sources: contables.length,
         });
       });
     return () => {
