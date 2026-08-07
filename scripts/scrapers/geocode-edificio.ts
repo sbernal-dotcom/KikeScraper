@@ -133,6 +133,15 @@ type EdificioCacheRow = {
 // (ej. un proyecto nuevo) eventualmente sea encontrado.
 const SIN_RESULTADO_TTL_DIAS = 30;
 
+// H16: TTL para hits positivos de source='web'. El geocoder web
+// (DuckDuckGo scrape) es propenso a devolver coordenadas incorrectas —
+// caso Marbella 2026-07 colapsó 16 props en la misma coord falsa hasta
+// que se arreglaron a mano. Refrescamos cada 90 días para dar chance de
+// corregir automáticamente (limpiar-cache-mal-agrupado.ts ya cubre casos
+// severos; esto es la red preventiva).
+// Cache 'manual' y 'google' son de alta confianza — sin TTL.
+const WEB_HIT_TTL_DIAS = 90;
+
 export async function geocodeConEdificio(
   titulo: string | null,
   descripcion: string | null,
@@ -315,12 +324,17 @@ async function resolverNombre(
   const ahora = Date.now();
   if (cached) {
     const row = cached as EdificioCacheRow;
-    if (row.lat != null && row.lng != null) {
-      return { lat: row.lat, lng: row.lng, source: `cache(${row.source})` };
-    }
-    // Marcado como sin resultado — ¿re-intentar?
     const ageDias = (ahora - new Date(row.last_attempt_at).getTime()) / 86_400_000;
-    if (row.source === "sin_resultado" && ageDias < SIN_RESULTADO_TTL_DIAS) {
+    if (row.lat != null && row.lng != null) {
+      // H16: hits positivos de source='web' se re-validan cada 90d.
+      // manual/google/manual → sin TTL (alta confianza).
+      const isWebStale = row.source === "web" && ageDias >= WEB_HIT_TTL_DIAS;
+      if (!isWebStale) {
+        return { lat: row.lat, lng: row.lng, source: `cache(${row.source})` };
+      }
+      console.log(`  cache "${nombre}" es web-stale (${ageDias.toFixed(0)}d) — re-verificando`);
+      // Cae al web search abajo.
+    } else if (row.source === "sin_resultado" && ageDias < SIN_RESULTADO_TTL_DIAS) {
       return null; // ya intentamos hace poco, no buscar de nuevo
     }
     // Sí re-intentar → caemos al web search.

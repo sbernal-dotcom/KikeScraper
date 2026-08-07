@@ -37,6 +37,8 @@
     "limpiar-cache-duplicado:apply": "tsx scripts/scrapers/limpiar-cache-duplicado.ts --apply",
     "limpiar-cache-mal": "tsx scripts/scrapers/limpiar-cache-mal-agrupado.ts",
     "limpiar-cache-mal:apply": "tsx scripts/scrapers/limpiar-cache-mal-agrupado.ts --apply",
+    "detectar-colapso": "tsx scripts/scrapers/detectar-colapso-cache.ts",
+    "detectar-colapso:apply": "tsx scripts/scrapers/detectar-colapso-cache.ts --apply",
     "backfill:corregimiento": "tsx scripts/scrapers/backfill-corregimiento-normalizado.ts",
     "backfill:corregimiento:apply": "tsx scripts/scrapers/backfill-corregimiento-normalizado.ts --apply",
     "backfill:precision": "tsx scripts/scrapers/backfill-precision-null.ts",
