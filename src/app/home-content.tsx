@@ -14,6 +14,10 @@ import {
   applyMapFilters,
   useAnalyticsFiltersCtx,
 } from "@/features/propiedades/AnalyticsFiltersContext";
+import {
+  countActiveMapFilters,
+  hasAnalyticsOnlyFilters,
+} from "@/features/propiedades/analyticsFilters";
 import { AnalyticsFilterPanel } from "@/features/propiedades/components/AnalyticsFilterPanel";
 import { PropertyCard } from "@/features/propiedades/components/PropertyCard";
 import { ZonaList } from "@/features/propiedades/components/ZonaList";
@@ -23,7 +27,14 @@ import type { Propiedad } from "@/features/propiedades/types";
 export function HomeContent() {
   const dict = useDict();
   const { data: propiedades, error } = usePropiedades();
-  const { filters, setFilters, reset, activeCount } = useAnalyticsFiltersCtx();
+  const { filters, setFilters, reset } = useAnalyticsFiltersCtx();
+  // El chip "N filtros" y el conteo matched/total del mapa usan SOLO
+  // los filtros que applyMapFilters efectivamente aplica (operación,
+  // categoría, fuentes). Score y confianza son métricas derivadas de
+  // vw_oportunidades y solo funcionan en /analisis — antes se contaban
+  // como activos y el mapa mostraba 500/500 idéntico → auditoría C1.
+  const activeCount = countActiveMapFilters(filters);
+  const analyticsOnly = hasAnalyticsOnlyFilters(filters);
   const comparison = useComparison();
   const [seleccionada, setSeleccionada] = useState<Propiedad | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -163,6 +174,19 @@ export function HomeContent() {
             >
               <X className="size-3.5" />
             </button>
+          </div>
+        ) : null}
+        {analyticsOnly ? (
+          <div
+            className="rounded-md border px-2 py-1.5 text-[10px] shadow-sm backdrop-blur"
+            style={{
+              background: "rgba(214,255,0,0.10)",
+              color: "#D6FF00",
+              borderColor: "rgba(214,255,0,0.35)",
+            }}
+            title={dict.properties.analytics_only_hint}
+          >
+            {dict.properties.analytics_only_badge}
           </div>
         ) : null}
       </div>

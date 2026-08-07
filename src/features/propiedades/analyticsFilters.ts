@@ -30,6 +30,26 @@ export function countActiveAnalyticsFilters(f: AnalyticsFilters): number {
   return n;
 }
 
+/**
+ * Cuenta SOLO los filtros que `applyMapFilters` aplica efectivamente
+ * (operación, categoría, fuentes). scoreMin y confianza son métricas
+ * derivadas de `vw_oportunidades` que la vista del mapa no puede
+ * aplicar — antes se contaban como activos y el chip mostraba "1
+ * filtro" con el mapa idéntico → auditoría CRITICAL C1.
+ */
+export function countActiveMapFilters(f: AnalyticsFilters): number {
+  let n = 0;
+  if (f.operacion.length) n++;
+  if (f.categoria.length) n++;
+  if (f.fuentes.length) n++;
+  return n;
+}
+
+/** True si hay filtros de análisis activos que el mapa no aplica. */
+export function hasAnalyticsOnlyFilters(f: AnalyticsFilters): boolean {
+  return f.confianza.length > 0 || f.scoreMin !== undefined;
+}
+
 export function applyAnalyticsFilters(
   items: Oportunidad[],
   f: AnalyticsFilters,

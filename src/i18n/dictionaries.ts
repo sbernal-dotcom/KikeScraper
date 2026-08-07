@@ -53,6 +53,8 @@ export type Dictionary = {
     filters: string;
     empty_state: string;
     missing_token: string;
+    analytics_only_badge: string;
+    analytics_only_hint: string;
   };
   filters: {
     operation: string;
@@ -287,6 +289,9 @@ const es: Dictionary = {
     empty_state: "No hay propiedades que coincidan con los filtros aplicados.",
     missing_token:
       "Configura NEXT_PUBLIC_MAPBOX_TOKEN en .env.local para mostrar el mapa.",
+    analytics_only_badge: "Score / confianza — solo en Análisis",
+    analytics_only_hint:
+      "Los filtros de score y confianza dependen de comparables por zona y solo se aplican en la vista de Análisis. En el mapa se ignoran.",
   },
   filters: {
     operation: "Operación",
@@ -551,6 +556,9 @@ const en: Dictionary = {
     empty_state: "No properties match the applied filters.",
     missing_token:
       "Set NEXT_PUBLIC_MAPBOX_TOKEN in .env.local to display the map.",
+    analytics_only_badge: "Score / confidence — Analysis only",
+    analytics_only_hint:
+      "Score and confidence filters depend on per-zone comparables and only apply in the Analysis view. They are ignored on the map.",
   },
   filters: {
     operation: "Operation",
