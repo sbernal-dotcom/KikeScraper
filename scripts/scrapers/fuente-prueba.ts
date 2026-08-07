@@ -679,8 +679,12 @@ async function fetchExistingUrls(
       .select("url_original, estado_anuncio")
       .range(from, from + PAGE - 1);
     if (error) {
-      console.warn(`  No se pudo leer propiedades existentes: ${error.message}`);
-      return map;
+      // H3: antes retornábamos el map parcial → las URLs de páginas
+      // siguientes se creían "nuevas" y el scraper gastaba Groq
+      // re-procesándolas. Ahora abortamos: pipeline falla ruidoso.
+      throw new Error(
+        `fetchExistingUrls falló en range=${from}-${from + PAGE - 1}: ${error.message}`,
+      );
     }
     const batch = (data ?? []) as Array<{ url_original: string; estado_anuncio: string }>;
     for (const r of batch) map.set(r.url_original, { estado_anuncio: r.estado_anuncio });

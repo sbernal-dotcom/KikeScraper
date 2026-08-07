@@ -659,8 +659,12 @@ async function fetchExistingUrls(
       .eq("fuente_id", FUENTE_ID)
       .range(from, from + PAGE - 1);
     if (error) {
-      console.warn(`  No se pudo leer propiedades existentes: ${error.message}`);
-      return map;
+      // H3: retornar parcial hacía que URLs de páginas siguientes se
+      // creyeran nuevas → gasto Groq y potencial resurrección de
+      // archivadas. Abortamos ruidoso.
+      throw new Error(
+        `fetchExistingUrls falló en range=${from}-${from + PAGE - 1}: ${error.message}`,
+      );
     }
     const batch = (data ?? []) as Array<{ url_original: string; estado_anuncio: string }>;
     for (const r of batch) map.set(r.url_original, { estado_anuncio: r.estado_anuncio });
