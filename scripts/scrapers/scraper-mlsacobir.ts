@@ -29,6 +29,7 @@ import {
   type ResumenBilingue,
 } from "./ia";
 import { stripLifecycleIfNotActive } from "./_lifecycle";
+import { computeRunStatus } from "./_run-status";
 import { geocodeConEdificio } from "./geocode-edificio";
 import { preflightCheck } from "./preflight-check";
 import { validarConMapbox } from "./mapbox-validate";
@@ -655,7 +656,7 @@ async function runSupabaseMode() {
     return null;
   });
 
-  const status = errors > 0 && inserted === 0 ? "error" : "ok";
+  const status = computeRunStatus({ ok: inserted, errors });
   const { error: runErr } = await supa.from("scraper_runs").insert({
     fuente_id: FUENTE_ID,
     started_at: startedAt,

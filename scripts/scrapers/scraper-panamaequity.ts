@@ -30,6 +30,7 @@ import {
 } from "./ia";
 import { isOnLand } from "../../src/lib/geo/panama-land";
 import { stripLifecycleIfNotActive } from "./_lifecycle";
+import { computeRunStatus } from "./_run-status";
 import { geocodeConEdificio } from "./geocode-edificio";
 import { normalizeKey } from "./zonas-panama";
 import { preflightCheck } from "./preflight-check";
@@ -590,7 +591,10 @@ let runState: RunState | null = null;
 async function writeRunOnce(notes: string): Promise<void> {
   if (!runState || runState.written || runState.writing) return;
   runState.writing = true;
-  const status = runState.errors > 0 && runState.inserted === 0 ? "error" : "ok";
+  const status = computeRunStatus({
+    ok: runState.inserted,
+    errors: runState.errors,
+  });
   try {
     const { error } = await runState.supa.from("scraper_runs").insert({
       fuente_id: FUENTE_ID,
@@ -666,7 +670,10 @@ async function runSupabaseMode() {
   });
 
   await writeRunOnce("panamaequity (bróker boutique)");
-  const status = runState.errors > 0 && runState.inserted === 0 ? "error" : "ok";
+  const status = computeRunStatus({
+    ok: runState.inserted,
+    errors: runState.errors,
+  });
   console.log(
     `\nUpsert terminado — insertados: ${runState.inserted}, errores: ${runState.errors}, status: ${status}.`,
   );

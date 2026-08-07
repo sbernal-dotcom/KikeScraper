@@ -30,6 +30,7 @@ import {
   type ResumenBilingue,
 } from "./ia";
 import { stripLifecycleIfNotActive } from "./_lifecycle";
+import { computeRunStatus } from "./_run-status";
 import { geocodeConEdificio } from "./geocode-edificio";
 import { preflightCheck } from "./preflight-check";
 import { validarConMapbox } from "./mapbox-validate";
@@ -884,7 +885,10 @@ let runState: RunState | null = null;
 async function writeRunOnce(notes: string): Promise<void> {
   if (!runState || runState.written || runState.writing) return;
   runState.writing = true;
-  const status = runState.errors > 0 && runState.inserted === 0 ? "error" : "ok";
+  const status = computeRunStatus({
+    ok: runState.inserted,
+    errors: runState.errors,
+  });
   try {
     const { error } = await runState.supa.from("scraper_runs").insert({
       fuente_id: FUENTE_ID,
@@ -962,7 +966,10 @@ async function runSupabaseMode() {
   // Como scrapeAll salta los url_original ya presentes, todos los escritos
   // son nuevos (updated=0). El refresco de existentes se hará en otra corrida.
   await writeRunOnce(`listados: ${LISTADOS.map((l) => l.url).join(", ")}`);
-  const status = runState.errors > 0 && runState.inserted === 0 ? "error" : "ok";
+  const status = computeRunStatus({
+    ok: runState.inserted,
+    errors: runState.errors,
+  });
   console.log(
     `\nUpsert terminado — insertados: ${runState.inserted}, errores: ${runState.errors}, status: ${status}.`,
   );

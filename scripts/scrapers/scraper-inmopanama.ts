@@ -49,6 +49,7 @@ import {
   type CamposSemanticos,
 } from "./extraer-html-ia";
 import { stripLifecycleIfNotActive } from "./_lifecycle";
+import { computeRunStatus } from "./_run-status";
 import { geocodeConEdificio } from "./geocode-edificio";
 import { preflightCheck } from "./preflight-check";
 import { createScraperClient } from "./supabase-admin";
@@ -925,10 +926,10 @@ let runState: RunState | null = null;
 async function writeRunOnce(notes: string): Promise<void> {
   if (!runState || runState.written || runState.writing) return;
   runState.writing = true;
-  const status =
-    runState.errors > 0 && runState.inserted === 0 && runState.updated === 0
-      ? "error"
-      : "ok";
+  const status = computeRunStatus({
+    ok: runState.inserted + runState.updated,
+    errors: runState.errors,
+  });
   try {
     const { error } = await runState.supa.from("scraper_runs").insert({
       fuente_id: FUENTE_ID,
@@ -1037,10 +1038,10 @@ async function runSupabaseMode() {
     ? `inmopanama (agregador) — cortado por hard timeout ${MAX_RUNTIME_MS / 60000}min`
     : `inmopanama (agregador) — refresh: ${runState.updated}/${runState.refreshUrls.size} más viejas`;
   await writeRunOnce(notes);
-  const okStatus =
-    runState.errors > 0 && runState.inserted === 0 && runState.updated === 0
-      ? "error"
-      : "ok";
+  const okStatus = computeRunStatus({
+    ok: runState.inserted + runState.updated,
+    errors: runState.errors,
+  });
   console.log(
     `\nUpsert — insertados: ${runState.inserted}, actualizados: ${runState.updated}, errores: ${runState.errors}, status: ${okStatus}.`,
   );

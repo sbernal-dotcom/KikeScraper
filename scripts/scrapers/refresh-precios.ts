@@ -35,6 +35,7 @@
 import { config as loadEnv } from "dotenv";
 
 import { createScraperClient } from "./supabase-admin";
+import { computeRunStatus } from "./_run-status";
 
 loadEnv({ path: ".env.local" });
 loadEnv();
@@ -551,7 +552,10 @@ async function main() {
     fuente_id: "refresh-precios",
     started_at: startedAt,
     finished_at: new Date().toISOString(),
-    status: errores > 0 && cambiados === 0 ? "error" : "ok",
+    status: computeRunStatus({
+      ok: cambiados + sinCambio + noEnc,
+      errors: errores,
+    }),
     found: total,
     inserted: 0,
     updated: cambiados,

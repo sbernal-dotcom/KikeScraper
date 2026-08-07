@@ -35,6 +35,7 @@ import {
   type CamposSemanticos,
 } from "./extraer-html-ia";
 import { stripLifecycleIfNotActive } from "./_lifecycle";
+import { computeRunStatus } from "./_run-status";
 import { geocodeConEdificio } from "./geocode-edificio";
 import { normalizeKey } from "./zonas-panama";
 import { preflightCheck } from "./preflight-check";
@@ -722,10 +723,10 @@ let runState: RunState | null = null;
 async function writeRunOnce(notes: string): Promise<void> {
   if (!runState || runState.written || runState.writing) return;
   runState.writing = true;
-  const status =
-    runState.errors > 0 && runState.inserted === 0 && runState.updated === 0
-      ? "error"
-      : "ok";
+  const status = computeRunStatus({
+    ok: runState.inserted + runState.updated,
+    errors: runState.errors,
+  });
   try {
     const { error } = await runState.supa.from("scraper_runs").insert({
       fuente_id: FUENTE_ID,
@@ -819,10 +820,10 @@ async function runSupabaseMode() {
     ? `savitat (CBRE Panamá afiliado) — cortado por hard timeout ${MAX_RUNTIME_MS / 60000}min`
     : `savitat (CBRE Panamá afiliado) — refresh: ${runState.updated}/${runState.refreshUrls.size} más viejas`;
   await writeRunOnce(notes);
-  const okStatus =
-    runState.errors > 0 && runState.inserted === 0 && runState.updated === 0
-      ? "error"
-      : "ok";
+  const okStatus = computeRunStatus({
+    ok: runState.inserted + runState.updated,
+    errors: runState.errors,
+  });
   console.log(
     `\nUpsert — insertados: ${runState.inserted}, actualizados: ${runState.updated}, errores: ${runState.errors}, status: ${okStatus}.`,
   );
