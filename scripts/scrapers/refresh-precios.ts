@@ -453,13 +453,26 @@ async function procesarFuente(
     const nuevo = ex(html);
     const patch = computeUpdate(row, nuevo);
     if (!patch) {
-      // Sin cambios: solo tocamos fecha_ultima_revision para que el
-      // verify sepa que la vimos hoy.
-      await supa
+      // Sin cambios en datos: solo bumping de fecha_ultima_revision para
+      // que verify no la re-verifique innecesariamente.
+      //
+      // Fix (auditoría CRITICAL C5): antes ignorábamos el error del
+      // update — si fallaba (RLS, network), stats.sinCambio se
+      // incrementaba igual, la fila NO se actualizaba, y verify la
+      // re-verificaba al día siguiente escalando veces_no_encontrado.
+      // Ahora capturamos el error y lo contamos como stats.errores.
+      const { error: bumpErr } = await supa
         .from("propiedades")
         .update({ fecha_ultima_revision: ahora, fecha_ultima_vista: ahora })
         .eq("id", row.id);
-      stats.sinCambio++;
+      if (bumpErr) {
+        console.warn(
+          `  [${fuente}] bump fecha_ultima_revision falló (${row.url_original}): ${bumpErr.message}`,
+        );
+        stats.errores++;
+      } else {
+        stats.sinCambio++;
+      }
       return;
     }
     patch.fecha_ultima_revision = ahora;
