@@ -531,14 +531,11 @@ async function main() {
     .map((s) => `${s.fuente}:${s.cambiados}/${s.total}`)
     .join(" ");
   const notes = `refresh-precios | ${detalle}`;
-  // Nota: scraper_runs.fuente_id tiene FK a `fuentes` — solo acepta los
-  // 6 valores del scraper. Reusamos "encuentra24" (mismo patrón que
-  // verificar-estado), y la fila se distingue por `notes` empezando en
-  // "refresh-precios |". Sin esto el insert falla con 23503 (FK
-  // violation) y el pase queda invisible en scraper_runs — que fue
-  // exactamente el bug 2026-08-01 → 2026-08-03.
+  // Fila propia bajo fuente_id="refresh-precios" (agregada en migration
+  // 0018). Antes reusábamos "encuentra24" como workaround del FK y
+  // ensuciaba las métricas de encuentra24 con datos de este job.
   const { error: insertErr } = await supa.from("scraper_runs").insert({
-    fuente_id: "encuentra24",
+    fuente_id: "refresh-precios",
     started_at: startedAt,
     finished_at: new Date().toISOString(),
     status: errores > 0 && cambiados === 0 ? "error" : "ok",

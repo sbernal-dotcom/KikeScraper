@@ -173,9 +173,13 @@ export async function fetchScraperInfo(): Promise<ScraperInfoData> {
     })
     .sort((a, b) => b.count - a.count);
 
-  // Último run de verify (fuente_id="encuentra24" con notes que comienzan con "verificar-estado")
+  // Último run de verify. Desde 0018 se registra con fuente_id="verify";
+  // el matcheo por notes cubre filas históricas cuando el workaround era
+  // fuente_id="encuentra24" + notes que empiezan con "verificar-estado".
   const ultimoVerifyRow = runsArr.find(
-    (r) => r.notes && String(r.notes).startsWith("verificar-estado"),
+    (r) =>
+      r.fuente_id === "verify" ||
+      (r.notes && String(r.notes).startsWith("verificar-estado")),
   );
   const ultimoVerify = ultimoVerifyRow
     ? {
@@ -205,9 +209,13 @@ export async function fetchScraperInfo(): Promise<ScraperInfoData> {
       finishedAt: finishedLast,
       durationMin,
     },
-    porFuente: Array.from(porFuenteMap.values()).sort(
-      (a, b) => b.activas - a.activas,
-    ),
+    // Excluimos IDs "sistema" (verify, refresh-precios, backfill-ia) —
+    // son jobs no-scraper que viven en `fuentes` solo para satisfacer el
+    // FK de scraper_runs. No aparecen en el listado por-fuente porque no
+    // scrapean ninguna URL y su count de activas siempre es 0.
+    porFuente: Array.from(porFuenteMap.values())
+      .filter((f) => !["verify", "refresh-precios", "backfill-ia"].includes(f.fuenteId))
+      .sort((a, b) => b.activas - a.activas),
     caches: {
       iaExtract,
       urlsFallidas,

@@ -26,6 +26,11 @@ const CRON_GAP_MIN = 30;
 // hace 12-48h.
 const LOOKBACK_HOURS = 72;
 
+// Los 6 scrapers reales + refresh-precios (job diario que actualiza
+// campos duros — sus `updated` son cambios reales de precio/área).
+// Verify NO se incluye: bumping fecha_ultima_revision no es una
+// actualización de datos y metería +1000 falso en el total.
+// backfill-ia tampoco: es manual, no parte del cron.
 const SCRAPE_FUENTES = [
   "encuentra24",
   "acobir",
@@ -33,6 +38,7 @@ const SCRAPE_FUENTES = [
   "mlsacobir",
   "inmopanama",
   "savitat",
+  "refresh-precios",
 ];
 
 export type LastScraperRun = {

@@ -30,7 +30,9 @@ loadEnv();
 
 const USER_AGENT =
   "MapaInteractivoInteligente/0.1 (+contacto: abilendesign@gmail.com)";
-const FUENTE_ID = "encuentra24";
+// Fila propia en `fuentes` (migration 0018) para distinguir las corridas
+// de este job de las de encuentra24 en scraper_runs.
+const FUENTE_ID = "backfill-ia";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const jitter = (min = 1500, max = 3000) =>

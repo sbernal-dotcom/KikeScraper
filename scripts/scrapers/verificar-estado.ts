@@ -42,7 +42,11 @@ loadEnv();
 
 const USER_AGENT =
   "MapaInteractivoInteligente/0.1 (+contacto: abilendesign@gmail.com)";
-const FUENTE_ID = "encuentra24";
+// Antes usábamos "encuentra24" como workaround del FK — ensuciaba las
+// métricas de encuentra24. Ahora "verify" es una fila propia en
+// `fuentes` (migration 0018) para que las corridas de este job sean
+// distinguibles en scraper_runs.
+const FUENTE_ID = "verify";
 
 // Solo re-verificamos filas con fecha_ultima_revision más vieja que esto.
 // Mantenemos margen para que el scrape recién corrido no se vuelva a
