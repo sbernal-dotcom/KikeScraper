@@ -31,6 +31,7 @@ import {
 import { isOnLand } from "../../src/lib/geo/panama-land";
 import { stripLifecycleIfNotActive } from "./_lifecycle";
 import { computeRunStatus } from "./_run-status";
+import { fetchUrlsFallidasRecientes, marcarUrlFallida } from "./urls-fallidas";
 import { geocodeConEdificio } from "./geocode-edificio";
 import { normalizeKey } from "./zonas-panama";
 import { preflightCheck } from "./preflight-check";
@@ -364,6 +365,8 @@ async function scrapeDetail(url: string): Promise<AnuncioRaw | null> {
     );
     if (!geo) {
       console.log(`  pipeline tampoco resolvió — saltando`);
+      // H7: cachear para no re-consumir Groq en la próxima corrida.
+      marcarUrlFallida(FUENTE_ID, url, "sin_geo", "pipeline edificio→cache→web→zona sin resultado");
       return null;
     }
     finalLat = geo.lat;
@@ -424,6 +427,14 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
   if (!allowed) {
     console.warn("robots.txt prohíbe /es/listings/ — abortando.");
     return [];
+  }
+
+  // H7: mergear cache de URLs que ya fallaron en corridas recientes
+  // (TTL 30d). Sin esto, PE re-quema Groq en URLs sin-geo cada día.
+  const urlsFallidas = await fetchUrlsFallidasRecientes(FUENTE_ID);
+  if (urlsFallidas.size > 0) {
+    console.log(`Cache URLs fallidas (30d): ${urlsFallidas.size} (se saltan)`);
+    for (const u of urlsFallidas) skipUrls.add(u);
   }
 
   const seenUrls = new Set<string>();

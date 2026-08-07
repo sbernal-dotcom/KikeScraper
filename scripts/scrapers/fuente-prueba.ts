@@ -31,6 +31,7 @@ import {
 } from "./ia";
 import { stripLifecycleIfNotActive } from "./_lifecycle";
 import { computeRunStatus } from "./_run-status";
+import { fetchUrlsFallidasRecientes, marcarUrlFallida } from "./urls-fallidas";
 import { geocodeConEdificio } from "./geocode-edificio";
 import { preflightCheck } from "./preflight-check";
 import { validarConMapbox } from "./mapbox-validate";
@@ -488,6 +489,8 @@ async function scrapeOne(
   );
   if (!geo) {
     console.warn("  Sin ubicación resoluble — saltando");
+    // H7: cachear para no re-consumir Groq en la próxima corrida.
+    marcarUrlFallida(FUENTE_ID, item.url, "sin_geo", "pipeline edificio→cache→web→zona sin resultado");
     return null;
   }
   if (zona) await validarConMapbox(zona, { lat: geo.lat, lng: geo.lng });
@@ -725,6 +728,14 @@ function slugFromUrl(url: string): string {
 }
 
 async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
+  // H7: mergear cache de URLs que ya fallaron en corridas recientes
+  // (TTL 30d). Sin esto, encuentra24 re-quema Groq en las mismas URLs
+  // sin-geo cada día.
+  const urlsFallidas = await fetchUrlsFallidasRecientes(FUENTE_ID);
+  if (urlsFallidas.size > 0) {
+    console.log(`Cache URLs fallidas (30d): ${urlsFallidas.size} (se saltan)`);
+    for (const u of urlsFallidas) skipUrls.add(u);
+  }
   const browser = await chromium.launch({ headless: true });
   const ctx = await browser.newContext({
     userAgent: USER_AGENT,

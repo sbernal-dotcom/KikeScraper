@@ -34,6 +34,7 @@ import {
 } from "./ia";
 import { stripLifecycleIfNotActive } from "./_lifecycle";
 import { computeRunStatus } from "./_run-status";
+import { fetchUrlsFallidasRecientes, marcarUrlFallida } from "./urls-fallidas";
 import { geocodeConEdificio } from "./geocode-edificio";
 import { preflightCheck } from "./preflight-check";
 import { validarConMapbox } from "./mapbox-validate";
@@ -384,6 +385,8 @@ async function scrapeDetail(slug: string): Promise<ProyectoRaw | null> {
   const geo = await geocodeConEdificio(titulo, descripcion, url, zona);
   if (!geo) {
     console.log(`  geocode → sin resultado — saltando`);
+    // H7: cachear para no re-consumir Groq en la próxima corrida.
+    marcarUrlFallida(FUENTE_ID, url, "sin_geo", "pipeline edificio→cache→web→zona sin resultado");
     return null;
   }
   if (zona) await validarConMapbox(zona, { lat: geo.lat, lng: geo.lng });
@@ -442,6 +445,15 @@ async function scrapeAll(skipUrls: Set<string>): Promise<ProyectoRaw[]> {
   if (!allowed) {
     console.warn("robots.txt prohíbe /proyectos/list/ — abortando.");
     return [];
+  }
+
+  // H7: mergear cache de URLs que ya fallaron en corridas recientes
+  // (TTL 30d). Sin esto, ACOBIR re-quema Groq en slugs sin-geo cada
+  // semana. Cache keyeado por URL final (BASE_URL + slug).
+  const urlsFallidas = await fetchUrlsFallidasRecientes(FUENTE_ID);
+  if (urlsFallidas.size > 0) {
+    console.log(`Cache URLs fallidas (30d): ${urlsFallidas.size} (se saltan)`);
+    for (const u of urlsFallidas) skipUrls.add(u);
   }
 
   const seenSlugs = new Set<string>();

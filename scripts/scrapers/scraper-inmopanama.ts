@@ -50,6 +50,7 @@ import {
 } from "./extraer-html-ia";
 import { stripLifecycleIfNotActive } from "./_lifecycle";
 import { computeRunStatus } from "./_run-status";
+import { fetchUrlsFallidasRecientes, marcarUrlFallida } from "./urls-fallidas";
 import { geocodeConEdificio } from "./geocode-edificio";
 import { preflightCheck } from "./preflight-check";
 import { createScraperClient } from "./supabase-admin";
@@ -591,6 +592,8 @@ async function scrapeDetail(
   });
   if (!geo) {
     console.log(`  geocode → sin resultado — saltando`);
+    // H7: cachear para no re-consumir Groq en la próxima corrida.
+    marcarUrlFallida(FUENTE_ID, url, "sin_geo", "pipeline edificio→cache→web→zona sin resultado");
     return null;
   }
   const descripcionTemp = trimDescripcion(descRaw);
@@ -683,6 +686,15 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
   if (!allowed) {
     console.warn("robots.txt prohíbe — abortando.");
     return [];
+  }
+
+  // H7: mergear cache de URLs que ya fallaron en corridas recientes
+  // (TTL 30d). Sin esto, InmoPanama re-quema Groq en URLs sin-geo
+  // conocidas cada día — docenas de calls perdidas.
+  const urlsFallidas = await fetchUrlsFallidasRecientes(FUENTE_ID);
+  if (urlsFallidas.size > 0) {
+    console.log(`Cache URLs fallidas (30d): ${urlsFallidas.size} (se saltan)`);
+    for (const u of urlsFallidas) skipUrls.add(u);
   }
 
   const seenUrls = new Set<string>();
