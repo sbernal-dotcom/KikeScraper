@@ -38,7 +38,7 @@ import {
   fetchUrlsFallidasRecientes,
   marcarUrlFallida,
 } from "./urls-fallidas";
-import { centroFromTable } from "./zonas-panama";
+import { centroFromTable, normalizeKey } from "./zonas-panama";
 
 loadEnv({ path: ".env.local" });
 loadEnv();
@@ -533,7 +533,7 @@ function toDbRow(a: AnuncioRaw): Record<string, unknown> | null {
     lng: a.lng,
     precision_ubicacion: a.precision_ubicacion,
     ubicacion_fuente: a.ubicacion_fuente,
-    corregimiento: a.zona,
+    corregimiento: a.zona ? normalizeKey(a.zona) : null,
     area_m2: a.area_m2,
     habitaciones: a.habitaciones,
     banos: a.banos,

@@ -36,6 +36,7 @@ import {
 } from "./extraer-html-ia";
 import { stripLifecycleIfNotActive } from "./_lifecycle";
 import { geocodeConEdificio } from "./geocode-edificio";
+import { normalizeKey } from "./zonas-panama";
 import { preflightCheck } from "./preflight-check";
 import {
   enriquecerConIA,
@@ -581,7 +582,7 @@ function toDbRow(a: AnuncioRaw): Record<string, unknown> | null {
     motivo_estado: "visto en scrape savitat",
     lat: a.lat,
     lng: a.lng,
-    corregimiento: a.zona,
+    corregimiento: a.zona ? normalizeKey(a.zona) : null,
     area_m2: a.area_m2,
     habitaciones: a.habitaciones,
     banos: a.banos,

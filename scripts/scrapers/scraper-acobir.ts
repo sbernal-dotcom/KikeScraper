@@ -38,7 +38,7 @@ import { preflightCheck } from "./preflight-check";
 import { validarConMapbox } from "./mapbox-validate";
 import { createScraperClient } from "./supabase-admin";
 import { type TagCerrado } from "./tags-caracteristicas";
-import { centroFromTable } from "./zonas-panama";
+import { centroFromTable, normalizeKey } from "./zonas-panama";
 
 loadEnv({ path: ".env.local" });
 loadEnv();
@@ -505,7 +505,7 @@ function toDbRow(a: ProyectoRaw): Record<string, unknown> | null {
     lng: a.lng,
     precision_ubicacion: a.precision_ubicacion,
     ubicacion_fuente: a.ubicacion_fuente,
-    corregimiento: a.zona,
+    corregimiento: a.zona ? normalizeKey(a.zona) : null,
     area_m2: a.area_desde_m2,
     habitaciones: a.habitaciones_desde,
     banos: a.banos_desde,

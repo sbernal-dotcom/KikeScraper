@@ -267,7 +267,15 @@ export const ZONAS_PANAMA: Record<string, ZonaCentro> = {
   pedasi: { lat: 7.5333, lng: -80.0333 },
 };
 
-function normalizeKey(zona: string): string {
+/**
+ * Normaliza una zona/corregimiento a forma canónica: lowercase, sin
+ * acentos, sin espacios múltiples, trim. Uso doble:
+ *   - Lookup en ZONAS_PANAMA (comparar keys sin importar mayúsculas/acentos).
+ *   - Persistencia consistente en `propiedades.corregimiento` — evita
+ *     que "Bella Vista", "BELLA VISTA" y "bella vista" queden como 3
+ *     buckets distintos en el `GROUP BY` del benchmark (auditoría C3).
+ */
+export function normalizeKey(zona: string): string {
   return zona
     .toLowerCase()
     .normalize("NFD")
