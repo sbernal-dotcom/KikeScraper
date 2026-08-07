@@ -63,6 +63,13 @@ function inputHash(titulo: string, desc: string): string {
   return createHash("sha256").update(`${titulo}|${desc}`).digest("hex");
 }
 
+// H17: TTL 90d en hits del cache. La extracción IA es determinista
+// (temp 0.1) pero NO infalible — 2026-07-29 Savitat: la IA extraía
+// "Área Bancaria" cuando la zona real era "Marbella", y quedaba
+// cacheado para siempre. Refrescamos cada 90 días para dar chance de
+// corregir sin re-crear la tabla entera.
+const IA_CACHE_TTL_DIAS = 90;
+
 /**
  * Busca en el cache persistente de Supabase. Retorna null si no hay hit
  * o si hubo error de red (fail-open — llamar a Groq es aceptable).
@@ -72,12 +79,17 @@ async function lookupCache(hash: string): Promise<ExtraccionEdificio | null> {
     const supa = createScraperClient();
     const { data, error } = await supa
       .from("ia_extract_cache")
-      .select("edificio, proyecto, zona, model")
+      .select("edificio, proyecto, zona, model, created_at")
       .eq("input_hash", hash)
       .maybeSingle();
     if (error || !data) return null;
     // Si el cache fue creado con otro modelo, ignorar (invalidación).
     if (data.model !== GROQ_MODEL) return null;
+    // H17: descartar hits antiguos para permitir corrección.
+    if (data.created_at) {
+      const ageDias = (Date.now() - new Date(data.created_at).getTime()) / 86_400_000;
+      if (ageDias >= IA_CACHE_TTL_DIAS) return null;
+    }
     // Fire-and-forget: actualizar hit_count + last_hit_at.
     void Promise.resolve(supa.rpc("ia_extract_cache_touch", { p_hash: hash })).catch(() => {});
     return {
