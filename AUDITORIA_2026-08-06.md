@@ -4,6 +4,15 @@
 > `b1db63f` C4, `7d7b28b` C2, `f1d6212` C5, `2267733` C1, `99d11d4` C3).
 > Backfill C3 consolidó 107 buckets duplicados de corregimiento sobre
 > 5757 filas históricas.
+>
+> **Fase 2 (silent failures del scraper) cerrada 2026-08-07**: 7 HIGH
+> arreglados — H1 `46f32f7` (status por ratio 20% vs "todo-o-nada"),
+> H2 `4ff5620` (errores en scrapeDetail cuentan), H3 `6f06f20`
+> (fetchExistingUrls throw en fallo de paginación), H4 `86f3d16`
+> (SIGTERM handler awaitea el insert), H7 `9e08311` (cache urls-fallidas
+> en las 4 fuentes restantes), H16 `72f8558` (TTL 90d edificios_cache
+> source=web + `detectar-colapso-cache.ts`), H17 `b7a381b` (TTL 90d
+> ia_extract_cache + `purgar-ia-cache.ts`).
 
 **Metodología**: 5 agentes de exploración paralelos, cada uno cubriendo una dimensión (scraper correctness, security, UI/UX, data quality, tech debt). ~67 findings raw deduplicados y consolidados abajo. Los CRITICAL fueron verificados manualmente antes de reportar.
 
