@@ -590,7 +590,9 @@ async function scrape(
   >(found, Math.min(DETAIL_CONCURRENCY, pagePool.length), (item, j) => {
     const detailPage = pagePool[j];
     return scrapeOne(detailPage, item).catch((err) => {
+      // H2: contar el error para que el ratio dispare status=error.
       console.warn(`  Error procesando ${item.url}: ${(err as Error).message}`);
+      if (runState) runState.errors++;
       return null;
     });
   });

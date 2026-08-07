@@ -464,7 +464,9 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
 
     const batch = await chunkedParallel(procesables, DETAIL_CONCURRENCY, (u) =>
       scrapeDetail(u).catch((err) => {
+        // H2: antes solo logueábamos → status=ok ocultaba scrapes rotos.
         console.warn(`  Error en ${u}: ${(err as Error).message}`);
+        if (runState) runState.errors++;
         return null;
       }),
     );

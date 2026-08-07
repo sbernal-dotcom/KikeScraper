@@ -432,7 +432,12 @@ async function scrapeDetail(slug: string): Promise<ProyectoRaw | null> {
   return { ...base, ...enriq };
 }
 
+// H2: errores de scrapeDetail (fetch/parse/geo). Antes se silenciaban
+// con `.catch(()=>null)` → status "ok" mientras N slugs fallaban.
+let scrapeErrors = 0;
+
 async function scrapeAll(skipUrls: Set<string>): Promise<ProyectoRaw[]> {
+  scrapeErrors = 0;
   const allowed = await checkRobotsTxt();
   if (!allowed) {
     console.warn("robots.txt prohíbe /proyectos/list/ — abortando.");
@@ -477,7 +482,9 @@ async function scrapeAll(skipUrls: Set<string>): Promise<ProyectoRaw[]> {
 
     const batch = await chunkedParallel(procesables, DETAIL_CONCURRENCY, (slug) =>
       scrapeDetail(slug).catch((err) => {
+        // H2: contar el error para que el ratio dispare status=error.
         console.warn(`  Error en ${slug}: ${(err as Error).message}`);
+        scrapeErrors++;
         return null;
       }),
     );
@@ -628,6 +635,7 @@ async function runSupabaseMode() {
     return null;
   });
 
+  errors += scrapeErrors;
   const status = computeRunStatus({ ok: inserted, errors });
   const { error: runErr } = await supa.from("scraper_runs").insert({
     fuente_id: FUENTE_ID,

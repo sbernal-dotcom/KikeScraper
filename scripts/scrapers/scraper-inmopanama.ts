@@ -663,7 +663,9 @@ async function scrapeRefreshDirect(
   const results = await chunkedParallel(urls, DETAIL_CONCURRENCY, async (u) => {
     if (isExpired()) return null;
     const r = await scrapeDetail(u, "venta").catch((err) => {
+      // H2: contar el error para que el ratio dispare status=error.
       console.warn(`    Error refresh ${u}: ${(err as Error).message}`);
+      if (runState) runState.errors++;
       return null;
     });
     await jitter(300, 700);
@@ -731,7 +733,9 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
 
       const batch = await chunkedParallel(procesables, DETAIL_CONCURRENCY, (u) =>
         scrapeDetail(u, tipo).catch((err) => {
+          // H2: contar el error para que el ratio dispare status=error.
           console.warn(`    Error en ${u}: ${(err as Error).message}`);
+          if (runState) runState.errors++;
           return null;
         }),
       );

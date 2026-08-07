@@ -552,7 +552,9 @@ async function scrapeAll(skipUrls: Set<string>): Promise<AnuncioRaw[]> {
     async (u) => {
       if (isExpired()) return null;
       const r = await scrapeDetail(u).catch((err) => {
+        // H2: contar el error para que el ratio dispare status=error.
         console.warn(`  Error en ${u}: ${(err as Error).message}`);
+        if (runState) runState.errors++;
         return null;
       });
       await jitter();
