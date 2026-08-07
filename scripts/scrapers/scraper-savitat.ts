@@ -34,6 +34,7 @@ import {
   extraerCamposDesdeHtml,
   type CamposSemanticos,
 } from "./extraer-html-ia";
+import { stripLifecycleIfNotActive } from "./_lifecycle";
 import { geocodeConEdificio } from "./geocode-edificio";
 import { preflightCheck } from "./preflight-check";
 import {
@@ -638,27 +639,31 @@ async function fetchRefreshTargets(
 
 async function fetchExistingUrls(
   supa: ReturnType<typeof createScraperClient>,
-): Promise<Set<string>> {
+): Promise<Map<string, { estado_anuncio: string }>> {
+  // Trae TODAS las URLs de la fuente (activas + archivadas). Antes
+  // filtraba `estado_anuncio='activo'` → propiedades archivadas por
+  // verify se re-procesaban como si fueran nuevas y el upsert las
+  // resucitaba (bug de auditoría scraper #7). Ahora traemos el estado
+  // y stripLifecycleIfNotActive respeta la decisión de verify.
   const PAGE = 1000;
-  const all: string[] = [];
+  const map = new Map<string, { estado_anuncio: string }>();
   let from = 0;
   while (true) {
     const { data, error } = await supa
       .from("propiedades")
-      .select("url_original")
+      .select("url_original, estado_anuncio")
       .eq("fuente_id", FUENTE_ID)
-      .eq("estado_anuncio", "activo")
       .range(from, from + PAGE - 1);
     if (error) {
       console.warn(`  No se pudo leer propiedades existentes: ${error.message}`);
-      return new Set(all);
+      return map;
     }
-    const batch = (data ?? []).map((r) => r.url_original as string);
-    all.push(...batch);
+    const batch = (data ?? []) as Array<{ url_original: string; estado_anuncio: string }>;
+    for (const r of batch) map.set(r.url_original, { estado_anuncio: r.estado_anuncio });
     if (batch.length < PAGE) break;
     from += PAGE;
   }
-  return new Set(all);
+  return map;
 }
 
 function loadExisting(outPath: string): AnuncioRaw[] {
@@ -761,14 +766,15 @@ async function runSupabaseMode() {
     written: false,
   };
 
-  const skipUrls = await fetchExistingUrls(supa);
+  const existingMap = await fetchExistingUrls(supa);
+  const skipUrls = new Set(existingMap.keys());
   const refreshMap = await fetchRefreshTargets(supa);
   for (const u of refreshMap.keys()) {
     skipUrls.delete(u);
     runState.refreshUrls.add(u);
   }
   console.log(
-    `En DB: ${skipUrls.size + refreshMap.size} (se saltan ${skipUrls.size}, se refrescan ${refreshMap.size} más viejas).`,
+    `En DB: ${existingMap.size} (se saltan ${skipUrls.size}, se refrescan ${refreshMap.size} más viejas).`,
   );
   const allNew = await scrapeAll(skipUrls);
   const nuevos = allNew.filter((a) => !refreshMap.has(a.url_original));
@@ -793,9 +799,10 @@ async function runSupabaseMode() {
     rows.push({ a, row });
   }
   await chunkedParallel(rows, UPSERT_CONCURRENCY, async ({ a, row }) => {
+    const payload = stripLifecycleIfNotActive(row, existingMap.get(a.url_original));
     const { error } = await supa
       .from("propiedades")
-      .upsert(row, { onConflict: "url_original" });
+      .upsert(payload, { onConflict: "url_original" });
     if (error) {
       console.warn(`  ✗ upsert falló (${a.url_original}): ${error.message}`);
       runState!.errors++;

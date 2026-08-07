@@ -29,6 +29,7 @@ import {
   type ResumenBilingue,
 } from "./ia";
 import { isOnLand } from "../../src/lib/geo/panama-land";
+import { stripLifecycleIfNotActive } from "./_lifecycle";
 import { geocodeConEdificio } from "./geocode-edificio";
 import { preflightCheck } from "./preflight-check";
 import { createScraperClient } from "./supabase-admin";
@@ -512,29 +513,28 @@ function toDbRow(a: AnuncioRaw): Record<string, unknown> | null {
 
 async function fetchExistingUrls(
   supa: ReturnType<typeof createScraperClient>,
-): Promise<Set<string>> {
-  // Solo URLs activas. Archivadas se re-procesan para poder revivirlas.
-  // Paginado por cap de 1000.
+): Promise<Map<string, { estado_anuncio: string }>> {
+  // Trae TODAS (auditoría C2). stripLifecycleIfNotActive respeta el
+  // estado de lifecycle si no está activo.
   const PAGE = 1000;
-  const all: string[] = [];
+  const map = new Map<string, { estado_anuncio: string }>();
   let from = 0;
   while (true) {
     const { data, error } = await supa
       .from("propiedades")
-      .select("url_original")
+      .select("url_original, estado_anuncio")
       .eq("fuente_id", FUENTE_ID)
-      .eq("estado_anuncio", "activo")
       .range(from, from + PAGE - 1);
     if (error) {
       console.warn(`  No se pudo leer propiedades existentes: ${error.message}`);
-      return new Set(all);
+      return map;
     }
-    const batch = (data ?? []).map((r) => r.url_original as string);
-    all.push(...batch);
+    const batch = (data ?? []) as Array<{ url_original: string; estado_anuncio: string }>;
+    for (const r of batch) map.set(r.url_original, { estado_anuncio: r.estado_anuncio });
     if (batch.length < PAGE) break;
     from += PAGE;
   }
-  return new Set(all);
+  return map;
 }
 
 function loadExisting(outPath: string): AnuncioRaw[] {
@@ -628,7 +628,8 @@ async function runSupabaseMode() {
     written: false,
   };
 
-  const skipUrls = await fetchExistingUrls(supa);
+  const existingMap = await fetchExistingUrls(supa);
+  const skipUrls = new Set(existingMap.keys());
   console.log(`Propiedades Panama Equity en DB: ${skipUrls.size} (se saltan).`);
 
   const allNew = await scrapeAll(skipUrls);
@@ -650,9 +651,10 @@ async function runSupabaseMode() {
   }
 
   await chunkedParallel(rows, UPSERT_CONCURRENCY, async ({ a, row }) => {
+    const payload = stripLifecycleIfNotActive(row, existingMap.get(a.url_original));
     const { error } = await supa
       .from("propiedades")
-      .upsert(row, { onConflict: "url_original" });
+      .upsert(payload, { onConflict: "url_original" });
     if (error) {
       console.warn(`  ✗ upsert falló (${a.url_original}): ${error.message}`);
       runState!.errors++;

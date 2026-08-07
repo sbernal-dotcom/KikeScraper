@@ -48,6 +48,7 @@ import {
   extraerCamposDesdeHtml,
   type CamposSemanticos,
 } from "./extraer-html-ia";
+import { stripLifecycleIfNotActive } from "./_lifecycle";
 import { geocodeConEdificio } from "./geocode-edificio";
 import { preflightCheck } from "./preflight-check";
 import { createScraperClient } from "./supabase-admin";
@@ -828,7 +829,7 @@ async function fetchRefreshTargets(
 
 async function fetchExistingUrls(
   supa: ReturnType<typeof createScraperClient>,
-): Promise<Set<string>> {
+): Promise<Map<string, { estado_anuncio: string }>> {
   // Saltamos TODAS las URLs ya en DB (activas + archivadas).
   //
   // Fix 2026-07-15: el diseño anterior re-procesaba archivadas viejas
@@ -847,24 +848,24 @@ async function fetchExistingUrls(
   // Perdemos: la reactivación automática vía scraper. Ganamos: corrida
   // de InmoPanama estable en <60 min.
   const PAGE = 1000;
-  const all: string[] = [];
+  const map = new Map<string, { estado_anuncio: string }>();
   let from = 0;
   while (true) {
     const { data, error } = await supa
       .from("propiedades")
-      .select("url_original")
+      .select("url_original, estado_anuncio")
       .eq("fuente_id", FUENTE_ID)
       .range(from, from + PAGE - 1);
     if (error) {
       console.warn(`  No se pudo leer propiedades existentes: ${error.message}`);
-      return new Set(all);
+      return map;
     }
-    const batch = (data ?? []) as Array<{ url_original: string }>;
-    for (const r of batch) all.push(r.url_original);
+    const batch = (data ?? []) as Array<{ url_original: string; estado_anuncio: string }>;
+    for (const r of batch) map.set(r.url_original, { estado_anuncio: r.estado_anuncio });
     if (batch.length < PAGE) break;
     from += PAGE;
   }
-  return new Set(all);
+  return map;
 }
 
 function loadExisting(outPath: string): AnuncioRaw[] {
@@ -977,7 +978,8 @@ async function runSupabaseMode() {
     written: false,
   };
 
-  const skipUrls = await fetchExistingUrls(supa);
+  const existingMap = await fetchExistingUrls(supa);
+  const skipUrls = new Set(existingMap.keys());
   const refreshMap = await fetchRefreshTargets(supa);
   // Registrar las URLs del refresh en el runState para clasificarlas
   // como "updated" cuando entren al upsert. NO las sacamos del skipSet
@@ -986,7 +988,7 @@ async function runSupabaseMode() {
   // separado con scrapeRefreshDirect.
   for (const u of refreshMap.keys()) runState.refreshUrls.add(u);
   console.log(
-    `En DB: ${skipUrls.size} activas totales — se refrescan ${refreshMap.size} más viejas por separado.`,
+    `En DB: ${existingMap.size} activas totales — se refrescan ${refreshMap.size} más viejas por separado.`,
   );
   // Pase 1: scrapear URLs nuevas del listado (con corte temprano).
   const nuevosScrape = await scrapeAll(skipUrls);
@@ -1014,9 +1016,12 @@ async function runSupabaseMode() {
     rows.push({ a, row });
   }
   await chunkedParallel(rows, UPSERT_CONCURRENCY, async ({ a, row }) => {
+    // No pisar lifecycle si la fila ya está archivada / marcada como
+    // problemática por verify. Ver `_lifecycle.ts` (CRITICAL C2).
+    const payload = stripLifecycleIfNotActive(row, existingMap.get(a.url_original));
     const { error } = await supa
       .from("propiedades")
-      .upsert(row, { onConflict: "url_original" });
+      .upsert(payload, { onConflict: "url_original" });
     if (error) {
       console.warn(`  ✗ upsert falló (${a.url_original}): ${error.message}`);
       runState!.errors++;
