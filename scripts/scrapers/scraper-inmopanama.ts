@@ -926,35 +926,42 @@ type RunState = {
   updated: number;
   errors: number;
   refreshUrls: Set<string>;
-  writing: boolean;
+  // H4: ver comentario en fuente-prueba — evita que SIGTERM mate el insert.
+  writingPromise: Promise<void> | null;
   written: boolean;
 };
 let runState: RunState | null = null;
 
 async function writeRunOnce(notes: string): Promise<void> {
-  if (!runState || runState.written || runState.writing) return;
-  runState.writing = true;
-  const status = computeRunStatus({
-    ok: runState.inserted + runState.updated,
-    errors: runState.errors,
-  });
-  try {
-    const { error } = await runState.supa.from("scraper_runs").insert({
-      fuente_id: FUENTE_ID,
-      started_at: runState.startedAt,
-      finished_at: new Date().toISOString(),
-      status,
-      found: runState.found,
-      inserted: runState.inserted,
-      updated: runState.updated,
-      errors: runState.errors,
-      notes,
-    });
-    if (error) console.warn(`  scraper_runs: ${error.message}`);
-    runState.written = true;
-  } catch (err) {
-    console.warn(`  scraper_runs falló: ${(err as Error).message}`);
+  if (!runState || runState.written) return;
+  if (runState.writingPromise) {
+    await runState.writingPromise;
+    return;
   }
+  runState.writingPromise = (async () => {
+    const status = computeRunStatus({
+      ok: runState!.inserted + runState!.updated,
+      errors: runState!.errors,
+    });
+    try {
+      const { error } = await runState!.supa.from("scraper_runs").insert({
+        fuente_id: FUENTE_ID,
+        started_at: runState!.startedAt,
+        finished_at: new Date().toISOString(),
+        status,
+        found: runState!.found,
+        inserted: runState!.inserted,
+        updated: runState!.updated,
+        errors: runState!.errors,
+        notes,
+      });
+      if (error) console.warn(`  scraper_runs: ${error.message}`);
+      runState!.written = true;
+    } catch (err) {
+      console.warn(`  scraper_runs falló: ${(err as Error).message}`);
+    }
+  })();
+  await runState.writingPromise;
 }
 
 // Al recibir SIGTERM del pipeline (`timeout` de bash envía SIGTERM
@@ -983,7 +990,7 @@ async function runSupabaseMode() {
     updated: 0,
     errors: 0,
     refreshUrls: new Set(),
-    writing: false,
+    writingPromise: null,
     written: false,
   };
 
