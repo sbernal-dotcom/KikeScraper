@@ -8,10 +8,10 @@ Marcar `[x]` cuando se cierre. Ver `AUDITORIA_2026-08-06.md` para el detalle té
 | Sección | Total | Hechos | Pendientes |
 |---|---|---|---|
 | 🔴 CRITICAL | 5 | **5** | 0 |
-| 🟠 HIGH | 23 | **7** | 16 |
+| 🟠 HIGH | 23 | **10** | 13 |
 | 🟡 MEDIUM | 21 | 0 | 21 |
 | 🟢 LOW | 10 | 0 | 10 |
-| **Total** | **59** | **12** | **47** |
+| **Total** | **59** | **15** | **44** |
 
 ---
 
@@ -59,16 +59,16 @@ Marcar `[x]` cuando se cierre. Ver `AUDITORIA_2026-08-06.md` para el detalle té
 - [x] **H17 — TTL 90d en ia_extract_cache** (`b7a381b`)
   Si la IA sacaba mal la zona ("Área Bancaria" por "Marbella") quedaba cacheado indefinido. Ahora los hits >90d se ignoran + script `purgar-ia-cache.ts` para hard-delete.
 
-### Scraper — quality (Fase 3, pendiente)
+### Scraper — quality (Fase 3, todos cerrados)
 
-- [ ] **H5 — Sitemap check Savitat sin normalizar**
-  El verify de Savitat compara URLs contra el sitemap sin normalizar protocolo (http/https), mayúsculas o query string. Si Savitat cambia el formato del sitemap, verify puede archivar 100+ propiedades vivas en pocos días creyendo que desaparecieron.
+- [x] **H5 — Sitemap check Savitat sin normalizar** (`5ea825d`)
+  Comparaba URLs contra el sitemap sin normalizar protocolo/case/query. Un cambio cosmético del formato del sitemap podía archivar 100+ propiedades vivas. Ahora `normalizeSavitatUrl()` aplicado simétricamente en ambos lados (https, lowercase, sin www, sin query, sin trailing slash).
 
-- [ ] **H6 — HTTP 403 en loop permanente**
-  Cuando Cloudflare bloquea temporalmente (HTTP 403), la prop queda como `error_verificacion` para siempre. Cada corrida la reintenta, vuelve a 403, sigue igual. Nunca sale del estado. Fix: sostener 3 corridas antes de mover a estado permanente.
+- [x] **H6 — HTTP 403 en loop permanente** (`7694178`)
+  Un 403 aislado (Cloudflare/bloqueo temporal) movía la prop a `error_verificacion` de inmediato y ahí quedaba. Ahora nueva columna `veces_error_consecutivo` (migration 0019): se sostiene el estado 3 corridas consecutivas antes de escalar. Cualquier resultado exitoso resetea el contador.
 
-- [ ] **H8 — InmoPanama refresh puede cambiar venta ↔ alquiler**
-  El refresh directo pasa `tipoOperacion="venta"` por default. Si el badge del sitio cambia y no se lee correctamente, una prop de alquiler se re-guarda como venta silenciosamente. Fix: pasar el tipo_operacion real desde la DB.
+- [x] **H8 — InmoPanama refresh podía cambiar venta ↔ alquiler** (`37ea372`)
+  `scrapeRefreshDirect` pasaba `tipoOperacion="venta"` hardcoded. Si el badge cambiaba, alquileres se re-guardaban como venta. Ahora `fetchRefreshTargets` trae el tipo real de DB y lo usa como default.
 
 ### UI / Performance (Fase 6, pendiente)
 
