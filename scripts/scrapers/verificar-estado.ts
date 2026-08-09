@@ -166,6 +166,33 @@ type Resultado =
 const SAVITAT_SITEMAP_URL = "https://savitat.com/sitemap.xml";
 let savitatSitemap: Set<string> | null = null;
 
+/**
+ * Normaliza una URL de Savitat para comparación robusta contra el sitemap.
+ *
+ * H5 fix: antes solo hacíamos `replace(/\/$/, "")` (drop trailing slash).
+ * Un cambio de formato del sitemap (agregar www, cambiar http→https,
+ * agregar utm, uppercase en el slug) archivaba 100+ propiedades vivas
+ * porque el `.has()` fallaba por diferencia cosmética.
+ *
+ * Ahora normalizamos ambos lados idénticamente:
+ *   - protocolo → https
+ *   - hostname → lowercase, sin www.
+ *   - pathname → lowercase, decode URI, sin trailing slash
+ *   - query + fragment → descartados
+ *
+ * Si la URL no parsea, devuelve la original (comparación cruda).
+ */
+function normalizeSavitatUrl(raw: string): string {
+  try {
+    const u = new URL(raw.trim());
+    const host = u.hostname.toLowerCase().replace(/^www\./, "");
+    const path = decodeURI(u.pathname).toLowerCase().replace(/\/+$/, "");
+    return `https://${host}${path}`;
+  } catch {
+    return raw.trim();
+  }
+}
+
 async function loadSavitatSitemap(): Promise<Set<string> | null> {
   try {
     const res = await fetch(SAVITAT_SITEMAP_URL, {
@@ -175,7 +202,7 @@ async function loadSavitatSitemap(): Promise<Set<string> | null> {
     if (!res.ok) return null;
     const xml = await res.text();
     const urls = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)]
-      .map((m) => m[1].trim())
+      .map((m) => normalizeSavitatUrl(m[1]))
       .filter((u) => u.includes("savitat.com/properties/"));
     if (urls.length < 20) return null; // sanity check
     return new Set(urls);
@@ -226,9 +253,8 @@ async function verificarUnaVez(url: string): Promise<Resultado> {
   // URL no aparece, es muerte legítima (el sitio no cambia el HTML de
   // vendidas — sin este check nunca se archivan).
   if (savitatSitemap && url.includes("savitat.com/properties/")) {
-    // Normalizamos ambos lados: sin trailing slash.
-    const normalized = url.replace(/\/$/, "");
-    const hit = savitatSitemap.has(normalized) || savitatSitemap.has(`${normalized}/`);
+    // H5: normalización simétrica en ambos lados (ver normalizeSavitatUrl).
+    const hit = savitatSitemap.has(normalizeSavitatUrl(url));
     if (!hit) {
       return { tipo: "no_encontrada", motivo: "savitat: no en sitemap" };
     }
