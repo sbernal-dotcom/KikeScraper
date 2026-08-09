@@ -654,18 +654,21 @@ async function scrapeDetail(
  * Bug histórico: entre 2026-08-01 y 2026-08-03 el refresh interno
  * mostraba "0/50 más viejas" corrida tras corrida por este motivo.
  *
- * tipoOperacion se pasa como "venta" por default — scrapeDetail lo
- * corrige leyendo del HTML (extractOperacion).
+ * H8: tipoOperacion viene del refreshMap (el que teníamos en DB para
+ * cada URL). Antes se pasaba "venta" hardcoded — si el badge del sitio
+ * cambiaba y extractOperacion devolvía null, una URL de alquiler se
+ * re-guardaba como venta silenciosamente. Ahora el default es el
+ * tipo real y solo se sobrescribe si extractOperacion detecta cambio.
  */
 async function scrapeRefreshDirect(
-  refreshMap: Map<string, string>,
+  refreshMap: Map<string, RefreshTarget>,
 ): Promise<AnuncioRaw[]> {
-  const urls = [...refreshMap.keys()];
-  if (urls.length === 0) return [];
-  console.log(`\n▶ Refresh directo: ${urls.length} URLs (las más viejas)`);
-  const results = await chunkedParallel(urls, DETAIL_CONCURRENCY, async (u) => {
+  const entries = [...refreshMap.entries()];
+  if (entries.length === 0) return [];
+  console.log(`\n▶ Refresh directo: ${entries.length} URLs (las más viejas)`);
+  const results = await chunkedParallel(entries, DETAIL_CONCURRENCY, async ([u, meta]) => {
     if (isExpired()) return null;
-    const r = await scrapeDetail(u, "venta").catch((err) => {
+    const r = await scrapeDetail(u, meta.tipo_operacion).catch((err) => {
       // H2: contar el error para que el ratio dispare status=error.
       console.warn(`    Error refresh ${u}: ${(err as Error).message}`);
       if (runState) runState.errors++;
@@ -674,7 +677,7 @@ async function scrapeRefreshDirect(
     await jitter(300, 700);
     return r;
   });
-  console.log(`  Refresh directo: ${results.length}/${urls.length} procesadas`);
+  console.log(`  Refresh directo: ${results.length}/${entries.length} procesadas`);
   return results;
 }
 
@@ -820,13 +823,22 @@ function toDbRow(a: AnuncioRaw): Record<string, unknown> | null {
  * NO sobreescribamos la fecha original con hoy.
  */
 const REFRESH_TARGETS = 50;
+type RefreshTarget = {
+  fecha_deteccion: string;
+  // H8: guardamos el tipo_operacion real de DB. Antes se pasaba "venta"
+  // hardcoded a scrapeDetail y si el badge del sitio cambiaba (y
+  // extractOperacion retornaba null), una URL de alquiler se re-guardaba
+  // como venta silenciosamente.
+  tipo_operacion: "venta" | "alquiler";
+};
+
 async function fetchRefreshTargets(
   supa: ReturnType<typeof createScraperClient>,
-): Promise<Map<string, string>> {
-  const map = new Map<string, string>();
+): Promise<Map<string, RefreshTarget>> {
+  const map = new Map<string, RefreshTarget>();
   const { data, error } = await supa
     .from("propiedades")
-    .select("url_original, fecha_deteccion")
+    .select("url_original, fecha_deteccion, tipo_operacion")
     .eq("fuente_id", FUENTE_ID)
     .eq("estado_anuncio", "activo")
     .order("fecha_ultima_revision", { ascending: true, nullsFirst: true })
@@ -838,8 +850,14 @@ async function fetchRefreshTargets(
   for (const r of (data ?? []) as Array<{
     url_original: string;
     fecha_deteccion: string | null;
+    tipo_operacion: string | null;
   }>) {
-    map.set(r.url_original, r.fecha_deteccion ?? new Date().toISOString());
+    const tipo: "venta" | "alquiler" =
+      r.tipo_operacion === "alquiler" ? "alquiler" : "venta";
+    map.set(r.url_original, {
+      fecha_deteccion: r.fecha_deteccion ?? new Date().toISOString(),
+      tipo_operacion: tipo,
+    });
   }
   return map;
 }
@@ -1039,8 +1057,8 @@ async function runSupabaseMode() {
     }
     // Refresh: preservar fecha_deteccion original — solo cambia
     // fecha_actualizacion / fecha_ultima_vista / fecha_ultima_revision.
-    const fechaOriginal = refreshMap.get(a.url_original);
-    if (fechaOriginal) row.fecha_deteccion = fechaOriginal;
+    const meta = refreshMap.get(a.url_original);
+    if (meta) row.fecha_deteccion = meta.fecha_deteccion;
     rows.push({ a, row });
   }
   await chunkedParallel(rows, UPSERT_CONCURRENCY, async ({ a, row }) => {
