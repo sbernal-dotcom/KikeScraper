@@ -62,6 +62,12 @@ const FORCE = process.argv.includes("--force");
 const THRESH_POSIBLE_INACTIVO = 3;
 const THRESH_ARCHIVADO = 7;
 
+// H6: sostener N corridas consecutivas con error transitorio antes de
+// mover a "error_verificacion". Antes: primer 403 movía el estado y
+// como el 403 persistía, la fila quedaba en error_verificacion sin
+// salida (perdíamos estado "activo" legítimo por un bloqueo de red).
+const THRESH_ERROR_CONSECUTIVO = 3;
+
 // Para no martillar la fuente: delay entre requests.
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const jitter = (min = 1200, max = 2400) =>
@@ -145,6 +151,7 @@ type FilaPendiente = {
   url_original: string;
   estado_anuncio: string;
   veces_no_encontrado: number | null;
+  veces_error_consecutivo: number | null;
   fuente_id: string;
 };
 
@@ -416,7 +423,7 @@ async function main() {
   // URLs muertas.
   const baseQuery = supa
     .from("propiedades")
-    .select("id, url_original, estado_anuncio, veces_no_encontrado, fuente_id")
+    .select("id, url_original, estado_anuncio, veces_no_encontrado, veces_error_consecutivo, fuente_id")
     .neq("estado_anuncio", "archivado");
   const { data, error } = FORCE
     ? await baseQuery
@@ -680,6 +687,7 @@ async function main() {
       update = {
         estado_anuncio: "activo",
         veces_no_encontrado: 0,
+        veces_error_consecutivo: 0,
         fecha_ultima_vista: ahoraIso,
         fecha_ultima_revision: ahoraIso,
         motivo_estado: `verificado activo (${r.motivo})`,
@@ -691,6 +699,7 @@ async function main() {
       update = {
         estado_anuncio: estado,
         veces_no_encontrado: veces,
+        veces_error_consecutivo: 0,
         fecha_ultima_revision: ahoraIso,
         motivo_estado: `${r.motivo} (fallo ${veces})`,
       };
@@ -698,10 +707,18 @@ async function main() {
       if (estado === "archivado") archivadas++;
       else if (estado === "posible_inactivo") posiblesInactivas++;
     } else {
+      // H6: no escalamos a error_verificacion en el primer error.
+      // Sostener N corridas consecutivas con error transitorio antes
+      // de mover el estado — un 403 aislado no debe borrar "activo".
+      const errores = (fila.veces_error_consecutivo ?? 0) + 1;
+      const escala = errores >= THRESH_ERROR_CONSECUTIVO;
       update = {
-        estado_anuncio: "error_verificacion",
+        estado_anuncio: escala ? "error_verificacion" : fila.estado_anuncio,
+        veces_error_consecutivo: errores,
         fecha_ultima_revision: ahoraIso,
-        motivo_estado: `error: ${r.motivo}`,
+        motivo_estado: escala
+          ? `error: ${r.motivo} (${errores} corridas consecutivas)`
+          : `error transitorio: ${r.motivo} (${errores}/${THRESH_ERROR_CONSECUTIVO})`,
       };
       erroresVerificacion++;
     }
