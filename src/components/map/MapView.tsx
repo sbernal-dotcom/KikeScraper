@@ -162,6 +162,17 @@ export function MapView({
   const geocoderRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  // H9: cachear pin id → HTMLElement para aplicar class toggles sin
+  // recrear todos los markers cada vez que cambia selectedId/matchedIds/
+  // onSelect. Antes cada filtro/click destruía y re-creaba N=pins.length
+  // nodos DOM (5000 con inventario grande = frames lentos).
+  const markerElsRef = useRef<Map<string, HTMLElement>>(new Map());
+  // Ref estable para el callback — evita que su cambio de identidad en
+  // cada render de HomeContent invalide el effect de pines.
+  const onSelectRef = useRef<((id: string) => void) | undefined>(onSelect);
+  useEffect(() => {
+    onSelectRef.current = onSelect;
+  }, [onSelect]);
   const geocoderInstanceRef = useRef<MapboxGeocoder | null>(null);
 
   useEffect(() => {
@@ -299,8 +310,14 @@ export function MapView({
     const map = mapRef.current;
     if (!map) return;
 
+    // H9: recreamos los markers SOLO cuando cambia `pins` (identidad de
+    // set). selectedId / matchedIds / onSelect son cambios frecuentes que
+    // antes disparaban este effect completo — 5000 nodos DOM recreados
+    // por cada click o cambio de filtro. Ahora esos cambios se aplican
+    // como toggles de clase en effects separados (ver abajo).
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
+    markerElsRef.current.clear();
 
     const newLabel = dict.common.new_badge.toUpperCase();
     pins.forEach((p) => {
@@ -308,7 +325,6 @@ export function MapView({
       el.className = "mii-marker";
       if (p.tipoOperacion === "alquiler") el.classList.add("mii-marker--alquiler");
       if (p.allArchived) el.classList.add("mii-marker--archived");
-      if (selectedId === p.id) el.classList.add("mii-marker--active");
       const isCluster = p.count > 1;
       // Chip arriba del pin: cluster muestra el número, single+preview muestra "NUEVO",
       // single normal no muestra nada.
@@ -316,8 +332,6 @@ export function MapView({
       const hasBadge = badgeText !== null;
       if (hasBadge) el.classList.add("mii-marker--nuevo");
       if (isCluster) el.classList.add("mii-marker--cluster");
-      const isDimmed = matchedIds !== null && !matchedIds.has(p.id);
-      if (isDimmed) el.classList.add("mii-marker--dimmed");
       // El chip vive DENTRO del SVG del pin para garantizar que se mueve/
       // escala junto al pin (no como sibling HTML que se podía desincronizar
       // con el transform de Mapbox). viewBox negativo en Y reserva espacio
@@ -344,23 +358,40 @@ export function MapView({
         ? `${p.count} ${dict.common.results} — ${dict.pin.click_hint}`
         : dict.pin.click_hint;
       el.setAttribute("aria-label", a11yLabel);
+      // Handlers usan ref para no depender de la identidad del callback.
       el.addEventListener("click", (e) => {
         e.stopPropagation();
-        onSelect?.(p.id);
+        onSelectRef.current?.(p.id);
       });
       el.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           e.stopPropagation();
-          onSelect?.(p.id);
+          onSelectRef.current?.(p.id);
         }
       });
       const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
         .setLngLat([p.lng, p.lat])
         .addTo(map);
       markersRef.current.push(marker);
+      markerElsRef.current.set(p.id, el);
     });
-  }, [pins, onSelect, selectedId, matchedIds, dict.common.new_badge]);
+  }, [pins, dict.common.new_badge, dict.common.results, dict.pin.click_hint]);
+
+  // H9: aplicar/quitar `mii-marker--active` sin recrear markers.
+  useEffect(() => {
+    for (const [id, el] of markerElsRef.current) {
+      el.classList.toggle("mii-marker--active", id === selectedId);
+    }
+  }, [selectedId, pins]);
+
+  // H9: aplicar/quitar `mii-marker--dimmed` sin recrear markers.
+  useEffect(() => {
+    for (const [id, el] of markerElsRef.current) {
+      const isDimmed = matchedIds !== null && !matchedIds.has(id);
+      el.classList.toggle("mii-marker--dimmed", isDimmed);
+    }
+  }, [matchedIds, pins]);
 
   if (!MAPBOX_TOKEN) {
     return (
