@@ -31,6 +31,9 @@ jobs:
       - name: Type-check (tsc --noEmit)
         run: npx tsc --noEmit
 
+      - name: Test (vitest)
+        run: npm test
+
       - name: Lint (eslint)
         # 2026-08-10: dejamos lint como advertencia (no bloquea el PR) por
         # deuda existente en el repo (5 errores pre-existentes). Se irá

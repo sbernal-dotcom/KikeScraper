@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "scrape:test": "tsx scripts/scrapers/fuente-prueba.ts",
     "scrape:prod": "tsx scripts/scrapers/fuente-prueba.ts --supabase",
     "scrape:acobir": "tsx scripts/scrapers/scraper-acobir.ts",
@@ -79,6 +81,7 @@
     "playwright": "^1.49.0",
     "tailwindcss": "^4",
     "tsx": "^4.19.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }
