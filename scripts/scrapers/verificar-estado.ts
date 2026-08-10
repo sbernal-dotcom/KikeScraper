@@ -694,7 +694,13 @@ async function main() {
       };
       vivas++;
     } else if (r.tipo === "no_encontrada") {
-      const veces = (fila.veces_no_encontrado ?? 0) + 1;
+      // H18: cap en THRESH_ARCHIVADO. Antes: filas archivadas seguían
+      // subiendo el contador (veces=15, 200, 999) sin sentido —
+      // el estado ya no puede escalar más allá de "archivado".
+      const veces = Math.min(
+        THRESH_ARCHIVADO,
+        (fila.veces_no_encontrado ?? 0) + 1,
+      );
       const estado = nuevoEstado(veces);
       update = {
         estado_anuncio: estado,

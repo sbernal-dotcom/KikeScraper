@@ -8,10 +8,10 @@ Marcar `[x]` cuando se cierre. Ver `AUDITORIA_2026-08-06.md` para el detalle té
 | Sección | Total | Hechos | Pendientes |
 |---|---|---|---|
 | 🔴 CRITICAL | 5 | **5** | 0 |
-| 🟠 HIGH | 23 | **10** | 13 |
+| 🟠 HIGH | 23 | **13** | 10 |
 | 🟡 MEDIUM | 21 | 0 | 21 |
 | 🟢 LOW | 10 | 0 | 10 |
-| **Total** | **59** | **15** | **44** |
+| **Total** | **59** | **18** | **41** |
 
 ---
 
@@ -95,16 +95,16 @@ Marcar `[x]` cuando se cierre. Ver `AUDITORIA_2026-08-06.md` para el detalle té
 - [ ] **H15 — Color de archivados invisible en modo oscuro**
   El rojo `#7a1010` con opacity 0.55 sobre fondo dark queda casi negro — falla contraste WCAG AA. Los pines de "ya no disponible" no se ven. Fix: color más claro (`#EF4444` @ 0.6) o outline.
 
-### Data quality (Fase 5, pendiente)
+### Data quality (Fase 5, todos cerrados)
 
-- [ ] **H18 — Contador `veces_no_encontrado` sin tope**
-  Verify incrementa el contador cada vez que no encuentra la URL. Filas con `veces=999` que siguen creciendo sin sentido (una vez archivada, no hace falta seguir contando). Fix: `Math.min(THRESH, veces + 1)`.
+- [x] **H18 — Contador `veces_no_encontrado` sin tope**
+  Filas con `veces=999` seguían creciendo sin sentido — una vez archivada, no hace falta seguir contando. Ahora `Math.min(THRESH_ARCHIVADO, veces + 1)` en verify.
 
-- [ ] **H19 — Migration 0003 no idempotente**
-  El `alter table … rename column resumen_ia to resumen_ia_es` falla si se re-ejecuta (la columna ya se llama así). Rompe la promesa de que las migrations se pueden correr múltiples veces sin efecto. Fix: envolver en `if exists`.
+- [x] **H19 — Migration 0003 no idempotente**
+  El `alter … rename column resumen_ia to resumen_ia_es` fallaba en re-ejecución. Ahora envuelto en `DO $$ ... $$` que chequea existencia de la columna antes de renombrar.
 
-- [ ] **H20 — reprocess-archived deja precision desactualizada**
-  El script actualiza `lat/lng` de propiedades archivadas pero NO `precision_ubicacion` ni `ubicacion_fuente`. La fila queda con coord nueva y metadata vieja (mostrando "aproximada" cuando debería ser "exacta"). Fix: agregar los 2 campos al UPDATE.
+- [x] **H20 — reprocess-archived dejaba precision desactualizada**
+  Actualizaba `lat/lng` pero NO `precision_ubicacion` ni `ubicacion_fuente` → filas revividas quedaban con coord nueva y metadata vieja (badge "Ubicación aproximada" incorrecto). Ahora se actualizan los 2 campos.
 
 ### Foundation — bloquea refactor futuro (Fase 7, pendiente)
 

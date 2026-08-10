@@ -123,6 +123,12 @@ async function main() {
             estado_anuncio: "activo",
             lat: geo.lat,
             lng: geo.lng,
+            // H20: antes solo actualizaba lat/lng → la fila quedaba con
+            // coord nueva pero precision/ubicacion_fuente viejas (null o
+            // "aproximada" del backfill masivo). El badge "Ubicación
+            // aproximada" aparecía incorrectamente en el mapa.
+            precision_ubicacion: geo.precision,
+            ubicacion_fuente: geo.source,
             veces_no_encontrado: 0,
             fecha_ultima_vista: nowIso,
             fecha_ultima_revision: nowIso,

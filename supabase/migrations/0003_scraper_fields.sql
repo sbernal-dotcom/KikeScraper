@@ -15,9 +15,23 @@
 -- -------------------------------------------------------------------------
 -- 1. Resumen IA bilingüe
 --    El resumen_ia existente pasa a ser la versión ES; agregamos EN.
+--
+--    H19 (2026-08-10): el `rename column` fallaba en re-ejecución
+--    ("column resumen_ia does not exist" — ya fue renombrada). Ahora se
+--    envuelve en un DO $$ ... $$ que chequea la existencia primero.
 -- -------------------------------------------------------------------------
-alter table public.propiedades
-  rename column resumen_ia to resumen_ia_es;
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+     where table_schema = 'public'
+       and table_name   = 'propiedades'
+       and column_name  = 'resumen_ia'
+  ) then
+    alter table public.propiedades
+      rename column resumen_ia to resumen_ia_es;
+  end if;
+end $$;
 
 alter table public.propiedades
   add column if not exists resumen_ia_en text;
