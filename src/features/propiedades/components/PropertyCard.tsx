@@ -74,8 +74,8 @@ export function PropertyCard({
     <aside
       style={accentVars(propiedad.tipoOperacion)}
       className={cn(
-        "flex h-dvh max-w-[92vw] flex-col border-l border-border/60 bg-background/95 font-sans backdrop-blur-md",
-        compact ? "w-[300px]" : "w-[380px]",
+        "flex h-dvh w-full flex-col border-l border-border/60 bg-background/95 font-sans backdrop-blur-md sm:max-w-[92vw]",
+        compact ? "sm:w-[300px]" : "sm:w-[380px]",
         className,
       )}
     >

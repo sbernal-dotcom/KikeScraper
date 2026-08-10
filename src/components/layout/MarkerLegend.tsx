@@ -15,9 +15,8 @@ export function MarkerLegend({ className }: { className?: string }) {
     { color: MARKER_COLOR, label: dict.nav.legend_venta },
     { color: MARKER_COLOR_ALQUILER, label: dict.nav.legend_alquiler },
     { color: MARKER_COLOR_CLUSTER, label: dict.nav.legend_cluster },
-    // Opacidad 0.55 = mismo tratamiento que el pin en el mapa (archivados
-    // se muestran apagados para diferenciarlos de listings activos).
-    { color: MARKER_COLOR_ARCHIVED, label: dict.nav.legend_archived, opacity: 0.55 },
+    // H15: 0.55 → 0.7 para sincronizar con el pin del mapa (contraste WCAG).
+    { color: MARKER_COLOR_ARCHIVED, label: dict.nav.legend_archived, opacity: 0.7 },
   ];
   return (
     <div className={cn("w-full px-1 py-0.5", className)}>

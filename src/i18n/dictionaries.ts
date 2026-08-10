@@ -120,6 +120,9 @@ export type Dictionary = {
     title: string;
   };
   geocoder: { placeholder: string };
+  pin: {
+    click_hint: string;
+  };
   analytics: {
     title: string;
     subtitle: string;
@@ -383,6 +386,7 @@ const es: Dictionary = {
     title: "Comparación",
   },
   geocoder: { placeholder: "Buscar dirección o lugar…" },
+  pin: { click_hint: "Ver detalle de la propiedad" },
   analytics: {
     title: "Analytics",
     subtitle: "Mejores oportunidades",
@@ -650,6 +654,7 @@ const en: Dictionary = {
     title: "Comparison",
   },
   geocoder: { placeholder: "Search address or place…" },
+  pin: { click_hint: "View property details" },
   analytics: {
     title: "Analytics",
     subtitle: "Top opportunities",

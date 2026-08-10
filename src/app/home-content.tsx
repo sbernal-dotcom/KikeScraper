@@ -286,6 +286,10 @@ export function HomeContent() {
               setSeleccionada(p);
               setZonaList(null);
             }}
+            // H12: en móvil, si ya hay PropertyCard/ZonaList a la izquierda,
+            // ocultar ComparisonList (queda accesible al cerrar la card).
+            // Antes: 600px side-by-side clipeaban en <600px.
+            className={seleccionada || zonaList ? "hidden sm:flex" : ""}
           />
         </div>
       ) : zonaList ? (

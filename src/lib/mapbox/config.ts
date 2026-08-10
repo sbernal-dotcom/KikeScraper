@@ -20,4 +20,7 @@ export const DEFAULT_ZOOM = 11;
 export const MARKER_COLOR = "#D6FF00";
 export const MARKER_COLOR_ALQUILER = "#FF7A00";
 export const MARKER_COLOR_CLUSTER = "#3B82F6";
-export const MARKER_COLOR_ARCHIVED = "#7a1010";
+// H15: subimos de #7a1010 a #EF4444 (Tailwind red-500). El anterior
+// con opacity 0.55 sobre fondo dark quedaba casi negro (contraste <3:1,
+// fallaba WCAG AA). El nuevo mantiene el "rojo apagado" pero visible.
+export const MARKER_COLOR_ARCHIVED = "#EF4444";

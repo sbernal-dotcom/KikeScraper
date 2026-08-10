@@ -335,9 +335,25 @@ export function MapView({
           <path fill-rule="evenodd" clip-rule="evenodd"
                 d="M12 0C5.373 0 0 5.373 0 12c0 8.4 12 20 12 20s12-11.6 12-20c0-6.627-5.373-12-12-12zm0 7a5 5 0 100 10 5 5 0 000-10z" />
         </svg>`;
+      // H14: accesibilidad. Antes: los pines eran <div> sin role/tabIndex —
+      // usuarios de teclado o lectores de pantalla no podían interactuar
+      // con la feature principal del mapa.
+      el.setAttribute("role", "button");
+      el.setAttribute("tabindex", "0");
+      const a11yLabel = isCluster
+        ? `${p.count} ${dict.common.results} — ${dict.pin.click_hint}`
+        : dict.pin.click_hint;
+      el.setAttribute("aria-label", a11yLabel);
       el.addEventListener("click", (e) => {
         e.stopPropagation();
         onSelect?.(p.id);
+      });
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          onSelect?.(p.id);
+        }
       });
       const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
         .setLngLat([p.lng, p.lat])
@@ -415,11 +431,12 @@ export function MapView({
            La card explica el motivo. */
         .mii-marker--archived {
           --mii-fill: ${MARKER_COLOR_ARCHIVED};
-          --mii-glow: 180, 30, 30;
-          opacity: 0.55;
+          --mii-glow: 239, 68, 68;
+          /* H15: 0.55 → 0.7 mejora contraste WCAG AA en modo oscuro. */
+          opacity: 0.7;
         }
         .mii-marker--archived:hover {
-          opacity: 0.85;
+          opacity: 1;
         }
         /* Hover/active effects live on the inner SVG so they don't fight
            the positional transform set by mapbox on the root. */
@@ -503,12 +520,17 @@ export function MapView({
       <div ref={containerRef} className={cn("h-full w-full", className)} />
       <div
         ref={geocoderRef}
-        className="mii-geocoder pointer-events-auto absolute top-3 z-20 w-[360px] max-w-[calc(100vw-18rem)] -translate-x-1/2 transition-[left] duration-300 ease-out"
+        // H13: en mobile el ancho es min(360, viewport-1.5rem) para que
+        // nunca se salga. En sm+ mantiene 360px. Antes: w-[360px] fijo +
+        // max-w-[calc(100vw-18rem)] podía dar 72px de ancho en <400px.
+        className="mii-geocoder pointer-events-auto absolute top-3 z-20 w-[min(360px,calc(100vw-1.5rem))] -translate-x-1/2 transition-[left] duration-300 ease-out"
         style={{
           // Centrada en el viewport, pero con un PISO: no permite que el
-          // borde izquierdo de la search bar invada el área del filtro.
-          // El piso es leftInsetPx + halfWidth (180 = w-[360px]/2).
-          left: `max(${leftInsetPx + 180}px, calc(50% - ${rightInsetPx / 2}px))`,
+          // borde izquierdo invada el área del filtro (desktop).
+          // En mobile el sidebar es Sheet (no ocupa espacio fijo), pero
+          // el `leftInsetPx` se sigue pasando; usamos min() con 50% para
+          // que si el piso empuja fuera del viewport, cae al centro real.
+          left: `min(max(${leftInsetPx + 180}px, calc(50% - ${rightInsetPx / 2}px)), calc(100vw - 1.5rem))`,
         }}
       />
     </>

@@ -50,7 +50,7 @@ export function ComparisonList({
   return (
     <aside
       className={cn(
-        "flex h-dvh w-[300px] max-w-[92vw] flex-col border-l border-border/60 bg-background/95 font-sans backdrop-blur-md",
+        "flex h-dvh w-full flex-col border-l border-border/60 bg-background/95 font-sans backdrop-blur-md sm:w-[300px] sm:max-w-[92vw]",
         className,
       )}
     >
