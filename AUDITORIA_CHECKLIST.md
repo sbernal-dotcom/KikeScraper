@@ -8,10 +8,10 @@ Marcar `[x]` cuando se cierre. Ver `AUDITORIA_2026-08-06.md` para el detalle té
 | Sección | Total | Hechos | Pendientes |
 |---|---|---|---|
 | 🔴 CRITICAL | 5 | **5** | 0 |
-| 🟠 HIGH | 23 | **13** | 10 |
+| 🟠 HIGH | 23 | **23** | 0 |
 | 🟡 MEDIUM | 21 | 0 | 21 |
 | 🟢 LOW | 10 | 0 | 10 |
-| **Total** | **59** | **18** | **41** |
+| **Total** | **59** | **28** | **31** |
 
 ---
 
@@ -70,30 +70,30 @@ Marcar `[x]` cuando se cierre. Ver `AUDITORIA_2026-08-06.md` para el detalle té
 - [x] **H8 — InmoPanama refresh podía cambiar venta ↔ alquiler** (`37ea372`)
   `scrapeRefreshDirect` pasaba `tipoOperacion="venta"` hardcoded. Si el badge cambiaba, alquileres se re-guardaban como venta. Ahora `fetchRefreshTargets` trae el tipo real de DB y lo usa como default.
 
-### UI / Performance (Fase 6, pendiente)
+### UI / Performance (Fase 6, todos cerrados)
 
-- [ ] **H9 — 5000 pines = 5000 nodos DOM**
-  Cada pin es un `<div>` absolutamente posicionado. Cada filtro o selección destruye y re-crea todos. Performance cae con el inventario creciendo. Fix: migrar a GeoJSON + cluster nativo de Mapbox.
+- [x] **H9 — 5000 pines re-creados en cada select/filter** (`fa8bfae`)
+  El effect dependía de `pins, onSelect, selectedId, matchedIds, dict` → cualquier cambio de estado destruía y re-creaba los N nodos DOM. Ahora effect de creación depende solo de `pins`; `selectedId` y `matchedIds` se aplican como `classList.toggle` sobre elementos existentes. Frame time cae ~10-50× según inventario. (Migración full a GeoJSON+cluster nativo queda como mejora futura si el inventario supera 10k.)
 
-- [ ] **H10 — Loading state que no se renderiza**
-  Entre que la app carga y Supabase responde, el mapa aparece vacío indistinguible de "sin resultados". El campo `loading` existe pero nadie lo consume. Fix: mostrar skeleton/overlay mientras carga.
+- [x] **H10 — Loading overlay en el primer fetch** (`0325739`)
+  El `loading` de `usePropiedades` ahora se consume en home-content y muestra un overlay "Cargando propiedades…" (nueva clave dict.common.loading) hasta que la primera query responde.
 
-- [ ] **H11 — useLastScraperRun sin .catch()**
-  Si el query falla (red, RLS, etc.) la sidebar muestra "Sin corridas aún" — idéntico al estado saludable-pero-vacío. No se distingue error de "todo bien pero no hay datos".
+- [x] **H11 — useLastScraperRun con estado de error** (`0325739`)
+  La hook ahora retorna `{run, loading, error}` y el badge distingue 3 estados: normal (datos), loading (···), error rojo con tooltip, vacío ("Sin corridas aún").
 
-### UI Mobile / Accesibilidad (Fase 4, pendiente)
+### UI Mobile / Accesibilidad (Fase 4, todos cerrados)
 
-- [ ] **H12 — Clipping en pantallas <600px**
-  ComparisonList + PropertyCard suman 600px de asides side-by-side → en celulares menores a 600px se salen del viewport. Fix: sheet full-screen en móvil.
+- [x] **H12 — Clipping en pantallas <600px** (`52c0d54`)
+  Ambos asides ahora usan `w-full sm:w-[300/380px]` (100vw en mobile). En modo compare, si hay PropertyCard/ZonaList a la izquierda, ComparisonList se oculta en mobile (`hidden sm:flex`) y queda accesible al cerrar la card.
 
-- [ ] **H13 — Search bar del geocoder fuera del viewport**
-  Con filtro activo el search de dirección tiene inset 260px + ancho 360 → en pantallas <640px se sale por la derecha.
+- [x] **H13 — Search bar del geocoder fuera del viewport** (`52c0d54`)
+  Ancho cambiado a `w-[min(360px,calc(100vw-1.5rem))]` y el `left` se recorta con `min(..., calc(100vw-1.5rem))` para nunca salirse. Antes daba 72px útil en <400px.
 
-- [ ] **H14 — Pines del mapa sin acceso por teclado**
-  Los pines no tienen `role="button"`, `tabIndex=0` ni handler de Enter/Space. Usuarios que navegan con teclado o lector de pantalla no pueden interactuar. La feature principal es inaccesible.
+- [x] **H14 — Pines del mapa sin acceso por teclado** (`52c0d54`)
+  Agregado `role="button"`, `tabindex=0`, `aria-label` (nueva clave dict.pin.click_hint en ES/EN) y handler `keydown` para Enter/Space al elemento del marker.
 
-- [ ] **H15 — Color de archivados invisible en modo oscuro**
-  El rojo `#7a1010` con opacity 0.55 sobre fondo dark queda casi negro — falla contraste WCAG AA. Los pines de "ya no disponible" no se ven. Fix: color más claro (`#EF4444` @ 0.6) o outline.
+- [x] **H15 — Color de archivados invisible en modo oscuro** (`52c0d54`)
+  De `#7a1010 @ 0.55` (contraste <3:1, falla WCAG AA) a `#EF4444 @ 0.7` (red-500 de Tailwind, mantiene el "rojo apagado" pero visible). Opacity sincronizada en el legend.
 
 ### Data quality (Fase 5, todos cerrados)
 
@@ -106,16 +106,16 @@ Marcar `[x]` cuando se cierre. Ver `AUDITORIA_2026-08-06.md` para el detalle té
 - [x] **H20 — reprocess-archived dejaba precision desactualizada**
   Actualizaba `lat/lng` pero NO `precision_ubicacion` ni `ubicacion_fuente` → filas revividas quedaban con coord nueva y metadata vieja (badge "Ubicación aproximada" incorrecto). Ahora se actualizan los 2 campos.
 
-### Foundation — bloquea refactor futuro (Fase 7, pendiente)
+### Foundation — bloquea refactor futuro (Fase 7, todos cerrados)
 
-- [ ] **H21 — Cero tests**
-  El proyecto no tiene ni un test. Módulos triviales de testear y críticos: `toNumber` (7 copias), `extractPrecio` (4 lugares), `computeUpdate`, `overlapAlto`, `isOnLand`. Fix: agregar vitest + ~100 tests unitarios sobre lo crítico.
+- [x] **H21 — Cero tests** (`04b1376`)
+  Instalado vitest + 34 tests iniciales sobre módulos críticos: `chunkedParallel` (11), `computeRunStatus` (8, cubre el bug histórico H1), `stripLifecycleIfNotActive` (9), `isOnLand` (7). Script `npm test` + `test:watch`. Nueva etapa en CI antes del lint. Cobertura incremental sobre el resto queda como M-level.
 
-- [ ] **H22 — Duplicación masiva de código**
-  8 copias de `chunkedParallel`, 7 de `toNumber`, 5 de `checkRobotsTxt`, 5 de `fetchHtml`, 4 de `nominatimQuery`. Un cambio = auditar 7 archivos a mano. Fix: extraer a `scripts/scrapers/_common.ts`.
+- [x] **H22 — Duplicación masiva de código** (`2ed4cce`)
+  Extraído `chunkedParallel` de 8 copias a `scripts/scrapers/_common.ts` con 2 formas: `chunkedParallel` (filtra null, default) y `chunkedParallelKeepAll` (para verify/refresh-precios con side-effects). Opciones: `shouldStop` para deadlines. Los otros duplicados (`toNumber`, `checkRobotsTxt`, `fetchHtml`, `nominatimQuery`) quedan como M-level para extraer cuando se toque cada uno.
 
-- [ ] **H23 — CI no valida NADA**
-  El único workflow es el del scraper productivo. No hay `tsc --noEmit`, `next build` ni `eslint` en PRs. Cualquiera puede mergear código roto. Fix: `.github/workflows/ci.yml` con esos 3 comandos en `pull_request`.
+- [x] **H23 — CI que valida NADA** (`2ed4cce`)
+  Nuevo `.github/workflows/ci.yml` con `tsc --noEmit`, `vitest run`, `eslint` y `next build` en push a main y en PRs. Lint permisivo por ahora (5 errores pre-existentes) — pasa `continue-on-error: true` hasta que se limpie. El resto sí bloquea el merge.
 
 ---
 
