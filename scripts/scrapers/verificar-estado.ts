@@ -97,21 +97,10 @@ const VERIFY_CONCURRENCY = 3;
 const CANARY_SIZE = 100;
 const CANARY_NO_ENCONTRADA_MAX_RATIO = 0.25;
 
-async function chunkedParallel<T, R>(
-  items: T[],
-  concurrency: number,
-  fn: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const out: R[] = [];
-  for (let i = 0; i < items.length; i += concurrency) {
-    const chunk = items.slice(i, i + concurrency);
-    const settled = await Promise.allSettled(chunk.map(fn));
-    for (const r of settled) {
-      if (r.status === "fulfilled") out.push(r.value);
-    }
-  }
-  return out;
-}
+// H22: variante KeepAll — verify hace side-effects (update en DB) y
+// retorna null como "sin dato para el caller" pero la ejecución ya
+// aplicó el efecto; no queremos que el filtro descarte esas filas.
+import { chunkedParallelKeepAll as chunkedParallel } from "./_common";
 
 /**
  * Selecciona una muestra mezclada: 1/3 más recientemente revisadas +

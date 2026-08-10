@@ -1,0 +1,48 @@
+name: ci
+
+# H23: valida tipos, build y lint en cada PR y push a main. Antes el
+# único workflow era el scraper productivo — cualquiera podía mergear
+# código que no compilaba, no pasaba tsc o rompía eslint.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  # Cancela runs viejos del mismo PR / branch para no acumular jobs.
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check (tsc --noEmit)
+        run: npx tsc --noEmit
+
+      - name: Lint (eslint)
+        # 2026-08-10: dejamos lint como advertencia (no bloquea el PR) por
+        # deuda existente en el repo (5 errores pre-existentes). Se irá
+        # bajando hasta poder subir a `run:` directo (fail-on-error).
+        continue-on-error: true
+        run: npm run lint
+
+      - name: Build (next build)
+        # Placeholder para vars públicas que Next necesita en build.
+        # Los valores reales no importan para el build — sí que existan.
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+          NEXT_PUBLIC_MAPBOX_TOKEN: placeholder
+        run: npm run build

@@ -144,21 +144,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const jitter = (min = 400, max = 900) =>
   sleep(min + Math.floor(Math.random() * (max - min)));
 
-async function chunkedParallel<T, R>(
-  items: T[],
-  concurrency: number,
-  fn: (item: T) => Promise<R | null>,
-): Promise<R[]> {
-  const out: R[] = [];
-  for (let i = 0; i < items.length; i += concurrency) {
-    const chunk = items.slice(i, i + concurrency);
-    const settled = await Promise.allSettled(chunk.map((it) => fn(it)));
-    for (const r of settled) {
-      if (r.status === "fulfilled" && r.value != null) out.push(r.value);
-    }
-  }
-  return out;
-}
+import { chunkedParallel } from "./_common";
 
 function toNumber(text: string | number | null | undefined): number | null {
   if (text == null) return null;

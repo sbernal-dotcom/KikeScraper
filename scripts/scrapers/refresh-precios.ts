@@ -369,22 +369,18 @@ function computeUpdate(
 // Pipeline principal
 // ─────────────────────────────────────────────────────────────────────
 
-async function chunkedParallel<T, R>(
+// H22: KeepAll + shouldStop (isExpired) para respetar el deadline de
+// wall-clock. El callback hace side-effects (update en DB) y retorna
+// void/null como "sin acción" — no queremos filtrarlos.
+import { chunkedParallelKeepAll as chunkedParallelBase } from "./_common";
+const chunkedParallel = <T, R>(
   items: T[],
   concurrency: number,
   fn: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const out: R[] = [];
-  for (let i = 0; i < items.length; i += concurrency) {
-    if (isExpired()) break;
-    const chunk = items.slice(i, i + concurrency);
-    const settled = await Promise.allSettled(chunk.map(fn));
-    for (const r of settled) {
-      if (r.status === "fulfilled") out.push(r.value);
-    }
-  }
-  return out;
-}
+) =>
+  chunkedParallelBase<T, R>(items, concurrency, (it) => fn(it), {
+    shouldStop: isExpired,
+  });
 
 type Stats = {
   fuente: Fuente;
