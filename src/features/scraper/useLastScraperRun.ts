@@ -49,8 +49,18 @@ export type LastScraperRun = {
   sources: number;
 };
 
-export function useLastScraperRun(): LastScraperRun | null {
-  const [run, setRun] = useState<LastScraperRun | null>(null);
+export type UseLastScraperRunResult = {
+  run: LastScraperRun | null;
+  loading: boolean;
+  error: string | null;
+};
+
+export function useLastScraperRun(): UseLastScraperRunResult {
+  const [state, setState] = useState<UseLastScraperRunResult>({
+    run: null,
+    loading: true,
+    error: null,
+  });
 
   useEffect(() => {
     const supabase = createClient();
@@ -66,8 +76,15 @@ export function useLastScraperRun(): LastScraperRun | null {
       )
       .order("started_at", { ascending: false })
       .limit(50)
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (cancelled) return;
+        // H11: antes se ignoraba el error del query → la sidebar mostraba
+        // "Sin corridas aún" indistinguible del estado saludable-pero-vacío
+        // cuando en realidad falló la red/RLS.
+        if (error) {
+          setState({ run: null, loading: false, error: error.message });
+          return;
+        }
         type Row = {
           started_at: string | null;
           finished_at: string | null;
@@ -78,7 +95,10 @@ export function useLastScraperRun(): LastScraperRun | null {
           notes: string | null;
         };
         const rows = (data ?? []) as Row[];
-        if (!rows.length) return;
+        if (!rows.length) {
+          setState({ run: null, loading: false, error: null });
+          return;
+        }
         // Agrupar: mientras la fila siguiente esté a <CRON_GAP_MIN de la
         // anterior, pertenece al mismo cron. Al primer gap grande, corto.
         const cron: Row[] = [];
@@ -104,12 +124,16 @@ export function useLastScraperRun(): LastScraperRun | null {
         const errors = contables.reduce((a, r) => a + (r.errors ?? 0), 0);
         // La más reciente por finished_at (la primera del array descendente).
         const finishedAt = cron[0].finished_at ?? "";
-        setRun({
-          finishedAt,
-          inserted,
-          updated,
-          errors,
-          sources: contables.length,
+        setState({
+          run: {
+            finishedAt,
+            inserted,
+            updated,
+            errors,
+            sources: contables.length,
+          },
+          loading: false,
+          error: null,
         });
       });
     return () => {
@@ -117,5 +141,5 @@ export function useLastScraperRun(): LastScraperRun | null {
     };
   }, []);
 
-  return run;
+  return state;
 }

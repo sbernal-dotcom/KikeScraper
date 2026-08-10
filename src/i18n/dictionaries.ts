@@ -31,6 +31,7 @@ export type Dictionary = {
     last_scrape_new: string;
     last_scrape_updated: string;
     last_scrape_never: string;
+    last_scrape_error: string;
     legend: string;
     legend_venta: string;
     legend_alquiler: string;
@@ -46,6 +47,7 @@ export type Dictionary = {
     back: string;
     new_badge: string;
     results: string;
+    loading: string;
   };
   properties: {
     title: string;
@@ -269,6 +271,7 @@ const es: Dictionary = {
     last_scrape_new: "nuevas",
     last_scrape_updated: "actualizadas",
     last_scrape_never: "Sin corridas aún",
+    last_scrape_error: "Error al consultar",
     legend: "Leyenda",
     legend_venta: "Venta",
     legend_alquiler: "Alquiler",
@@ -284,6 +287,7 @@ const es: Dictionary = {
     back: "Volver",
     new_badge: "Nuevo",
     results: "resultados",
+    loading: "Cargando propiedades…",
   },
   properties: {
     title: "Propiedades",
@@ -537,6 +541,7 @@ const en: Dictionary = {
     last_scrape_new: "new",
     last_scrape_updated: "updated",
     last_scrape_never: "No runs yet",
+    last_scrape_error: "Query failed",
     legend: "Legend",
     legend_venta: "For sale",
     legend_alquiler: "For rent",
@@ -552,6 +557,7 @@ const en: Dictionary = {
     back: "Back",
     new_badge: "New",
     results: "results",
+    loading: "Loading properties…",
   },
   properties: {
     title: "Properties",

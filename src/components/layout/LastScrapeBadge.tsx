@@ -22,7 +22,7 @@ function relative(iso: string, locale: "es" | "en"): string {
 }
 
 export function LastScrapeBadge({ className }: { className?: string }) {
-  const run = useLastScraperRun();
+  const { run, loading, error } = useLastScraperRun();
   const dict = useDict();
   const { locale } = useLocale();
 
@@ -33,6 +33,9 @@ export function LastScrapeBadge({ className }: { className?: string }) {
         <span>{dict.nav.last_scrape}</span>
       </div>
       <div className="rounded-md border border-border/60 bg-card/40 px-2 py-1 text-[10px] leading-tight">
+        {/* H11: distinguir loading, error y vacío. Antes: query fallado
+            mostraba "Sin corridas aún" idéntico al estado saludable-pero-
+            sin-datos. */}
         {run ? (
           <>
             <div className="text-foreground">{relative(run.finishedAt, locale)}</div>
@@ -43,6 +46,12 @@ export function LastScrapeBadge({ className }: { className?: string }) {
                 : ""}
             </div>
           </>
+        ) : loading ? (
+          <div className="text-muted-foreground italic">···</div>
+        ) : error ? (
+          <div className="text-destructive" title={error}>
+            {dict.nav.last_scrape_error}
+          </div>
         ) : (
           <div className="text-muted-foreground">
             {dict.nav.last_scrape_never}

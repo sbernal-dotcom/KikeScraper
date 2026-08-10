@@ -26,7 +26,7 @@ import type { Propiedad } from "@/features/propiedades/types";
 
 export function HomeContent() {
   const dict = useDict();
-  const { data: propiedades, error } = usePropiedades();
+  const { data: propiedades, loading, error } = usePropiedades();
   const { filters, setFilters, reset } = useAnalyticsFiltersCtx();
   // El chip "N filtros" y el conteo matched/total del mapa usan SOLO
   // los filtros que applyMapFilters efectivamente aplica (operación,
@@ -244,6 +244,16 @@ export function HomeContent() {
       {error ? (
         <div className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-md border border-destructive/60 bg-background/95 px-3 py-2 text-xs text-destructive">
           {error}
+        </div>
+      ) : null}
+      {/* H10: overlay de loading en el primer fetch. Antes: mapa vacío
+          indistinguible de "sin resultados" hasta que Supabase respondía. */}
+      {loading && propiedades.length === 0 ? (
+        <div className="pointer-events-none absolute bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-md border border-border/60 bg-background/95 px-3 py-2 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-2">
+            <span className="inline-block size-2 animate-pulse rounded-full bg-current" />
+            {dict.common.loading}
+          </span>
         </div>
       ) : null}
       {compareMode ? (
