@@ -19,8 +19,8 @@
 
 import { config as loadEnv } from "dotenv";
 
-import { createScraperClient } from "./supabase-admin";
-import { normalizeKey } from "./zonas-panama";
+import { createScraperClient } from "../supabase-admin";
+import { normalizeKey } from "../zonas-panama";
 
 loadEnv({ path: ".env.local" });
 loadEnv();

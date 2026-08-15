@@ -21,7 +21,7 @@ import { config as loadEnv } from "dotenv";
 loadEnv({ path: ".env.local" });
 loadEnv();
 
-import { createScraperClient } from "./supabase-admin";
+import { createScraperClient } from "../supabase-admin";
 
 const APPLY = process.argv.includes("--apply");
 const PAGE = 500;
@@ -60,7 +60,7 @@ async function main() {
     if (selErr) throw selErr;
     if (!batch || batch.length === 0) break;
 
-    const ids = batch.map((r) => r.id);
+    const ids = batch.map((r: { id: string }) => r.id);
     const { error: updErr } = await supa
       .from("propiedades")
       .update({ precision_ubicacion: "aproximada" })

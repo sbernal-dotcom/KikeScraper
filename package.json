@@ -43,10 +43,6 @@
     "detectar-colapso:apply": "tsx scripts/scrapers/detectar-colapso-cache.ts --apply",
     "purgar-ia-cache": "tsx scripts/scrapers/purgar-ia-cache.ts",
     "purgar-ia-cache:apply": "tsx scripts/scrapers/purgar-ia-cache.ts --apply",
-    "backfill:corregimiento": "tsx scripts/scrapers/backfill-corregimiento-normalizado.ts",
-    "backfill:corregimiento:apply": "tsx scripts/scrapers/backfill-corregimiento-normalizado.ts --apply",
-    "backfill:precision": "tsx scripts/scrapers/backfill-precision-null.ts",
-    "backfill:precision:apply": "tsx scripts/scrapers/backfill-precision-null.ts --apply",
     "revivir:inmo": "tsx scripts/scrapers/revivir-inmopanama.ts",
     "revivir:inmo:apply": "tsx scripts/scrapers/revivir-inmopanama.ts --apply",
     "alerta": "tsx scripts/scrapers/pipeline-alerta.ts"
