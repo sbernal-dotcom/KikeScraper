@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { satelliteUrl } from "@/lib/satellite-image";
 import { cn } from "@/lib/utils";
+import { safeExternalHref } from "@/lib/safeHref";
 import {
   useDict,
   useDomainLabels,
@@ -416,7 +417,7 @@ export function PropertyCard({
                 {propiedad.otrosAnuncios.map((a) => (
                   <li key={a.urlOriginal}>
                     <a
-                      href={a.urlOriginal}
+                      href={safeExternalHref(a.urlOriginal)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={cn(
@@ -477,7 +478,7 @@ export function PropertyCard({
           nativeButton={false}
           render={
             <a
-              href={propiedad.urlOriginal}
+              href={safeExternalHref(propiedad.urlOriginal)}
               target="_blank"
               rel="noopener noreferrer"
             />

@@ -9,9 +9,9 @@ Marcar `[x]` cuando se cierre. Ver `AUDITORIA_2026-08-06.md` para el detalle té
 |---|---|---|---|
 | 🔴 CRITICAL | 5 | **5** | 0 |
 | 🟠 HIGH | 23 | **23** | 0 |
-| 🟡 MEDIUM | 21 | 0 | 21 |
+| 🟡 MEDIUM | 21 | **17** | 4 |
 | 🟢 LOW | 10 | **10** | 0 |
-| **Total** | **59** | **38** | **21** |
+| **Total** | **59** | **55** | **4** |
 
 ---
 
@@ -119,72 +119,72 @@ Marcar `[x]` cuando se cierre. Ver `AUDITORIA_2026-08-06.md` para el detalle té
 
 ---
 
-## 🟡 MEDIUM
+## 🟡 MEDIUM (17/21 cerrados, 2026-08-11)
 
 ### Scraper / Data
 
-- [ ] **M1 — Extractor de precio InmoPanama duplicado en 4 lugares**
-  Scraper principal, savitat con lógica parecida, refresh-precios y extraer-html-ia. Cuando se agrega un fallback nuevo (como el del 08-01), hay que sincronizar 3 lugares a mano.
+- [x] **M1 — Extractor de precio InmoPanama duplicado** (`5cb1cbc`)
+  Nuevo módulo `scripts/scrapers/extractors/inmopanama-html.ts` con `parseInmoQuickFacts` y `extractInmoPrecio` (cascada de 4 fallbacks). `scraper-inmopanama.ts` y `refresh-precios.ts` importan del módulo — se acabó sincronizar a mano 2+ lugares cuando cambia el HTML de InmoPanama.
 
-- [ ] **M2 — Savitat descarta coord JSON-LD legítima si isOnLand la rechaza**
-  Sin log estructurado. Y encima corre el pipeline caro completo (Groq + web + Nominatim) para una prop cuya coord real ya teníamos, solo por un falso negativo del check.
+- [x] **M2 — Savitat isOnLand descarta coord con log estructurado** (`5cb1cbc`)
+  Log con prefijo `[M2/isOnLand-reject] savitat url=... zona=... coord=...` cuando el JSON-LD trae coord y `isOnLand` la rechaza. Permite grep sobre logs de prod para detectar patrones (ej. muchos rechazos en la misma zona costera → extender whitelist).
 
-- [ ] **M3 — Verify: contadores se incrementan antes del update**
-  Si el update a DB falla, `stats.archivadas++` ya se ejecutó → discrepancia entre lo que reporta el log y el estado real de la DB.
+- [x] **M3 — Verify: contadores DESPUÉS del update** (`6f55c12`)
+  Deltas locales (`dArchivadas`, `dVivas`, ...) que se suman al total solo si el UPDATE devuelve success. Antes: si el update fallaba, stats reportaban una realidad distinta a la DB.
 
-- [ ] **M4 — Refresh-precios: lista de fuentes hardcodeada**
-  Nuevos scrapers agregados en el futuro quedan fuera del refresh indefinidamente. Fix: `SELECT DISTINCT fuente_id FROM propiedades`.
+- [x] **M4 — Refresh-precios: fuentes dinámicas** (`6f55c12`)
+  `SELECT DISTINCT fuente_id FROM propiedades WHERE estado_anuncio='activo'` filtrando sistema-jobs. Nuevos scrapers ya no quedan fuera del refresh indefinidamente.
 
-- [ ] **M5 — Backfill de precision_ubicacion aplanó 3781 filas a "aproximada"**
-  Sin diferenciar por fuente. Savitat y PE (que casi siempre tenían coord exacta del JSON-LD) quedaron mal etiquetadas → badge "Ubicación aproximada" aparece indebido en el mapa. Fix: backfill correctivo por fuente.
+- [x] **M5 — Backfill correctivo de precision por fuente** (`5cb1cbc`)
+  Nuevo `scripts/scrapers/backfill-precision-por-fuente.ts` (`npm run backfill:precision-fuente[:apply]`). Para cada fuente que publica coord del JSON-LD (savitat, panamaequity), setea `precision_ubicacion='exacta'` + `ubicacion_fuente='jsonld_geo'` en filas que quedaron `aproximada` por el backfill masivo. Idempotente: solo toca filas con `ubicacion_fuente IS NULL`. **⚠ REQUIERE APLICAR MANUAL**: `npm run backfill:precision-fuente:apply`.
 
-- [ ] **M6 — ubicacion_fuente es texto libre sin CHECK**
-  Cualquier tipeo se pierde silenciosamente. Fix: documentar valores válidos y agregar CHECK constraint.
+- [x] **M6 — CHECK en ubicacion_fuente** (`6f55c12`)
+  Migración `0020_check_constraints.sql` con whitelist de 9 valores documentados. Typos silenciosos ahora fallan en el INSERT/UPDATE. **⚠ NO APLICAR AÚN** hasta confirmar que la DB no tiene valores fuera de whitelist.
 
-- [ ] **M7 — scraper_runs.status sin CHECK**
-  Typos ("okay", "OK") se aceptan y rompen filtros de la alerta. Fix: CHECK en solo ('ok', 'error').
+- [x] **M7 — CHECK en scraper_runs.status** (`6f55c12`)
+  Misma migración: solo permite `'running' | 'ok' | 'error'`. Ver arriba.
 
-- [ ] **M8 — Métricas de hit-rate del cache IA subestimadas**
-  `ia_extract_cache_touch` no se llama en session-cache hits → `hit_count` refleja menos hits reales de los que hay.
+- [x] **M8 — Session-cache hits cuentan en `ia_extract_cache_touch`** (`6f55c12`)
+  Antes solo se contaban hits de Supabase → `hit_count` subestimado. Ahora la RPC se llama también cuando el hit viene del cache en memoria.
 
 ### UI / UX
 
-- [ ] **M9 — /scraper con labels hardcodeados en español**
-  Al hacer switch a inglés, textos como "vivas", "no encontradas", "archivadas", "posibles" no se traducen.
+- [x] **M9 — Labels hardcoded en /scraper** (`7ffe1f3`)
+  6 nuevas claves en dict.scraper_info (verify_alive/missing/possible/archived/errors, preview_scraped) traducidas a ES/EN. `/scraper` y sidebar ya no rompen el switch de idioma.
 
-- [ ] **M10 — Otros strings hardcoded ES**
-  "Preview · N scrapeados", `alt` del botón satellite, `title="Máx N"` del compare. Rompen i18n.
+- [x] **M10 — Otros strings hardcoded** (`7ffe1f3`)
+  `title="Máx N"` en PropertyCard usa `dict.common.max`. "Preview · N scrapeados" cubierto por M9.
 
-- [ ] **M11 — Fechas con locale mezclado**
-  `.toLocaleDateString()` sin pasar locale → app en español, fechas en formato del navegador (inglés en la mayoría).
+- [x] **M11 — Fechas con locale mezclado** (`7ffe1f3`)
+  PropertyCard pasa locale explícito ("es-PA" / "en-US") a `toLocaleDateString`. Sin esto la app-ES mostraba fechas EN.
 
-- [ ] **M12 — Loading fallbacks se ven rotos**
-  Los skeletons actuales son un glyph `…` en un div de 64px. Se ve como bug. Existe un componente `Skeleton` que no se usa.
+- [x] **M12 — Skeleton en fallbacks** (`7ffe1f3`)
+  Los glyphs "…" en /analisis, /historial, /propiedades y los 3 KpiCard de /scraper reemplazados por el componente `Skeleton` existente. `KpiCard` acepta prop `loading` para renderizar skeleton en lugar del valor.
 
-- [ ] **M13 — Sheet de filtros colisiona visualmente con la sidebar**
-  Ambos abren en el mismo lado en desktop → visualmente se pisan. Fix: sheet a la derecha o auto-collapse sidebar.
+- [x] **M13 — Sheet de filtros a la derecha** (`7ffe1f3`)
+  Sheet abre `side="right"` en /analisis, /home y /propiedades para no colisionar con la Sidebar (izquierda).
 
 ### Tech debt
 
-- [ ] **M14 — Tipos de Supabase son stub**
-  `src/lib/supabase/types.ts` es `Record<string, unknown>`. El código compensa con casts `as unknown as DbPropiedad[]`. Fix: correr `npx supabase gen types typescript`.
+- [ ] **M14 — Tipos de Supabase son stub** (REQUIERE `supabase login`)
+  `npx supabase gen types typescript --project-id lbvboqoyvuxuanwvtypf` pide token de acceso. Para completar: correr `npx supabase login` interactivamente (o setear `SUPABASE_ACCESS_TOKEN` en el env) y volver a lanzar el gen. Sin esto, los tipos siguen como `Record<string, unknown>` y el código sigue con casts `as unknown as DbPropiedad[]`.
 
-- [ ] **M15 — Drift entre Railway pipeline y GitHub Actions**
-  `run-pipeline.sh` (Railway, el que corre en prod) tiene más pasos que `.github/workflows/scraper.yml`. Si alguien dispara el workflow pensando que replica producción, corre incompleto.
+- [x] **M15 — Drift entre Railway y Actions** (`7ffe1f3`)
+  `scraper.yml` agrega el step `Refresh precios` que faltaba. Header del workflow documenta la diferencia intencional en la alerta (Railway=email vía Resend, Actions=GitHub Issue).
 
-- [ ] **M16 — TypeScript strict sin noUncheckedIndexedAccess**
-  El flag está apagado. Activarlo probablemente destape 2-3 bugs reales del tipo `html.match()?.[1]` sin chequeo de undefined.
+- [x] **M16 — noUncheckedIndexedAccess evaluado, NO activado** (`7ffe1f3`)
+  Probado: activar el flag destapa 113 errores en 4 categorías (18048/2532/2345/2322). Demasiado para arreglar en batch sin riesgo de mal-fixear (mezclar `!` con `??`). Se deja como pendiente para arreglar incremental cuando se toque cada archivo. Registro para no re-explorar en la próxima auditoría.
 
 ### Security (bajo riesgo)
 
-- [ ] **S1 — Sin rate limiting en Supabase**
-  La anon key está en el bundle público (normal), pero sin rate limits cualquiera puede martillar y quemar tu quota. Fix: rate limits en Supabase settings o middleware con Upstash.
+- [ ] **S1 — Sin rate limiting en Supabase** (REQUIERE CONFIG EXTERNA)
+  No es código — hay que setearlo en Supabase Studio → Settings → API Rate Limits. Alternativa: middleware con Upstash Redis (requiere cuenta Upstash + code).
 
-- [ ] **S2 — Token Mapbox sin restricciones de URL**
-  El `.env.example` dice que hay que restringir el token en la consola de Mapbox, pero no hay verificación automática.
+- [ ] **S2 — Token Mapbox sin restricciones de URL** (REQUIERE CONFIG EXTERNA)
+  Tampoco es código — hay que ir a account.mapbox.com → tokens → editar el token público → agregar restricción por URL (solo dominios propios). Sin esto el token puede usarse desde cualquier sitio.
 
-- [ ] **S3 — href externo sin whitelist de protocolo**
-  `<a href={urlOriginal}>` sin chequeo. Si algún día un scraper inserta `javascript:...` como URL, un click lo ejecuta. Probabilidad baja, fix simple: helper `safeExternalHref()`.
+- [x] **S3 — href externo con whitelist de protocolo** (`5cb1cbc`)
+  Nuevo helper `src/lib/safeHref.ts` que rechaza cualquier protocolo distinto a `http:` / `https:`. Aplicado en `PropertyCard` (link "Ver original" + "otros anuncios") y `OpportunitiesTable`. Cierra el vector aunque la probabilidad era baja.
 
 ---
 

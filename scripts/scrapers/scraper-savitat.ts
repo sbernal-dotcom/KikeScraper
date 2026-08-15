@@ -422,9 +422,18 @@ async function scrapeDetail(url: string): Promise<AnuncioRaw | null> {
   }
 
   // Validar coord del JSON-LD contra tierra/mar. Si mal, correr pipeline.
+  //
+  // M2 (auditoría 2026-08-06): loggeamos estructuradamente cuando
+  // descartamos una coord legítima del source. isOnLand tiene falsos
+  // positivos en zonas costeras (Coronado, Chame, Bocas) y en cada uno
+  // corremos el pipeline completo caro (Groq extract + web search +
+  // Nominatim) para adivinar una coord que YA teníamos. El log permite
+  // diagnosticar patrones — si vemos muchos rechazos en la misma zona,
+  // extender la whitelist de landmarks en panama-land.ts.
   if (lat != null && lng != null && !isOnLand(lat, lng)) {
     console.log(
-      `  ✗ geo del JSON-LD en mar (${lat.toFixed(4)}, ${lng.toFixed(4)}) — corriendo pipeline`,
+      `  ✗ [M2/isOnLand-reject] savitat url=${url} zona="${zona ?? ""}" ` +
+        `coord=${lat.toFixed(4)},${lng.toFixed(4)} — corriendo pipeline`,
     );
     lat = null;
     lng = null;

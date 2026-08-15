@@ -3,6 +3,7 @@
 import { ExternalLink } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { safeExternalHref } from "@/lib/safeHref";
 import {
   useDict,
   useDomainLabels,
@@ -132,7 +133,7 @@ function Row({
       <Td className="align-top">
         <div className="flex flex-col gap-1">
           <a
-            href={o.urlOriginal}
+            href={safeExternalHref(o.urlOriginal)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-xs hover:bg-card/60"
@@ -147,7 +148,7 @@ function Row({
           {o.otrosAnuncios.map((a) => (
             <a
               key={a.urlOriginal}
-              href={a.urlOriginal}
+              href={safeExternalHref(a.urlOriginal)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 rounded-md border border-border/40 bg-card/30 px-1.5 py-1 text-[11px] text-muted-foreground hover:border-border hover:text-foreground"

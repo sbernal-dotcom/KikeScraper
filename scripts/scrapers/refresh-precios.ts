@@ -211,39 +211,13 @@ function normalizeLabel(s: string): string {
 }
 
 /**
- * InmoPanama: parseo de nb-quick-fact-cell (nuevo diseño 2026-07) +
- * cadena de fallbacks para precio (mismos que scraper-inmopanama).
- * Sin IA (a diferencia del scraper principal que hace fallback semántico).
+ * InmoPanama: parseo de campos duros usando los extractors compartidos.
+ * Sin IA (a diferencia del scraper principal). Ver
+ * `extractors/inmopanama-html.ts` para el detalle de la cascada de precio.
  */
 function extractorInmoPanama(html: string): CamposDuros {
-  const facts = new Map<string, string>();
-  const re =
-    /<div\s+class="[^"]*nb-quick-fact-cell[^"]*"[^>]*>\s*<div\s+class="nb-quick-fact-label"[^>]*>\s*([^<]+?)\s*<\/div>\s*<div\s+class="nb-quick-fact-value"[^>]*>\s*([^<]+?)\s*<\/div>/gi;
-  for (const m of html.matchAll(re)) {
-    const label = normalizeLabel(m[1]);
-    const value = m[2].trim();
-    if (label && value) facts.set(label, value);
-  }
-
-  // Precio: 4 fallbacks (nuevo, celda específica, viejo, texto libre).
-  const p1 = facts.get("precio");
-  let precio = toNumber(p1);
-  if (!precio) {
-    const nb = html.match(
-      /class="[^"]*nb-price-cell[^"]*"[\s\S]{0,500}?class="nb-quick-fact-value"[^>]*>\s*\$?\s*([\d,\.]+)/i,
-    )?.[1];
-    precio = toNumber(nb ?? null);
-  }
-  if (!precio) {
-    const viejo = html.match(/class="ib-prop-main-price"[^>]*>\s*([^<]+?)\s*</i)?.[1];
-    precio = toNumber(viejo ?? null);
-  }
-  if (!precio) {
-    const texto = html.match(
-      /PRECIO\s+DE\s+(?:VENTA|ALQUILER)[:\s]+\$?\s*([\d,\.]+)/i,
-    )?.[1];
-    precio = toNumber(texto ?? null);
-  }
+  const facts = parseInmoQuickFacts(html);
+  const precio = extractInmoPrecio(html, facts);
 
   const hRaw = facts.get("habitaciones") ?? facts.get("recamaras") ?? facts.get("dormitorios");
   const bRaw = facts.get("banos") ?? facts.get("bathrooms");
@@ -375,6 +349,10 @@ function computeUpdate(
 // wall-clock. El callback hace side-effects (update en DB) y retorna
 // void/null como "sin acción" — no queremos filtrarlos.
 import { chunkedParallelKeepAll as chunkedParallelBase } from "./_common";
+import {
+  extractInmoPrecio,
+  parseInmoQuickFacts,
+} from "./extractors/inmopanama-html";
 const chunkedParallel = <T, R>(
   items: T[],
   concurrency: number,
