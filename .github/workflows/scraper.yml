@@ -1,5 +1,13 @@
 name: scraper
 
+# ⚠️ Este workflow debe replicar 1-a-1 los pasos de scripts/run-pipeline.sh
+# (Railway) para que un dispatch manual haga exactamente lo mismo que un
+# cron nocturno. Si agregás un paso en Railway, agregalo también acá.
+#
+# Diferencia intencional (2026-08-11, M15): la alerta al final. Railway
+# usa `pipeline-alerta.ts` (email vía Resend); Actions usa
+# `check-last-run.ts` (GitHub Issue) porque ya tiene GITHUB_TOKEN. Ambos
+# leen la misma tabla scraper_runs, solo cambia el canal.
 on:
   # 2026-07-26: schedule desactivado — el cron corre en Railway (Docker
   # con cron nativo, sin límite de 2000 min/mes). Dejamos workflow_dispatch
@@ -151,6 +159,18 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: npm run scrape:inmo:prod
+
+      # M15: refresh liviano diario. Actualiza precio/área/hab de TODAS
+      # las activas sin tocar IA. Idem paso `refresh-precios` en Railway.
+      # Antes faltaba acá — dispatch manual replicaba producción a medias.
+      - name: Refresh precios (todas las activas)
+        id: refresh_precios
+        if: always()
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run refresh:precios
 
       # Pase 3: deduplicación cross-source. Wipe + rebuild de la tabla
       # propiedades_duplicados. Idempotente; corre siempre (los duplicados

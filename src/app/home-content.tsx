@@ -340,7 +340,9 @@ export function HomeContent() {
       ) : null}
 
       <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <SheetContent side="left" className="w-[320px] p-0 sm:max-w-[320px]">
+        {/* M13: sheet abre a la derecha para no colisionar visualmente con
+            la Sidebar (que vive a la izquierda). */}
+        <SheetContent side="right" className="w-[320px] p-0 sm:max-w-[320px]">
           <AnalyticsFilterPanel
             filters={filters}
             onChange={setFilters}

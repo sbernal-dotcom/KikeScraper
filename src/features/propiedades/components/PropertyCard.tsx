@@ -180,7 +180,11 @@ export function PropertyCard({
           {propiedad.fechaUltimaRevision ? (
             <div className="text-[10px] opacity-70">
               {dict.card.unavailable_since}{" "}
-              {new Date(propiedad.fechaUltimaRevision).toLocaleDateString()}
+              {/* M11: pasar el locale explícito — sin él el navegador usa
+                  su locale de S.O., mezclando app-ES con fecha-EN. */}
+              {new Date(propiedad.fechaUltimaRevision).toLocaleDateString(
+                locale === "en" ? "en-US" : "es-PA",
+              )}
             </div>
           ) : null}
         </div>
@@ -460,7 +464,7 @@ export function PropertyCard({
             inCompare ? { background: "#FF1F17", color: "#fff" } : undefined
           }
           disabled={cantAdd}
-          title={cantAdd ? `Máx ${MAX_COMPARACION}` : undefined}
+          title={cantAdd ? `${dict.common.max} ${MAX_COMPARACION}` : undefined}
           onClick={() => comparison.toggle(propiedad)}
         >
           <Scale className={cn("mr-1", compact ? "size-3" : "size-4")} />

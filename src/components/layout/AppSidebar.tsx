@@ -97,7 +97,7 @@ export function AppSidebar() {
                 }}
                 title="Mostrando anuncios scrapeados desde public/scrape-preview.json (no guardados en DB)"
               >
-                Preview · {preview.count} scrapeados
+                Preview · {preview.count} {dict.scraper_info.preview_scraped}
               </div>
             </SidebarGroupContent>
           </SidebarGroup>

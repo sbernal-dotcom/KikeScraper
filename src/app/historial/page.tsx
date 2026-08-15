@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useDict } from "@/i18n/LocaleProvider";
 import { fetchScraperRuns, type ScraperRun } from "@/features/scraper-history/api";
 
@@ -157,8 +158,12 @@ export default function HistorialPage() {
               {dict.history.load_error} <span className="ml-2 opacity-70">({error})</span>
             </div>
           ) : loading ? (
-            <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-              …
+            // M12: skeleton de "corrida" placeholder — cada card del
+            // historial mide ~120px, mostramos 4.
+            <div className="space-y-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-28 w-full rounded-xl" />
+              ))}
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">

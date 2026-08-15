@@ -196,6 +196,12 @@ export type Dictionary = {
     verify_state: string;
     verify_effect: string;
     verify_last: string;
+    verify_alive: string;
+    verify_missing: string;
+    verify_possible: string;
+    verify_archived: string;
+    verify_errors: string;
+    preview_scraped: string;
     section_caches: string;
     section_caches_hint: string;
     failed_urls_breakdown: string;
@@ -462,6 +468,12 @@ const es: Dictionary = {
     verify_state: "Estado",
     verify_effect: "Efecto",
     verify_last: "Último resultado",
+    verify_alive: "vivas",
+    verify_missing: "no encontradas",
+    verify_possible: "posibles",
+    verify_archived: "archivadas",
+    verify_errors: "errores",
+    preview_scraped: "scrapeados",
     section_caches: "Caches",
     section_caches_hint: "ahorran Groq + web-search",
     failed_urls_breakdown: "URLs fallidas por fuente / motivo",
@@ -732,6 +744,12 @@ const en: Dictionary = {
     verify_state: "State",
     verify_effect: "Effect",
     verify_last: "Last result",
+    verify_alive: "alive",
+    verify_missing: "missing",
+    verify_possible: "possible",
+    verify_archived: "archived",
+    verify_errors: "errors",
+    preview_scraped: "scraped",
     section_caches: "Caches",
     section_caches_hint: "save Groq + web-search calls",
     failed_urls_breakdown: "Failed URLs by source / reason",

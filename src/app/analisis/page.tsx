@@ -12,6 +12,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useDict, useFormatters } from "@/i18n/LocaleProvider";
 import { AnalyticsFilterPanel } from "@/features/propiedades/components/AnalyticsFilterPanel";
@@ -138,8 +139,12 @@ export default function AnalisisPage() {
               {error}
             </div>
           ) : loading ? (
-            <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-              …
+            // M12: en vez del "…" (parecía roto), un skeleton de tabla
+            // con 6 filas placeholder — señala carga sin quedar vacío.
+            <div className="space-y-2 rounded-xl border border-border/60 p-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-8 w-full" />
+              ))}
             </div>
           ) : filtradas.length === 0 ? (
             <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
@@ -152,7 +157,8 @@ export default function AnalisisPage() {
       </main>
 
       <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <SheetContent side="left" className="w-[320px] p-0 sm:max-w-[320px]">
+        {/* M13: sheet abre a la derecha para no colisionar con la Sidebar. */}
+        <SheetContent side="right" className="w-[320px] p-0 sm:max-w-[320px]">
           <AnalyticsFilterPanel
             filters={filters}
             onChange={setFilters}

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
@@ -95,20 +96,23 @@ export default function ScraperPage() {
             <KpiCard
               icon={<Building2 className="size-3.5 text-muted-foreground" />}
               label={dict.scraper_info.kpi_active}
-              value={loading ? "…" : String(data?.totalActivas ?? 0)}
+              value={String(data?.totalActivas ?? 0)}
+              loading={loading}
               caption={dict.scraper_info.kpi_active_caption}
               accent
             />
             <KpiCard
               icon={<AlertTriangle className="size-3.5 text-muted-foreground" />}
               label={dict.scraper_info.kpi_recent_archived}
-              value={loading ? "…" : String(data?.totalArchivadasRecientes ?? 0)}
+              value={String(data?.totalArchivadasRecientes ?? 0)}
+              loading={loading}
               caption={`≤${LIFECYCLE_TTL_DIAS_MAPA}d`}
             />
             <KpiCard
               icon={<Clock3 className="size-3.5 text-muted-foreground" />}
               label={dict.scraper_info.kpi_last_run}
-              value={loading ? "…" : kpiUltimaCorrida}
+              value={kpiUltimaCorrida}
+              loading={loading}
               caption={
                 data?.ultimaCorrida.durationMin != null
                   ? `${data.ultimaCorrida.durationMin} min ${dict.scraper_info.kpi_duration_caption}`
@@ -324,11 +328,11 @@ export default function ScraperPage() {
                     {dict.scraper_info.verify_last} · {formatAgo(data.ultimoVerify.startedAt)}
                   </div>
                   <div className="flex flex-wrap gap-3 text-xs">
-                    <VerifyStat label="vivas" value={data.ultimoVerify.vivas} />
-                    <VerifyStat label="no encontradas" value={data.ultimoVerify.noEncontradas} />
-                    <VerifyStat label="posibles" value={data.ultimoVerify.posibles} />
-                    <VerifyStat label="archivadas" value={data.ultimoVerify.archivadas} accent="destructive" />
-                    <VerifyStat label="errores" value={data.ultimoVerify.errores} accent="destructive" />
+                    <VerifyStat label={dict.scraper_info.verify_alive} value={data.ultimoVerify.vivas} />
+                    <VerifyStat label={dict.scraper_info.verify_missing} value={data.ultimoVerify.noEncontradas} />
+                    <VerifyStat label={dict.scraper_info.verify_possible} value={data.ultimoVerify.posibles} />
+                    <VerifyStat label={dict.scraper_info.verify_archived} value={data.ultimoVerify.archivadas} accent="destructive" />
+                    <VerifyStat label={dict.scraper_info.verify_errors} value={data.ultimoVerify.errores} accent="destructive" />
                   </div>
                 </div>
               ) : null}
@@ -521,12 +525,14 @@ function KpiCard({
   icon,
   label,
   value,
+  loading = false,
   caption,
   accent = false,
 }: {
   icon?: React.ReactNode;
   label: string;
   value: string;
+  loading?: boolean;
   caption?: string;
   accent?: boolean;
 }) {
@@ -536,12 +542,18 @@ function KpiCard({
         {icon}
         <span>{label}</span>
       </div>
-      <div
-        className="mt-1 text-2xl font-bold tracking-tight tabular-nums"
-        style={accent ? { color: "#D6FF00" } : undefined}
-      >
-        {value}
-      </div>
+      {/* M12: en loading un Skeleton de altura del valor, en vez del
+          glyph "…" que parecía roto en pantalla. */}
+      {loading ? (
+        <Skeleton className="mt-1 h-7 w-16" />
+      ) : (
+        <div
+          className="mt-1 text-2xl font-bold tracking-tight tabular-nums"
+          style={accent ? { color: "#D6FF00" } : undefined}
+        >
+          {value}
+        </div>
+      )}
       {caption ? (
         <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
           {caption}

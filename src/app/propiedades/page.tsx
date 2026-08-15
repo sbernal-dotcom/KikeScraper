@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useDict } from "@/i18n/LocaleProvider";
 import { FilterPanel } from "@/features/propiedades/components/FilterPanel";
 import { PropertyGridCard } from "@/features/propiedades/components/PropertyGridCard";
@@ -111,8 +112,12 @@ export default function PropiedadesPage() {
               {error}
             </div>
           ) : loading ? (
-            <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-              …
+            // M12: skeleton en grid — 6 cards placeholder que respetan
+            // el layout responsive (1/2/3 columnas).
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-64 w-full rounded-xl" />
+              ))}
             </div>
           ) : filtradas.length === 0 ? (
             <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
@@ -129,7 +134,8 @@ export default function PropiedadesPage() {
       </main>
 
       <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <SheetContent side="left" className="w-[320px] p-0 sm:max-w-[320px]">
+        {/* M13: sheet abre a la derecha para no colisionar con la Sidebar. */}
+        <SheetContent side="right" className="w-[320px] p-0 sm:max-w-[320px]">
           <FilterPanel
             filters={filters}
             onChange={setFilters}
