@@ -393,6 +393,23 @@ export function MapView({
     }
   }, [matchedIds, pins]);
 
+  // L8: cuando se selecciona un pin, ajustar la vista para que no quede
+  // tapado por la PropertyCard/ZonaList a la derecha. Antes: hacías click
+  // en un pin del borde derecho y la card lo cubría — no veías el pin
+  // seleccionado. Ahora hacemos `easeTo` con padding derecho igual al
+  // ancho del aside abierto.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !selectedId || rightInsetPx <= 0) return;
+    const pin = pins.find((p) => p.id === selectedId);
+    if (!pin) return;
+    map.easeTo({
+      center: [pin.lng, pin.lat],
+      padding: { top: 0, bottom: 0, left: 0, right: rightInsetPx },
+      duration: 450,
+    });
+  }, [selectedId, rightInsetPx, pins]);
+
   if (!MAPBOX_TOKEN) {
     return (
       <div
@@ -420,12 +437,16 @@ export function MapView({
         }
         .mii-marker--alquiler {
           --mii-fill: ${MARKER_COLOR_ALQUILER};
-          --mii-glow: 0, 98, 255;
+          /* L7: glow sincronizado con el fill (#FF7A00 naranja).
+             Antes 0,98,255 = azul, sobra del color viejo pre-refactor. */
+          --mii-glow: 255, 122, 0;
         }
-        /* Pin cluster: magenta distintivo (sobreescribe color de operación). */
+        /* Pin cluster: azul distintivo (sobreescribe color de operación). */
         .mii-marker--cluster {
           --mii-fill: ${MARKER_COLOR_CLUSTER};
-          --mii-glow: 221, 0, 255;
+          /* L7: glow sincronizado con el fill (#3B82F6 azul).
+             Antes 221,0,255 = magenta, sobra del color viejo pre-refactor. */
+          --mii-glow: 59, 130, 246;
         }
         /* Pines preview ("NUEVO"): el badge va DENTRO del SVG, así que
            necesitan más altura. Mantenemos el ancho/aspecto para que el
@@ -441,8 +462,8 @@ export function MapView({
           fill: #0a0a0a;
           font-family: var(--font-geist-sans), system-ui, sans-serif;
         }
-        /* Sobre fondos oscuros (alquiler azul, cluster magenta) el texto
-           del chip pasa a blanco para mantener contraste legible. */
+        /* Sobre fondos oscuros/vibrantes (alquiler naranja, cluster azul) el
+           texto del chip pasa a blanco para mantener contraste legible. */
         .mii-marker--alquiler svg .mii-badge-text,
         .mii-marker--cluster svg .mii-badge-text {
           fill: #fff;

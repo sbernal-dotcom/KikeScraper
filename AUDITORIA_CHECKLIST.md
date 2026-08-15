@@ -10,8 +10,8 @@ Marcar `[x]` cuando se cierre. Ver `AUDITORIA_2026-08-06.md` para el detalle té
 | 🔴 CRITICAL | 5 | **5** | 0 |
 | 🟠 HIGH | 23 | **23** | 0 |
 | 🟡 MEDIUM | 21 | 0 | 21 |
-| 🟢 LOW | 10 | 0 | 10 |
-| **Total** | **59** | **28** | **31** |
+| 🟢 LOW | 10 | **10** | 0 |
+| **Total** | **59** | **38** | **21** |
 
 ---
 
@@ -188,27 +188,37 @@ Marcar `[x]` cuando se cierre. Ver `AUDITORIA_2026-08-06.md` para el detalle té
 
 ---
 
-## 🟢 LOW
+## 🟢 LOW (todos cerrados, 2026-08-11)
 
-- [ ] **L1 — 313 líneas de código muerto** — `src/features/propiedades/mock.ts` no se importa desde ningún lado.
+- [x] **L1 — 313 líneas de código muerto** (`4c495f9`)
+  Borrado `src/features/propiedades/mock.ts` — no se importaba desde ningún lado.
 
-- [ ] **L2 — PANAMA_BOUNDS exportado sin usarse.**
+- [x] **L2 — PANAMA_BOUNDS exportado sin usarse** (`4c495f9`)
+  Removido el export de `src/lib/mapbox/config.ts`.
 
-- [ ] **L3 — createAdminClient() sin usarse** en `src/lib/supabase/admin.ts`.
+- [x] **L3 — createAdminClient() sin usarse** (`4c495f9`)
+  Borrado `src/lib/supabase/admin.ts` — los scripts usan `createScraperClient` del helper propio.
 
-- [ ] **L4 — AI_SUMMARY_ENABLED apagado** — Gemini en prod está off. 176 líneas de `ia.ts` que un cambio silencioso rompería sin nadie enterarse. Decidir: prender o eliminar el módulo.
+- [x] **L4 — AI_SUMMARY_ENABLED apagado** (`4c495f9`)
+  `scripts/scrapers/ia.ts` reemplazado por STUB (176 → 30 líneas). `enriquecerConIA` retorna resultado vacío. Removida dependency `@google/genai`. Pendiente en memoria del proyecto: usuario va a pasar spec de qué hace cada IA para rediseñar.
 
-- [ ] **L5 — Scripts one-shot acumulados** — `backfill:precision` y otros ya ejecutados siguen en `package.json`. Mover a `_archived/` o borrar.
+- [x] **L5 — Scripts one-shot acumulados** (`d5e62ad`)
+  Movidos `backfill-precision-null.ts` (corrido 2026-07-25) y `backfill-corregimiento-normalizado.ts` (corrido 2026-08-07) a `scripts/scrapers/_archived/` con README. Removidos los 4 scripts npm asociados.
 
-- [ ] **L6 — Comentarios "fix 2026-07-XX" apilándose** — sin convención de limpieza. Fix: mover histórico a `bitacora.md`.
+- [x] **L6 — Comentarios "fix 2026-07-XX" apilándose** (`d5e62ad`)
+  Nueva sección en `AGENTS.md` con política: comentarios inline explican "por qué actual", historia va a bitacora.md. Cuando un archivo tiene ≥3 "fix" apilados, consolidar al tocar.
 
-- [ ] **L7 — Glow del pin alquiler descoordinado con el color** — pin naranja pero el glow es azul. Visualmente incoherente.
+- [x] **L7 — Glow del pin alquiler descoordinado con el color** (commit siguiente)
+  Sincronizados los glows: alquiler naranja `#FF7A00` → glow `255,122,0`; cluster azul `#3B82F6` → glow `59,130,246`. Antes eran restos del color viejo pre-refactor.
 
-- [ ] **L8 — Card del pin tapa el pin cuando está al borde derecho** — Fix: hacer paneo con `easeTo` cuando cambia el `selectedId`.
+- [x] **L8 — Card del pin tapa el pin al borde derecho** (commit siguiente)
+  Nuevo effect: cuando cambia `selectedId`, `map.easeTo({ center, padding: { right: rightInsetPx } })` re-encuadra para que el pin no quede tapado por la card.
 
-- [ ] **L9 — use-mobile.ts retorna false en el primer render** — 1 frame de flash donde el Sheet renderiza como popover desktop antes de darse cuenta.
+- [x] **L9 — use-mobile.ts retorna false primer render** (commit siguiente)
+  Reescrito con `useSyncExternalStore` — el primer render en cliente ya lee el valor real. Se acabó el frame de flash "desktop → mobile".
 
-- [ ] **L10 — Sin test contractual de "no persistir PII"** — no hay guardarraíl que falle en CI si alguien agrega `telefono` a `toDbRow`.
+- [x] **L10 — Sin test contractual de "no persistir PII"** (commit siguiente)
+  Nuevo `tests/anti-pii.test.ts` con 12 tests. Lee el bloque de `function toDbRow` de los 6 scrapers y falla si detecta keys prohibidas (descripcion, telefono, email, contacto, fotos, etc.). Blindaje contra descuidos de copy-paste. 46/46 tests totales pasan.
 
 ---
 
