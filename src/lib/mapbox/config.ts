@@ -10,11 +10,6 @@ export const MAPBOX_STYLE_3D = "mapbox://styles/mapbox/standard";
 
 export const PANAMA_CITY_CENTER: [number, number] = [-79.5199, 8.9824];
 
-export const PANAMA_BOUNDS: [[number, number], [number, number]] = [
-  [-83.0517, 7.1986],
-  [-77.1583, 9.6477],
-];
-
 export const DEFAULT_ZOOM = 11;
 
 export const MARKER_COLOR = "#D6FF00";
