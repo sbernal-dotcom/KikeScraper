@@ -147,7 +147,17 @@ export async function extraerEdificio(
   if (attempt === 0) {
     const hash = inputHash(titulo ?? "", desc);
     const inSession = sessionCache.get(hash);
-    if (inSession) return inSession;
+    if (inSession) {
+      // M8: contar el hit también cuando viene del session-cache. Antes
+      // solo se llamaba touch en el hit de Supabase → hit_count
+      // subestimado (todo lo que se resolvía intra-corrida no aportaba
+      // a las métricas del dashboard).
+      const supa = createScraperClient();
+      void Promise.resolve(
+        supa.rpc("ia_extract_cache_touch", { p_hash: hash }),
+      ).catch(() => {});
+      return inSession;
+    }
     const cached = await lookupCache(hash);
     if (cached) {
       sessionCache.set(hash, cached);

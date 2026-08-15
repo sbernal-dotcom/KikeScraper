@@ -672,6 +672,16 @@ async function main() {
     const ahoraIso = new Date().toISOString();
     let update: Record<string, unknown>;
 
+    // M3: preparamos el update PRIMERO y calculamos deltas de contadores
+    // por separado. Los contadores solo se aplican DESPUÉS del update
+    // exitoso — antes se incrementaban primero y si el update fallaba,
+    // los stats reportaban una realidad distinta al estado de la DB.
+    let dVivas = 0;
+    let dNoEncontradas = 0;
+    let dArchivadas = 0;
+    let dPosiblesInactivas = 0;
+    let dErroresVerificacion = 0;
+
     if (r.tipo === "viva") {
       update = {
         estado_anuncio: "activo",
@@ -681,7 +691,7 @@ async function main() {
         fecha_ultima_revision: ahoraIso,
         motivo_estado: `verificado activo (${r.motivo})`,
       };
-      vivas++;
+      dVivas = 1;
     } else if (r.tipo === "no_encontrada") {
       // H18: cap en THRESH_ARCHIVADO. Antes: filas archivadas seguían
       // subiendo el contador (veces=15, 200, 999) sin sentido —
@@ -698,9 +708,9 @@ async function main() {
         fecha_ultima_revision: ahoraIso,
         motivo_estado: `${r.motivo} (fallo ${veces})`,
       };
-      noEncontradas++;
-      if (estado === "archivado") archivadas++;
-      else if (estado === "posible_inactivo") posiblesInactivas++;
+      dNoEncontradas = 1;
+      if (estado === "archivado") dArchivadas = 1;
+      else if (estado === "posible_inactivo") dPosiblesInactivas = 1;
     } else {
       // H6: no escalamos a error_verificacion en el primer error.
       // Sostener N corridas consecutivas con error transitorio antes
@@ -715,7 +725,7 @@ async function main() {
           ? `error: ${r.motivo} (${errores} corridas consecutivas)`
           : `error transitorio: ${r.motivo} (${errores}/${THRESH_ERROR_CONSECUTIVO})`,
       };
-      erroresVerificacion++;
+      dErroresVerificacion = 1;
     }
 
     const { error: updErr } = await supa
@@ -723,8 +733,15 @@ async function main() {
       .update(update)
       .eq("id", fila.id);
     if (updErr) {
+      // M3: si el UPDATE falla NO aplicamos los deltas. Antes stats
+      // decían "archivadas: 5" pero la DB no tenía esas 5 archivadas.
       console.warn(`  ✗ ${fila.url_original}: update ${updErr.message}`);
     } else {
+      vivas += dVivas;
+      noEncontradas += dNoEncontradas;
+      archivadas += dArchivadas;
+      posiblesInactivas += dPosiblesInactivas;
+      erroresVerificacion += dErroresVerificacion;
       const tag =
         r.tipo === "viva" ? "✓" : r.tipo === "no_encontrada" ? "✗" : "?";
       console.log(`  ${tag} ${r.tipo} — ${r.motivo}`);

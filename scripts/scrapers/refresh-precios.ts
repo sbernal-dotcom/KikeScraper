@@ -279,19 +279,21 @@ function extractorSavitat(html: string): CamposDuros {
   return { ...base, precio };
 }
 
-function extractor(fuente: Fuente): (html: string) => CamposDuros {
-  switch (fuente) {
-    case "inmopanama":
-      return extractorInmoPanama;
-    case "savitat":
-      return extractorSavitat;
-    case "mlsacobir":
-      return extractorMicrodata;
-    case "acobir":
-    case "panamaequity":
-    case "encuentra24":
-      return extractorJsonLd;
-  }
+// M4: mapa de extractores conocidos. `null` significa "fuente conocida pero
+// sin extractor todavía" — refresh-precios la saltará con warning. Se
+// mantiene explícito para no procesar por accidente HTML de un portal
+// nuevo con un extractor genérico incorrecto.
+const EXTRACTORES: Record<Fuente, ((html: string) => CamposDuros) | null> = {
+  inmopanama: extractorInmoPanama,
+  savitat: extractorSavitat,
+  mlsacobir: extractorMicrodata,
+  acobir: extractorJsonLd,
+  panamaequity: extractorJsonLd,
+  encuentra24: extractorJsonLd,
+};
+
+function extractor(fuente: Fuente): ((html: string) => CamposDuros) | null {
+  return EXTRACTORES[fuente] ?? null;
 }
 
 function vacio(): CamposDuros {
@@ -430,6 +432,12 @@ async function procesarFuente(
 
   console.log(`\n▶ ${fuente}: ${rows.length} activas`);
   const ex = extractor(fuente);
+  if (!ex) {
+    // Defensa en profundidad: main() ya filtra fuentes sin extractor,
+    // pero mantenemos el guard por si esta función se llama directo.
+    console.warn(`  [${fuente}] sin extractor — se salta.`);
+    return stats;
+  }
   const ahora = new Date().toISOString();
 
   await chunkedParallel(rows, CONCURRENCY, async (row) => {
@@ -504,14 +512,43 @@ async function main() {
   const supa = createScraperClient();
   const startedAt = new Date().toISOString();
 
-  const fuentes: Fuente[] = [
-    "acobir",
-    "panamaequity",
-    "savitat",
-    "mlsacobir",
-    "encuentra24",
-    "inmopanama",
-  ];
+  // M4: fuentes derivadas de la DB, no hardcoded. Si mañana agregamos un
+  // scraper nuevo (`compreoalquile`, `mercadolibre`, etc.) refresh-precios
+  // lo procesa automáticamente en cuanto tenga extractor. Antes: nuevos
+  // scrapers quedaban fuera del refresh indefinidamente.
+  //
+  // Filtramos:
+  //   * Sistema jobs (verify, refresh-precios, backfill-ia) — no publican
+  //     propiedades propias.
+  //   * Fuentes conocidas sin extractor todavía — loggeamos advertencia.
+  const SISTEMA_JOBS = new Set(["verify", "refresh-precios", "backfill-ia"]);
+  const { data: fuentesData, error: fuentesErr } = await supa
+    .from("propiedades")
+    .select("fuente_id")
+    .eq("estado_anuncio", "activo")
+    .not("fuente_id", "is", null);
+  if (fuentesErr) {
+    console.error(`SELECT DISTINCT fuente_id falló: ${fuentesErr.message}`);
+    process.exit(1);
+  }
+  const fuentesUnicas = new Set<string>();
+  for (const r of (fuentesData ?? []) as Array<{ fuente_id: string | null }>) {
+    if (r.fuente_id && !SISTEMA_JOBS.has(r.fuente_id)) {
+      fuentesUnicas.add(r.fuente_id);
+    }
+  }
+  const fuentes: Fuente[] = [];
+  for (const f of fuentesUnicas) {
+    if (extractor(f as Fuente) != null) {
+      fuentes.push(f as Fuente);
+    } else {
+      console.warn(
+        `⚠ Fuente "${f}" tiene props activas pero no hay extractor en refresh-precios — se salta.`,
+      );
+    }
+  }
+  fuentes.sort();
+  console.log(`Fuentes a refrescar (${fuentes.length}): ${fuentes.join(", ")}`);
 
   const allStats: Stats[] = [];
   for (const f of fuentes) {
