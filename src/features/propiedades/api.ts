@@ -204,7 +204,11 @@ export async function fetchOportunidades(): Promise<Oportunidad[]> {
     .select("*")
     .order("opportunity_score", { ascending: false, nullsFirst: false });
   if (error) throw error;
-  const rows = (data ?? []) as unknown as DbOportunidad[];
+  // M14: era `as unknown as DbOportunidad[]` (doble cast, sin verificación).
+  // Ahora `data` viene tipado por el schema real y el cast simple deja que
+  // TS chequee compatibilidad. vw_oportunidades es view — su Row incluye
+  // más campos que DbOportunidad; el cast angosta a los que usamos.
+  const rows = (data ?? []) as DbOportunidad[];
   return rows.map(mapOportunidad);
 }
 
@@ -304,7 +308,10 @@ export async function fetchPropiedades(): Promise<Propiedad[]> {
   });
 
   if (error) throw error;
-  const rows = (data ?? []) as unknown as DbPropiedad[];
+  // M14: mismo racional que arriba — cast simple ahora que Database
+  // está tipado. DbPropiedad incluye joins (fuente, anuncios) que no
+  // vienen automático del Row; el cast preserva la shape que mapPropiedad espera.
+  const rows = (data ?? []) as DbPropiedad[];
   return rows
     .filter((r) => !dupIdSet.has(r.id))
     .map((r) => {

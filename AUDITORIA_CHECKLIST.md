@@ -9,9 +9,9 @@ Marcar `[x]` cuando se cierre. Ver `AUDITORIA_2026-08-06.md` para el detalle té
 |---|---|---|---|
 | 🔴 CRITICAL | 5 | **5** | 0 |
 | 🟠 HIGH | 23 | **23** | 0 |
-| 🟡 MEDIUM | 21 | **17** | 4 |
+| 🟡 MEDIUM | 21 | **18** | 3 |
 | 🟢 LOW | 10 | **10** | 0 |
-| **Total** | **59** | **55** | **4** |
+| **Total** | **59** | **56** | **3** |
 
 ---
 
@@ -166,8 +166,8 @@ Marcar `[x]` cuando se cierre. Ver `AUDITORIA_2026-08-06.md` para el detalle té
 
 ### Tech debt
 
-- [ ] **M14 — Tipos de Supabase son stub** (REQUIERE `supabase login`)
-  `npx supabase gen types typescript --project-id lbvboqoyvuxuanwvtypf` pide token de acceso. Para completar: correr `npx supabase login` interactivamente (o setear `SUPABASE_ACCESS_TOKEN` en el env) y volver a lanzar el gen. Sin esto, los tipos siguen como `Record<string, unknown>` y el código sigue con casts `as unknown as DbPropiedad[]`.
+- [x] **M14 — Tipos de Supabase generados** (commit siguiente)
+  `src/lib/supabase/types.ts` ahora tiene 702 líneas con el schema real (11 tablas + 2 views + enums + RPCs). Los 3 `as unknown as X` reemplazados por casts simples (verificados por TS) o por tipos derivados del schema (`Pick<Database["public"]["Tables"]["scraper_runs"]["Row"], ...>`). **Bug destapado y corregido:** `safeCount(supabase, "edificio_coords_cache")` en `scraper-info/api.ts` — nombre inventado, la tabla real es `edificios_cache`. Antes silencioso (siempre devolvía null → card mostraba "—"), ahora TS lo hubiera atrapado en el editor.
 
 - [x] **M15 — Drift entre Railway y Actions** (`7ffe1f3`)
   `scraper.yml` agrega el step `Refresh precios` que faltaba. Header del workflow documenta la diferencia intencional en la alerta (Railway=email vía Resend, Actions=GitHub Issue).

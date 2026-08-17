@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import type { Database } from "@/lib/supabase/types";
 
 export type FuenteStats = {
   fuenteId: string;
@@ -35,9 +36,16 @@ export type ScraperInfoData = {
   };
 };
 
+// M14: tipado del nombre de tabla. Antes: `table: string` aceptaba
+// cualquier nombre → el bug `"edificio_coords_cache"` (nombre inventado,
+// la tabla real es `edificios_cache`) pasaba silencioso porque el
+// query devolvía error atrapado por el catch de safeCount. Ahora
+// TypeScript rechaza cualquier nombre fuera del schema real.
+type PublicTable = keyof Database["public"]["Tables"];
+
 async function safeCount(
   supabase: ReturnType<typeof createClient>,
-  table: string,
+  table: PublicTable,
 ): Promise<number | null> {
   try {
     const { count, error } = await supabase
@@ -93,16 +101,15 @@ export async function fetchScraperInfo(): Promise<ScraperInfoData> {
         .order("started_at", { ascending: false }),
     ]);
 
-  type RunRow = {
-    fuente_id: string | null;
-    status: string;
-    started_at: string;
-    finished_at: string | null;
-    errors: number | null;
-    notes: string | null;
-  };
-  // Cast: types.ts no incluye scraper_runs (pendiente regenerar tras 0003).
-  const runsArr = (runsRes.data ?? []) as unknown as RunRow[];
+  // M14: derivado del schema real. Antes era un tipo local + comentario
+  // "types.ts no incluye scraper_runs (pendiente regenerar tras 0003)".
+  // Ya se regeneró — usamos el Row directamente + Pick para angostar a
+  // los campos que efectivamente seleccionamos arriba.
+  type RunRow = Pick<
+    Database["public"]["Tables"]["scraper_runs"]["Row"],
+    "fuente_id" | "status" | "started_at" | "finished_at" | "errors" | "notes"
+  >;
+  const runsArr = (runsRes.data ?? []) as RunRow[];
   const startedFirst = runsArr.length
     ? runsArr[runsArr.length - 1].started_at
     : null;
@@ -154,7 +161,9 @@ export async function fetchScraperInfo(): Promise<ScraperInfoData> {
     await Promise.all([
       safeCount(supabase, "ia_extract_cache"),
       safeCount(supabase, "urls_fallidas_cache"),
-      safeCount(supabase, "edificio_coords_cache"),
+      // M14: era "edificio_coords_cache" (nombre inventado) → siempre
+      // devolvía null y la card mostraba `—`. El nombre real es plural.
+      safeCount(supabase, "edificios_cache"),
       supabase
         .from("urls_fallidas_cache")
         .select("fuente_id, motivo"),
