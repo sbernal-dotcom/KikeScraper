@@ -6,6 +6,7 @@ import {
   Building2,
   Cog,
   History,
+  Home,
   Map as MapIcon,
   TrendingUp,
 } from "lucide-react";
@@ -32,14 +33,18 @@ import { MapModeToggle } from "./MapModeToggle";
 import { MarkerLegend } from "./MarkerLegend";
 
 type NavItem = {
-  key: "map" | "properties" | "analysis" | "history" | "scraper";
+  key: "home" | "map" | "properties" | "analysis" | "history" | "scraper";
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   comingSoon?: boolean;
 };
 
+// El mapa ahora vive en /mapa; el landing público ocupa /. La sidebar
+// agrega un ítem "Inicio" para que, desde el shell del app, el usuario
+// pueda volver al landing sin escribir la URL a mano.
 const primaryNav: NavItem[] = [
-  { key: "map", href: "/", icon: MapIcon },
+  { key: "home", href: "/", icon: Home },
+  { key: "map", href: "/mapa", icon: MapIcon },
   { key: "properties", href: "/propiedades", icon: Building2 },
   { key: "analysis", href: "/analisis", icon: TrendingUp },
   { key: "history", href: "/historial", icon: History },
@@ -105,7 +110,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t">
-        {pathname === "/" ? <MarkerLegend /> : null}
+        {pathname === "/mapa" ? <MarkerLegend /> : null}
         <LastScrapeBadge />
         <MapModeToggle />
         <LanguageToggle />

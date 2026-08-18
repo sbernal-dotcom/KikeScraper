@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
-import { AppShell } from "@/components/layout/AppShell";
+import { LocaleProvider } from "@/i18n/LocaleProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -20,6 +20,10 @@ export const metadata: Metadata = {
     "Plataforma que organiza propiedades públicas del mercado inmobiliario panameño con fuentes originales, comparaciones y detección de cambios en un mapa interactivo.",
 };
 
+// Root layout — solo html+body+fuentes. El shell (sidebar+providers) vive
+// en `(app)/layout.tsx`; el landing en `/` monta su propio LandingHeader/
+// LandingFooter en `src/app/page.tsx`. Así cada área tiene el chrome que
+// necesita sin arrastrar contexto de la otra.
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,7 +36,7 @@ export default function RootLayout({
       style={{ colorScheme: "dark" }}
     >
       <body className="bg-background text-foreground">
-        <AppShell>{children}</AppShell>
+        <LocaleProvider>{children}</LocaleProvider>
       </body>
     </html>
   );

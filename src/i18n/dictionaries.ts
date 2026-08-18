@@ -15,6 +15,7 @@ export type Dictionary = {
   nav: {
     section: string;
     section_project: string;
+    home: string;
     map: string;
     properties: string;
     sources: string;
@@ -249,6 +250,34 @@ export type Dictionary = {
     filter_days_30: string;
     filter_days_90: string;
   };
+  landing: {
+    hero: {
+      title_before: string;
+      title_accent: string;
+      title_after: string;
+      subtitle: string;
+      cta_map: string;
+      cta_properties: string;
+    };
+    stat: {
+      activas: string;
+      from_sources: string;
+      updated_today: string;
+      updated_yesterday: string;
+      updated_days_ago: string;
+    };
+    services: {
+      title: string;
+      subtitle: string;
+      cards: Record<
+        "properties" | "analysis" | "history" | "scraper",
+        { title: string; description: string; cta: string }
+      >;
+    };
+    footer: {
+      contact: string;
+    };
+  };
 };
 
 const es: Dictionary = {
@@ -261,6 +290,7 @@ const es: Dictionary = {
   nav: {
     section: "Navegación",
     section_project: "Proyecto",
+    home: "Inicio",
     map: "Mapa",
     properties: "Propiedades",
     sources: "Fuentes",
@@ -525,6 +555,58 @@ const es: Dictionary = {
     filter_days_30: "30 días",
     filter_days_90: "90 días",
   },
+  landing: {
+    hero: {
+      title_before: "El mapa",
+      title_accent: "inmobiliario",
+      title_after: "de Panamá.",
+      subtitle:
+        "Todas las fuentes en un solo lugar, con precios reales, historial y sin registros.",
+      cta_map: "Ver mapa",
+      cta_properties: "Propiedades",
+    },
+    stat: {
+      activas: "propiedades activas",
+      from_sources: "De {n} fuentes",
+      updated_today: "actualizadas hoy",
+      updated_yesterday: "actualizadas ayer",
+      updated_days_ago: "actualizadas hace {n} días",
+    },
+    services: {
+      title: "Qué podés hacer",
+      subtitle:
+        "Cinco vistas del mismo dato: exploración geográfica, listado con filtros, análisis por zona, historial de precios e info de los scrapers.",
+      cards: {
+        properties: {
+          title: "Propiedades",
+          description:
+            "Lista tabular con búsqueda y filtros por precio, ambientes, condición y fuente.",
+          cta: "Ver listado",
+        },
+        analysis: {
+          title: "Análisis",
+          description:
+            "Rankings por zona con score de oportunidad, precio/m² y confianza del dato.",
+          cta: "Ver oportunidades",
+        },
+        history: {
+          title: "Historial",
+          description:
+            "Cada corrida de scraper con nuevas, actualizadas y eliminadas por fuente.",
+          cta: "Ver corridas",
+        },
+        scraper: {
+          title: "Scraper",
+          description:
+            "Estado de las fuentes, caches y última verificación de estado de los anuncios.",
+          cta: "Ver info",
+        },
+      },
+    },
+    footer: {
+      contact: "Contacto",
+    },
+  },
 };
 
 const en: Dictionary = {
@@ -537,6 +619,7 @@ const en: Dictionary = {
   nav: {
     section: "Navigation",
     section_project: "Project",
+    home: "Home",
     map: "Map",
     properties: "Properties",
     sources: "Sources",
@@ -799,6 +882,58 @@ const en: Dictionary = {
     filter_days_7: "7 days",
     filter_days_30: "30 days",
     filter_days_90: "90 days",
+  },
+  landing: {
+    hero: {
+      title_before: "The",
+      title_accent: "real-estate",
+      title_after: "map of Panama.",
+      subtitle:
+        "Every source in one place — real prices, price history, no sign-up needed.",
+      cta_map: "See the map",
+      cta_properties: "Properties",
+    },
+    stat: {
+      activas: "active listings",
+      from_sources: "From {n} sources",
+      updated_today: "updated today",
+      updated_yesterday: "updated yesterday",
+      updated_days_ago: "updated {n} days ago",
+    },
+    services: {
+      title: "What you can do",
+      subtitle:
+        "Five views of the same data: geographic exploration, filtered list, per-area analysis, price history, and scraper info.",
+      cards: {
+        properties: {
+          title: "Properties",
+          description:
+            "Tabular list with search and filters by price, rooms, condition, and source.",
+          cta: "See list",
+        },
+        analysis: {
+          title: "Analytics",
+          description:
+            "Rankings by area with opportunity score, price/m², and data confidence.",
+          cta: "See opportunities",
+        },
+        history: {
+          title: "History",
+          description:
+            "Each scraper run with new, updated, and removed listings per source.",
+          cta: "See runs",
+        },
+        scraper: {
+          title: "Scraper",
+          description:
+            "Source health, caches, and last listing-status verification.",
+          cta: "See info",
+        },
+      },
+    },
+    footer: {
+      contact: "Contact",
+    },
   },
 };
 
