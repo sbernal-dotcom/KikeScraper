@@ -30,7 +30,7 @@ export function ServiceCards() {
           más denso que el del hero (size=32) para diferenciar. */}
       <DotGridPattern
         className="absolute inset-0"
-        color="rgba(214,255,0,0.04)"
+        color="rgba(214,255,0,0.15)"
         size={32}
       />
       {/* Halo verde radial muy tenue en el centro superior — le da un

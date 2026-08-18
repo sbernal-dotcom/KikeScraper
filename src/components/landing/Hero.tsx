@@ -26,7 +26,7 @@ export function Hero() {
           para que no arranque bruscamente contra el header y el StatBanner. */}
       <DotGridPattern
         className="absolute inset-0 -z-10"
-        color="rgba(214,255,0,0.05)"
+        color="rgba(214,255,0,0.15)"
         size={28}
       />
       <div
