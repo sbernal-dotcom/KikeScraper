@@ -5,7 +5,7 @@ import { ArrowRight, Building2 } from "lucide-react";
 
 import { useDict } from "@/i18n/LocaleProvider";
 
-import { StreetGridBackground } from "./StreetGridBackground";
+import { HeroMapPreview } from "./HeroMapPreview";
 
 // Hero: título grande a la izquierda con dos CTAs, malla vectorial a la
 // derecha. Grid 60/40 en desktop, stack vertical en móvil (imagen debajo).
@@ -49,9 +49,11 @@ export function Hero() {
           </div>
         </div>
 
-        {/* Malla vectorial — 2 columnas en desktop, altura fija */}
+        {/* Preview del mapa — 2 columnas en desktop, altura fija.
+            Opacidad baja para que se sienta "de fondo" sin robar foco al
+            texto de la izquierda. */}
         <div className="relative h-[280px] md:col-span-2 md:h-[420px] lg:h-[480px]">
-          <StreetGridBackground className="absolute inset-0" />
+          <HeroMapPreview className="absolute inset-0 opacity-70" />
         </div>
       </div>
     </section>
