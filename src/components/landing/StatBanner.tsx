@@ -1,60 +1,97 @@
-import { createClient } from "@/lib/supabase/server";
-import { dictionaries, type Locale } from "@/i18n/dictionaries";
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { useDict, useLocale } from "@/i18n/LocaleProvider";
+import { createClient } from "@/lib/supabase/client";
 
 import { DiagonalStripesPattern } from "./patterns";
 
 // StatBanner: número gigante con la cantidad de propiedades activas y una
 // línea chica debajo con la cantidad de fuentes + cuándo fue la última
-// corrida. Server Component async — se corre en el servidor, cuenta en la
-// DB y devuelve HTML ya renderizado. Con `revalidate` en la página, este
-// componente se cachea por 5 minutos.
+// corrida.
 //
-// Opción B del landing plan: fondo negro, número en verde. El número es
-// enorme (text-8xl) para que "grite" sin necesidad de fondo verde.
+// Client Component (antes era Server Component con revalidate=300). Razones
+// del cambio:
+//   - El Server Component con el cliente Supabase de server (que usa
+//     cookies) mostraba números incorrectos porque el count venía
+//     bloqueado por RLS sin sesión — RLS deja LEER las propiedades
+//     con anon key, pero contar HEAD queries parece caer distinto.
+//   - El cache de 5 min hacía que cualquier cambio en la DB tardara
+//     hasta 5 minutos en reflejarse en el landing.
+//   - El resto del app (/scraper, /mapa) usa el cliente client-side y
+//     ese sí muestra el número correcto — este componente ahora
+//     comparte esa misma pila, garantía de consistencia.
+//
+// Fondo verde plano (opción A del plan original) + diagonal stripes sutiles.
 
-export async function StatBanner({ locale = "es" }: { locale?: Locale }) {
-  const dict = dictionaries[locale];
-  const supabase = await createClient();
+type StatData = {
+  activas: number | null;
+  fuentes: number | null;
+  lastRunISO: string | null;
+};
 
-  // 3 queries en paralelo. Cualquier fallo individual cae a null y
-  // renderea "—" en vez de romper toda la página.
-  const [activasRes, fuentesRes, lastRunRes] = await Promise.all([
-    supabase
-      .from("propiedades")
-      .select("*", { count: "exact", head: true })
-      .eq("estado_anuncio", "activo"),
-    supabase.from("fuentes").select("id"),
-    supabase
-      .from("scraper_runs")
-      .select("finished_at")
-      .not("finished_at", "is", null)
-      .order("finished_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ]);
+// Jobs "sistema" en la tabla `fuentes` — verify, refresh-precios,
+// backfill-ia comparten esa tabla por el FK de scraper_runs pero no son
+// portales scrapeados. El conteo debe reflejar "de cuántos portales
+// origen se toma la data".
+const SYSTEM_JOBS = new Set(["verify", "refresh-precios", "backfill-ia"]);
 
-  const activas = activasRes.count ?? null;
-  // Excluir jobs "sistema" (verify, refresh-precios, backfill-ia) — no son
-  // fuentes de datos, solo comparten la tabla `fuentes` por el FK de
-  // scraper_runs. El card debe reflejar "de cuántos portales scrapeamos".
-  const SYSTEM_JOBS = new Set(["verify", "refresh-precios", "backfill-ia"]);
-  const fuentes = fuentesRes.data
-    ? fuentesRes.data.filter((f) => !SYSTEM_JOBS.has(f.id)).length
-    : null;
-  const lastRunISO = lastRunRes.data?.finished_at ?? null;
+export function StatBanner() {
+  const dict = useDict();
+  const { locale } = useLocale();
+  const [data, setData] = useState<StatData | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const [activasRes, fuentesRes, lastRunRes] = await Promise.all([
+        supabase
+          .from("propiedades")
+          .select("*", { count: "exact", head: true })
+          .eq("estado_anuncio", "activo"),
+        supabase.from("fuentes").select("id"),
+        supabase
+          .from("scraper_runs")
+          .select("finished_at")
+          .not("finished_at", "is", null)
+          .order("finished_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+      if (cancelled) return;
+
+      setData({
+        activas: activasRes.error ? null : activasRes.count ?? 0,
+        fuentes: fuentesRes.data
+          ? fuentesRes.data.filter((f) => !SYSTEM_JOBS.has(f.id)).length
+          : null,
+        lastRunISO: lastRunRes.data?.finished_at ?? null,
+      });
+    })().catch((err) => {
+      console.warn("[StatBanner] fetch failed:", err);
+      if (!cancelled) setData({ activas: null, fuentes: null, lastRunISO: null });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!data) return <StatBannerSkeleton />;
 
   const nfNumber = new Intl.NumberFormat(locale === "en" ? "en-US" : "es-PA");
-  const activasLabel = activas !== null ? nfNumber.format(activas) : "—";
-  const fuentesLabel = fuentes !== null ? String(fuentes) : "—";
+  const activasLabel =
+    data.activas !== null ? nfNumber.format(data.activas) : "—";
+  const fuentesLabel = data.fuentes !== null ? String(data.fuentes) : "—";
 
   return (
     <section
       className="relative overflow-hidden"
       style={{ background: "#D6FF00" }}
     >
-      {/* Textura diagonal en negro sobre el verde. Muy sutil (opacity 0.05)
-          — se lee como "grain" que aporta profundidad sin desaturar el
-          verde de fondo. */}
+      {/* Textura diagonal en negro sobre el verde. Muy sutil — se lee
+          como "grain" que aporta profundidad sin desaturar el verde. */}
       <DiagonalStripesPattern
         className="absolute inset-0"
         color="rgba(0,0,0,0.05)"
@@ -73,10 +110,10 @@ export async function StatBanner({ locale = "es" }: { locale?: Locale }) {
         </p>
         <p className="mt-1.5 text-sm text-black/70">
           {dict.landing.stat.from_sources.replace("{n}", fuentesLabel)}
-          {lastRunISO ? (
+          {data.lastRunISO ? (
             <>
               {" · "}
-              {formatRelativeLabel(lastRunISO, dict.landing.stat, locale)}
+              {formatRelativeLabel(data.lastRunISO, dict.landing.stat, locale)}
             </>
           ) : null}
         </p>
@@ -87,8 +124,12 @@ export async function StatBanner({ locale = "es" }: { locale?: Locale }) {
 
 function formatRelativeLabel(
   iso: string,
-  labels: { updated_today: string; updated_yesterday: string; updated_days_ago: string },
-  locale: Locale,
+  labels: {
+    updated_today: string;
+    updated_yesterday: string;
+    updated_days_ago: string;
+  },
+  locale: "es" | "en",
 ): string {
   const diffMs = Date.now() - new Date(iso).getTime();
   const diffHr = diffMs / 3600_000;
@@ -99,9 +140,8 @@ function formatRelativeLabel(
   return labels.updated_days_ago.replace("{n}", nf.format(days));
 }
 
-// Skeleton para el Suspense fallback: reserva el mismo alto que el banner
-// real para que no haya salto de layout (CLS) mientras se resuelve la DB.
-// Sobre fondo verde igual que el banner real, con shimmer en negro suave.
+// Skeleton mientras el fetch está pendiente. Mismo alto/paleta que el
+// banner real para evitar CLS al reemplazarse.
 export function StatBannerSkeleton() {
   return (
     <section
