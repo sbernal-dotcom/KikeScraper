@@ -119,6 +119,28 @@ function mapPropiedad(p: DbPropiedad): Propiedad {
   };
 }
 
+// Supabase/PostgREST corta TODA respuesta en 1000 filas (db-max-rows).
+// `.range(0, 19999)` NO lo evita: el tope se aplica igual. La unica
+// forma de traer mas es pedir de a paginas hasta que una devuelva <1000.
+//
+// Sin esto el mapa mostraba 1000 propiedades de 3026, y el contador del
+// landing calculaba sobre un subconjunto arbitrario.
+const PAGINA = 1000;
+
+async function fetchAllRows<T>(
+  build: (desde: number, hasta: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
+): Promise<T[]> {
+  const todas: T[] = [];
+  for (let desde = 0; ; desde += PAGINA) {
+    const { data, error } = await build(desde, desde + PAGINA - 1);
+    if (error) throw error;
+    const lote = data ?? [];
+    todas.push(...lote);
+    if (lote.length < PAGINA) break;
+  }
+  return todas;
+}
+
 const SELECT = `
   *,
   fuente:fuentes!fuente_id(id, nombre),
@@ -224,31 +246,37 @@ export async function fetchOportunidades(): Promise<Oportunidad[]> {
 export async function fetchActiveCount(): Promise<number | null> {
   const supabase = createClient();
 
-  const [activeRes, dupRes] = await Promise.all([
-    supabase
-      .from("propiedades")
-      .select("id")
-      .eq("estado_anuncio", "activo")
-      .not("precio", "is", null)
-      .not("area_m2", "is", null)
-      .gt("area_m2", 0)
-      // Elevamos el límite por defecto (1000) por si superamos ese umbral.
-      .range(0, 19999),
-    supabase.from("propiedades_duplicados").select("propiedad_id"),
-  ]);
+  try {
+    // Ambas consultas pasan de 1000 filas (4337 activas, 1346 duplicados),
+    // por eso van por fetchAllRows. `.order("id")` da un orden estable
+    // entre paginas: sin él, PostgREST puede repetir u omitir filas.
+    const [active, dups] = await Promise.all([
+      fetchAllRows<{ id: string }>((desde, hasta) =>
+        supabase
+          .from("propiedades")
+          .select("id")
+          .eq("estado_anuncio", "activo")
+          .not("precio", "is", null)
+          .not("area_m2", "is", null)
+          .gt("area_m2", 0)
+          .order("id")
+          .range(desde, hasta),
+      ),
+      fetchAllRows<{ propiedad_id: string }>((desde, hasta) =>
+        supabase
+          .from("propiedades_duplicados")
+          .select("propiedad_id")
+          .order("propiedad_id")
+          .range(desde, hasta),
+      ),
+    ]);
 
-  if (activeRes.error) {
-    console.warn("[fetchActiveCount] activeRes error:", activeRes.error);
+    const dupSet = new Set(dups.map((r) => r.propiedad_id));
+    return active.filter((r) => !dupSet.has(r.id)).length;
+  } catch (err) {
+    console.warn("[fetchActiveCount] error:", err);
     return null;
   }
-
-  const dupSet = new Set(
-    ((dupRes.data ?? []) as Array<{ propiedad_id: string }>).map(
-      (r) => r.propiedad_id,
-    ),
-  );
-  const active = (activeRes.data ?? []) as Array<{ id: string }>;
-  return active.filter((r) => !dupSet.has(r.id)).length;
 }
 
 export async function fetchPropiedades(): Promise<Propiedad[]> {
@@ -262,14 +290,19 @@ export async function fetchPropiedades(): Promise<Propiedad[]> {
   // La tabla `anuncios` (0001_init.sql) está vacía en producción: ningún
   // scraper la escribe. `propiedades_duplicados` es la fuente real de
   // verdad para cross-source.
-  const { data: dupRows, error: dupErr } = await supabase
-    .from("propiedades_duplicados")
-    .select("propiedad_id, canonica_id");
-  if (dupErr) throw dupErr;
-  const dupPairs = (dupRows ?? []) as Array<{
+  // Paginado obligatorio: hay 1346 pares y PostgREST corta en 1000.
+  // Sin esto el Map quedaba incompleto y ~346 duplicados se colaban al
+  // mapa como propiedades independientes.
+  const dupPairs = await fetchAllRows<{
     propiedad_id: string;
     canonica_id: string;
-  }>;
+  }>((desde, hasta) =>
+    supabase
+      .from("propiedades_duplicados")
+      .select("propiedad_id, canonica_id")
+      .order("propiedad_id")
+      .range(desde, hasta),
+  );
   const dupToCan = new Map<string, string>();
   dupPairs.forEach((r) => dupToCan.set(r.propiedad_id, r.canonica_id));
   const dupIds = Array.from(dupToCan.keys());
@@ -332,26 +365,32 @@ export async function fetchPropiedades(): Promise<Propiedad[]> {
   // traemos TODAS las filas y filtramos en cliente con el Set — es una
   // lista de ~3k, la iteración es instantánea.
   const dupIdSet = new Set(dupIds);
-  const query = supabase
-    .from("propiedades")
-    .select(SELECT)
-    .not("precio", "is", null)
-    .not("area_m2", "is", null)
-    .gt("area_m2", 0)
-    .or(
-      `estado_anuncio.eq.activo,and(estado_anuncio.neq.activo,fecha_ultima_revision.gte.${archivedCutoff})`,
-    );
-
-  const { data, error } = await query.order("fecha_deteccion", {
-    ascending: false,
-  });
-
-  if (error) throw error;
-  // M14: mismo racional que arriba — cast simple ahora que Database
-  // está tipado. DbPropiedad incluye joins (fuente, anuncios) que no
-  // vienen automático del Row; el cast preserva la shape que mapPropiedad espera.
-  const rows = (data ?? []) as DbPropiedad[];
-  return rows
+  // Paginado obligatorio: son ~4300 filas y PostgREST corta en 1000.
+  // Antes el mapa mostraba solo las 1000 mas recientes por fecha_deteccion
+  // y las otras ~3300 no existian para el usuario.
+  //
+  // Orden por (fecha_deteccion, id): fecha_deteccion sola no es unica, y
+  // con empates PostgREST puede repetir u omitir filas entre paginas.
+  const data = await fetchAllRows<DbPropiedad>((desde, hasta) =>
+    supabase
+      .from("propiedades")
+      .select(SELECT)
+      .not("precio", "is", null)
+      .not("area_m2", "is", null)
+      .gt("area_m2", 0)
+      .or(
+        `estado_anuncio.eq.activo,and(estado_anuncio.neq.activo,fecha_ultima_revision.gte.${archivedCutoff})`,
+      )
+      .order("fecha_deteccion", { ascending: false })
+      .order("id")
+      .range(desde, hasta) as unknown as PromiseLike<{
+      data: DbPropiedad[] | null;
+      error: unknown;
+    }>,
+  );
+  // `data` ya viene tipado como DbPropiedad[] desde fetchAllRows y nunca
+  // es null (el helper devuelve [] si no hay filas).
+  return data
     .filter((r) => !dupIdSet.has(r.id))
     .map((r) => {
       const p = mapPropiedad(r);
