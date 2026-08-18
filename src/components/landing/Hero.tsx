@@ -29,12 +29,27 @@ export function Hero() {
         color="rgba(214,255,0,0.15)"
         size={28}
       />
+      {/* Ambient light: dos orbes verde tenue distribuidos en el fondo.
+          El primero grande arriba-izquierda ilumina el área del título;
+          el segundo más chico centro-derecha da vida cerca de la malla.
+          Ambos se leen como "luz ambiente" y evitan la sensación de
+          rectángulo negro plano. */}
       <div
         aria-hidden
         className="absolute inset-0 -z-10"
         style={{
           background:
-            "radial-gradient(ellipse at 30% 50%, transparent 40%, rgba(0,0,0,0.6) 100%)",
+            "radial-gradient(ellipse 60% 60% at 15% 30%, rgba(214,255,0,0.18), transparent 60%), radial-gradient(ellipse 45% 50% at 75% 65%, rgba(214,255,0,0.10), transparent 65%)",
+        }}
+      />
+      {/* Vignette de bordes para que las luces se contengan y no llenen
+          por completo el hero (queremos foco, no un fondo verdoso). */}
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10"
+        style={{
+          background:
+            "radial-gradient(ellipse at 40% 50%, transparent 50%, rgba(0,0,0,0.55) 100%)",
         }}
       />
       <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-4 py-16 sm:px-6 md:grid-cols-5 md:gap-8 md:py-24 lg:gap-12 lg:px-8 lg:py-32">

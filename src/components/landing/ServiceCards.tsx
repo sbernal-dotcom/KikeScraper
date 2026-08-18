@@ -33,14 +33,16 @@ export function ServiceCards() {
         color="rgba(214,255,0,0.15)"
         size={32}
       />
-      {/* Halo verde radial muy tenue en el centro superior — le da un
-          punto de "gravedad" visual al bloque de cards. */}
+      {/* Dos halos verdes: uno arriba centro y otro abajo derecha. Le dan
+          "luz ambiente" al bloque y evitan que la sección se sienta como
+          un rectángulo negro plano. Opacidades bajas para que no compitan
+          con el brillo verde de las cards al hacer hover. */}
       <div
         aria-hidden
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(214,255,0,0.06), transparent 60%)",
+            "radial-gradient(ellipse 70% 45% at 50% 0%, rgba(214,255,0,0.14), transparent 60%), radial-gradient(ellipse 55% 40% at 85% 100%, rgba(214,255,0,0.10), transparent 65%)",
         }}
       />
 
