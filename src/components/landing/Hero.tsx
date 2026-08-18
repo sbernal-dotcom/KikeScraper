@@ -1,33 +1,18 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { ArrowRight, Building2 } from "lucide-react";
 
 import { useDict } from "@/i18n/LocaleProvider";
 
-import { HeroMapPreview } from "./HeroMapPreview";
+import { HeroMapStatic } from "./HeroMapStatic";
 
-// Mapbox necesita `window` — cargamos el 3D solo en cliente. Mientras
-// se descarga (o durante SSR), mostramos el SVG estático como skeleton
-// para no dejar el hero vacío.
-const HeroMap3D = dynamic(
-  () => import("./HeroMap3D").then((m) => m.HeroMap3D),
-  {
-    ssr: false,
-    loading: () => (
-      <HeroMapPreview
-        fullBleed
-        className="pointer-events-none absolute inset-0 opacity-45"
-      />
-    ),
-  },
-);
-
-// Hero: mapa 3D interactivo:false como fondo full-bleed del hero. El
-// texto vive encima a la izquierda, sobre un gradient horizontal que
-// oscurece la mitad izquierda para asegurar legibilidad AAA sin sacar
-// el mapa del contexto visual.
+// Hero: mapa 3D como imagen estática (Mapbox Static API) como fondo
+// full-bleed. Reemplazamos el Mapbox GL JS interactivo por un PNG
+// generado del lado del server de Mapbox — 0 JS extra, 1 request HTTP
+// cacheada por CDN. El texto vive encima a la izquierda, sobre un
+// gradient horizontal que oscurece la mitad izquierda para asegurar
+// legibilidad AAA sin sacar el mapa del contexto visual.
 //
 // Título con acento verde en "inmobiliario" (única palabra coloreada
 // para mantener jerarquía). Dos CTAs alargados: primario en verde plano,
@@ -41,7 +26,7 @@ export function Hero() {
           área y no queremos que compita con el texto. `pointer-events-none`
           en el contenedor para que clicks/scroll pasen al hero. */}
       <div className="pointer-events-none absolute inset-0 -z-10">
-        <HeroMap3D className="absolute inset-0 opacity-70" />
+        <HeroMapStatic className="absolute inset-0 opacity-70" />
         {/* Overlay gradient: negro sólido a la izquierda → transparente a
             la derecha. Garantiza contraste AAA sobre el título/subtítulo
             sin tapar el mapa a la derecha. */}
