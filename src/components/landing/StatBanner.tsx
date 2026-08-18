@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { dictionaries, type Locale } from "@/i18n/dictionaries";
 
+import { DiagonalStripesPattern } from "./patterns";
+
 // StatBanner: número gigante con la cantidad de propiedades activas y una
 // línea chica debajo con la cantidad de fuentes + cuándo fue la última
 // corrida. Server Component async — se corre en el servidor, cuenta en la
@@ -46,8 +48,19 @@ export async function StatBanner({ locale = "es" }: { locale?: Locale }) {
   const fuentesLabel = fuentes !== null ? String(fuentes) : "—";
 
   return (
-    <section style={{ background: "#D6FF00" }}>
-      <div className="mx-auto max-w-7xl px-4 py-10 text-center sm:px-6 md:py-14 lg:px-8">
+    <section
+      className="relative overflow-hidden"
+      style={{ background: "#D6FF00" }}
+    >
+      {/* Textura diagonal en negro sobre el verde. Muy sutil (opacity 0.05)
+          — se lee como "grain" que aporta profundidad sin desaturar el
+          verde de fondo. */}
+      <DiagonalStripesPattern
+        className="absolute inset-0"
+        color="rgba(0,0,0,0.05)"
+        spacing={14}
+      />
+      <div className="relative mx-auto max-w-7xl px-4 py-10 text-center sm:px-6 md:py-14 lg:px-8">
         <p
           className="font-bold leading-none tracking-tight tabular-nums text-black"
           style={{ fontSize: "clamp(3.5rem, 10vw, 7.5rem)" }}
@@ -91,8 +104,16 @@ function formatRelativeLabel(
 // Sobre fondo verde igual que el banner real, con shimmer en negro suave.
 export function StatBannerSkeleton() {
   return (
-    <section style={{ background: "#D6FF00" }}>
-      <div className="mx-auto max-w-7xl px-4 py-10 text-center sm:px-6 md:py-14 lg:px-8">
+    <section
+      className="relative overflow-hidden"
+      style={{ background: "#D6FF00" }}
+    >
+      <DiagonalStripesPattern
+        className="absolute inset-0"
+        color="rgba(0,0,0,0.05)"
+        spacing={14}
+      />
+      <div className="relative mx-auto max-w-7xl px-4 py-10 text-center sm:px-6 md:py-14 lg:px-8">
         <div
           className="mx-auto animate-pulse rounded-md bg-black/15"
           style={{ height: "clamp(3.5rem, 10vw, 7.5rem)", width: "10ch" }}

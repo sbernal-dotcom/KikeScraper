@@ -5,18 +5,39 @@ import { ArrowRight, Building2 } from "lucide-react";
 
 import { useDict } from "@/i18n/LocaleProvider";
 
+import { DotGridPattern } from "./patterns";
 import { StreetGridBackground } from "./StreetGridBackground";
 
 // Hero: título grande a la izquierda con dos CTAs, malla vectorial a la
 // derecha. Grid 60/40 en desktop, stack vertical en móvil (imagen debajo).
 // El título resalta la palabra "inmobiliario" en verde — es el único
 // spot de color en el H1 para mantener la jerarquía visual.
+//
+// Fondo: dot-grid en verde a muy baja opacidad para dar textura sin
+// competir con la lectura. La malla vectorial de la derecha es más
+// densa y sigue siendo el acento visual principal.
 export function Hero() {
   const dict = useDict();
 
   return (
     <section className="relative overflow-hidden">
-      <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-4 py-16 sm:px-6 md:grid-cols-5 md:gap-8 md:py-24 lg:gap-12 lg:px-8 lg:py-32">
+      {/* Dot grid de fondo. -z-10 lo manda detrás del contenido; el
+          radial-gradient de la máscara lo desvanece hacia los bordes
+          para que no arranque bruscamente contra el header y el StatBanner. */}
+      <DotGridPattern
+        className="absolute inset-0 -z-10"
+        color="rgba(214,255,0,0.05)"
+        size={28}
+      />
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10"
+        style={{
+          background:
+            "radial-gradient(ellipse at 30% 50%, transparent 40%, rgba(0,0,0,0.6) 100%)",
+        }}
+      />
+      <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-4 py-16 sm:px-6 md:grid-cols-5 md:gap-8 md:py-24 lg:gap-12 lg:px-8 lg:py-32">
         {/* Texto — 3 columnas en desktop */}
         <div className="md:col-span-3">
           <h1 className="text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
