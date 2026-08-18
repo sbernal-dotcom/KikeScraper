@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { useDict, useLocale } from "@/i18n/LocaleProvider";
 import { createClient } from "@/lib/supabase/client";
+import { fetchActiveCount } from "@/features/propiedades/api";
 
 import { DiagonalStripesPattern } from "./patterns";
 
@@ -46,11 +47,14 @@ export function StatBanner() {
     let cancelled = false;
     (async () => {
       const supabase = createClient();
-      const [activasRes, fuentesRes, lastRunRes] = await Promise.all([
-        supabase
-          .from("propiedades")
-          .select("*", { count: "exact", head: true })
-          .eq("estado_anuncio", "activo"),
+      // `fetchActiveCount` aplica los MISMOS filtros que el mapa
+      // (activo + precio + area_m2 válidos + no duplicadas) — así el
+      // número coincide con lo que el usuario ve como pines en /mapa.
+      // Un count directo con solo `estado_anuncio='activo'` da miles
+      // de más porque incluye propiedades sin precio/area que el mapa
+      // filtra + duplicados que el mapa consolida.
+      const [activas, fuentesRes, lastRunRes] = await Promise.all([
+        fetchActiveCount(),
         supabase.from("fuentes").select("id"),
         supabase
           .from("scraper_runs")
@@ -63,7 +67,7 @@ export function StatBanner() {
       if (cancelled) return;
 
       setData({
-        activas: activasRes.error ? null : activasRes.count ?? 0,
+        activas,
         fuentes: fuentesRes.data
           ? fuentesRes.data.filter((f) => !SYSTEM_JOBS.has(f.id)).length
           : null,

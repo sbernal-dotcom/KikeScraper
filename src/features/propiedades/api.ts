@@ -212,6 +212,45 @@ export async function fetchOportunidades(): Promise<Oportunidad[]> {
   return rows.map(mapOportunidad);
 }
 
+// Conteo de propiedades activas VISIBLES EN EL MAPA. Replica el filtro
+// de `fetchPropiedades` (precio + area_m2 válidos, no duplicadas) sobre
+// `estado_anuncio = 'activo'` — así el número matchea exactamente lo
+// que el usuario ve como pines en /mapa.
+//
+// Usa `select('id')` en vez de `count: exact, head: true` porque
+// necesitamos restar los duplicados y para eso hay que tener los IDs.
+// Con ~3-5k activas trae ~150 KB de solo strings de UUID, aceptable
+// para un stat del landing (una sola vez, al montar).
+export async function fetchActiveCount(): Promise<number | null> {
+  const supabase = createClient();
+
+  const [activeRes, dupRes] = await Promise.all([
+    supabase
+      .from("propiedades")
+      .select("id")
+      .eq("estado_anuncio", "activo")
+      .not("precio", "is", null)
+      .not("area_m2", "is", null)
+      .gt("area_m2", 0)
+      // Elevamos el límite por defecto (1000) por si superamos ese umbral.
+      .range(0, 19999),
+    supabase.from("propiedades_duplicados").select("propiedad_id"),
+  ]);
+
+  if (activeRes.error) {
+    console.warn("[fetchActiveCount] activeRes error:", activeRes.error);
+    return null;
+  }
+
+  const dupSet = new Set(
+    ((dupRes.data ?? []) as Array<{ propiedad_id: string }>).map(
+      (r) => r.propiedad_id,
+    ),
+  );
+  const active = (activeRes.data ?? []) as Array<{ id: string }>;
+  return active.filter((r) => !dupSet.has(r.id)).length;
+}
+
 export async function fetchPropiedades(): Promise<Propiedad[]> {
   const supabase = createClient();
 
