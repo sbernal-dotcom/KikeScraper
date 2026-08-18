@@ -52,7 +52,10 @@ export function LandingHeader() {
         hidden ? "-translate-y-full" : "translate-y-0"
       }`}
     >
-      <div className="border-b border-border/60 bg-background/95 backdrop-blur">
+      {/* Vidrio esmerilado: fondo semitransparente + blur fuerte. Al
+          scrollear, el dot-grid y el patrón del hero se ven difuminados
+          detrás del header en vez de tapados por un rectángulo sólido. */}
+      <div className="border-b border-border/60 bg-background/60 backdrop-blur-xl backdrop-saturate-150">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Logo (placeholder hasta tener el real) */}
           <Link

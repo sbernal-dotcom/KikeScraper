@@ -62,7 +62,7 @@ export function ServiceCards() {
               <Link
                 key={card.href}
                 href={card.href}
-                className="group relative flex flex-col overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-card/70 to-card/20 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[color:#D6FF00]/60 hover:shadow-[0_15px_40px_-20px_rgba(214,255,0,0.35)]"
+                className="group relative flex flex-col overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-card/50 to-card/10 p-6 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-[color:#D6FF00]/60 hover:shadow-[0_15px_40px_-20px_rgba(214,255,0,0.35)]"
               >
                 {/* Glow verde tenue en la esquina superior derecha que se
                     intensifica en hover — micro-detalle que hace la card
