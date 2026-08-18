@@ -52,7 +52,7 @@ export function LandingHeader() {
         hidden ? "-translate-y-full" : "translate-y-0"
       }`}
     >
-      <div className="border-b border-border/40 bg-background/85 backdrop-blur">
+      <div className="border-b border-border/60 bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Logo (placeholder hasta tener el real) */}
           <Link
@@ -79,10 +79,10 @@ export function LandingHeader() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`relative rounded-md px-3 py-2 text-sm transition-colors ${
+                  className={`relative rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                     active
                       ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
+                      : "text-foreground/75 hover:text-foreground"
                   }`}
                 >
                   {dict.nav[item.key]}
@@ -124,10 +124,10 @@ export function LandingHeader() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setMobileOpen(false)}
-                    className={`rounded-md px-3 py-2 text-sm ${
+                    className={`rounded-md px-3 py-2 text-sm font-medium ${
                       active
                         ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                        : "text-foreground/75 hover:bg-muted/60 hover:text-foreground"
                     }`}
                   >
                     {dict.nav[item.key]}
