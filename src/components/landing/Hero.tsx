@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { ArrowRight, Building2 } from "lucide-react";
 
@@ -7,7 +8,23 @@ import { useDict } from "@/i18n/LocaleProvider";
 
 import { HeroMapPreview } from "./HeroMapPreview";
 
-// Hero: mapa como fondo completo del hero (full-bleed edge-to-edge). El
+// Mapbox necesita `window` — cargamos el 3D solo en cliente. Mientras
+// se descarga (o durante SSR), mostramos el SVG estático como skeleton
+// para no dejar el hero vacío.
+const HeroMap3D = dynamic(
+  () => import("./HeroMap3D").then((m) => m.HeroMap3D),
+  {
+    ssr: false,
+    loading: () => (
+      <HeroMapPreview
+        fullBleed
+        className="pointer-events-none absolute inset-0 opacity-45"
+      />
+    ),
+  },
+);
+
+// Hero: mapa 3D interactivo:false como fondo full-bleed del hero. El
 // texto vive encima a la izquierda, sobre un gradient horizontal que
 // oscurece la mitad izquierda para asegurar legibilidad AAA sin sacar
 // el mapa del contexto visual.
@@ -20,13 +37,11 @@ export function Hero() {
 
   return (
     <section className="relative overflow-hidden">
-      {/* Fondo: mapa full-bleed. Opacidad baja porque cubre toda el área
-          y no queremos que compita con el texto. */}
-      <div className="absolute inset-0 -z-10">
-        <HeroMapPreview
-          fullBleed
-          className="absolute inset-0 opacity-45"
-        />
+      {/* Fondo: mapa 3D full-bleed. Opacidad baja porque cubre toda el
+          área y no queremos que compita con el texto. `pointer-events-none`
+          en el contenedor para que clicks/scroll pasen al hero. */}
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <HeroMap3D className="absolute inset-0 opacity-70" />
         {/* Overlay gradient: negro sólido a la izquierda → transparente a
             la derecha. Garantiza contraste AAA sobre el título/subtítulo
             sin tapar el mapa a la derecha. */}
