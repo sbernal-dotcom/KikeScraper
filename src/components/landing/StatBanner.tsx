@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { dictionaries, type Locale } from "@/i18n/dictionaries";
 
+import { StreetGridBackground } from "./StreetGridBackground";
+
 // StatBanner: número gigante con la cantidad de propiedades activas y una
 // línea chica debajo con la cantidad de fuentes + cuándo fue la última
 // corrida. Server Component async — se corre en el servidor, cuenta en la
@@ -46,25 +48,30 @@ export async function StatBanner({ locale = "es" }: { locale?: Locale }) {
   const fuentesLabel = fuentes !== null ? String(fuentes) : "—";
 
   return (
-    <section className="border-y border-border/40">
-      <div className="mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 md:py-20 lg:px-8">
+    <section className="relative overflow-hidden border-y border-border/40">
+      {/* Malla vectorial de fondo — la misma del hero, pero con opacidad
+          reducida para no competir con el número gigante en verde. La ponemos
+          absoluta detrás del contenido; el fade radial del componente ya
+          suaviza los bordes hacia el negro. */}
+      <StreetGridBackground className="absolute inset-0 opacity-40" />
+      <div className="relative mx-auto max-w-7xl px-4 py-10 text-center sm:px-6 md:py-14 lg:px-8">
         <p
           className="font-bold leading-none tracking-tight tabular-nums"
           style={{
             color: "#D6FF00",
-            fontSize: "clamp(4rem, 12vw, 9rem)",
+            fontSize: "clamp(3.5rem, 10vw, 7.5rem)",
           }}
         >
           {activasLabel}
         </p>
         <div
-          className="mx-auto mt-4 h-0.5 w-16 rounded-full"
+          className="mx-auto mt-3 h-0.5 w-16 rounded-full"
           style={{ background: "#D6FF00", opacity: 0.4 }}
         />
-        <p className="mt-4 text-lg font-medium text-foreground md:text-xl">
+        <p className="mt-3 text-lg font-medium text-foreground md:text-xl">
           {dict.landing.stat.activas}
         </p>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-1.5 text-sm text-muted-foreground">
           {dict.landing.stat.from_sources.replace(
             "{n}",
             fuentesLabel,
@@ -99,15 +106,16 @@ function formatRelativeLabel(
 // real para que no haya salto de layout (CLS) mientras se resuelve la DB.
 export function StatBannerSkeleton() {
   return (
-    <section className="border-y border-border/40">
-      <div className="mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 md:py-20 lg:px-8">
+    <section className="relative overflow-hidden border-y border-border/40">
+      <StreetGridBackground className="absolute inset-0 opacity-40" />
+      <div className="relative mx-auto max-w-7xl px-4 py-10 text-center sm:px-6 md:py-14 lg:px-8">
         <div
           className="mx-auto animate-pulse rounded-md bg-muted/40"
-          style={{ height: "clamp(4rem, 12vw, 9rem)", width: "12ch" }}
+          style={{ height: "clamp(3.5rem, 10vw, 7.5rem)", width: "10ch" }}
         />
-        <div className="mx-auto mt-4 h-0.5 w-16 rounded-full bg-muted/40" />
-        <div className="mx-auto mt-4 h-6 w-64 animate-pulse rounded bg-muted/30" />
-        <div className="mx-auto mt-2 h-4 w-48 animate-pulse rounded bg-muted/20" />
+        <div className="mx-auto mt-3 h-0.5 w-16 rounded-full bg-muted/40" />
+        <div className="mx-auto mt-3 h-6 w-64 animate-pulse rounded bg-muted/30" />
+        <div className="mx-auto mt-1.5 h-4 w-48 animate-pulse rounded bg-muted/20" />
       </div>
     </section>
   );
