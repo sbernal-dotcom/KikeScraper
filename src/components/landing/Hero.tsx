@@ -50,8 +50,10 @@ export function Hero() {
 
       {/* Contenido: encima del mapa, alineado a la izquierda. max-w-2xl
           limita el ancho del bloque de texto para que respire y no invada
-          la parte visible del mapa. */}
-      <div className="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 md:py-32 lg:px-8 lg:py-40">
+          la parte visible del mapa. Padding igual al del hero original con
+          grid (16/24/32) — al hacer full-bleed lo había subido a 24/32/40
+          y el título se sentía "flotando" mucho más abajo. */}
+      <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-24 lg:px-8 lg:py-32">
         <div className="max-w-2xl">
           <h1 className="text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
             {dict.landing.hero.title_before}{" "}
