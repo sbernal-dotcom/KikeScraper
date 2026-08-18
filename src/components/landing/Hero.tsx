@@ -7,18 +7,52 @@ import { useDict } from "@/i18n/LocaleProvider";
 
 import { HeroMapPreview } from "./HeroMapPreview";
 
-// Hero: título grande a la izquierda con dos CTAs, malla vectorial a la
-// derecha. Grid 60/40 en desktop, stack vertical en móvil (imagen debajo).
-// El título resalta la palabra "inmobiliario" en verde — es el único
-// spot de color en el H1 para mantener la jerarquía visual.
+// Hero: mapa como fondo completo del hero (full-bleed edge-to-edge). El
+// texto vive encima a la izquierda, sobre un gradient horizontal que
+// oscurece la mitad izquierda para asegurar legibilidad AAA sin sacar
+// el mapa del contexto visual.
+//
+// Título con acento verde en "inmobiliario" (única palabra coloreada
+// para mantener jerarquía). Dos CTAs alargados: primario en verde plano,
+// secundario con borde verde.
 export function Hero() {
   const dict = useDict();
 
   return (
     <section className="relative overflow-hidden">
-      <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-4 py-16 sm:px-6 md:grid-cols-5 md:gap-8 md:py-24 lg:gap-12 lg:px-8 lg:py-32">
-        {/* Texto — 3 columnas en desktop */}
-        <div className="md:col-span-3">
+      {/* Fondo: mapa full-bleed. Opacidad baja porque cubre toda el área
+          y no queremos que compita con el texto. */}
+      <div className="absolute inset-0 -z-10">
+        <HeroMapPreview
+          fullBleed
+          className="absolute inset-0 opacity-45"
+        />
+        {/* Overlay gradient: negro sólido a la izquierda → transparente a
+            la derecha. Garantiza contraste AAA sobre el título/subtítulo
+            sin tapar el mapa a la derecha. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(90deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.75) 35%, rgba(0,0,0,0.35) 70%, rgba(0,0,0,0.15) 100%)",
+          }}
+        />
+        {/* Fade extra vertical en los bordes superior/inferior para que la
+            transición con el header y con el StatBanner verde sea suave. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(0,0,0,0.4) 0%, transparent 25%, transparent 75%, rgba(0,0,0,0.3) 100%)",
+          }}
+        />
+      </div>
+
+      {/* Contenido: encima del mapa, alineado a la izquierda. max-w-2xl
+          limita el ancho del bloque de texto para que respire y no invada
+          la parte visible del mapa. */}
+      <div className="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 md:py-32 lg:px-8 lg:py-40">
+        <div className="max-w-2xl">
           <h1 className="text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
             {dict.landing.hero.title_before}{" "}
             <span style={{ color: "#D6FF00" }}>
@@ -32,7 +66,7 @@ export function Hero() {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
               href="/mapa"
-              className="inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold text-black transition-transform hover:-translate-y-0.5"
+              className="inline-flex items-center justify-center gap-2 rounded-lg px-8 py-3.5 text-sm font-semibold text-black transition-transform hover:-translate-y-0.5"
               style={{ background: "#D6FF00" }}
             >
               {dict.landing.hero.cta_map}
@@ -40,20 +74,13 @@ export function Hero() {
             </Link>
             <Link
               href="/propiedades"
-              className="inline-flex items-center justify-center gap-2 rounded-lg border px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted/40"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border px-8 py-3.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted/40"
               style={{ borderColor: "#D6FF00" }}
             >
               <Building2 className="size-4" />
               {dict.landing.hero.cta_properties}
             </Link>
           </div>
-        </div>
-
-        {/* Preview del mapa — 2 columnas en desktop, altura fija.
-            Opacidad baja para que se sienta "de fondo" sin robar foco al
-            texto de la izquierda. */}
-        <div className="relative h-[280px] md:col-span-2 md:h-[420px] lg:h-[480px]">
-          <HeroMapPreview className="absolute inset-0 opacity-70" />
         </div>
       </div>
     </section>

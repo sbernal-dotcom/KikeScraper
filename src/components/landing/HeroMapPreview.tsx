@@ -13,19 +13,31 @@
 // screenshot real del MapView, se cambia solo este archivo.
 export function HeroMapPreview({
   className = "",
+  fullBleed = false,
 }: {
   className?: string;
+  /**
+   * Si es true, no aplica máscara radial — el mapa se ve edge-to-edge.
+   * Pensado para usarse como fondo completo del hero, donde el fade
+   * lo hace un overlay gradient del contenedor. Por defecto sigue con
+   * la viñeta radial (para uso en columnas / cards).
+   */
+  fullBleed?: boolean;
 }) {
   return (
     <div
       className={className}
       aria-hidden
-      style={{
-        maskImage:
-          "radial-gradient(ellipse at 55% 50%, black 45%, transparent 90%)",
-        WebkitMaskImage:
-          "radial-gradient(ellipse at 55% 50%, black 45%, transparent 90%)",
-      }}
+      style={
+        fullBleed
+          ? undefined
+          : {
+              maskImage:
+                "radial-gradient(ellipse at 55% 50%, black 45%, transparent 90%)",
+              WebkitMaskImage:
+                "radial-gradient(ellipse at 55% 50%, black 45%, transparent 90%)",
+            }
+      }
     >
       <svg
         viewBox="0 0 400 400"
