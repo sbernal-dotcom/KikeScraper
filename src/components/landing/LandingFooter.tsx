@@ -25,19 +25,8 @@ export function LandingFooter() {
   const year = 2026;
 
   return (
-    <footer className="relative overflow-hidden border-t border-border/40 bg-background">
-      {/* Glow tenue arriba centro — cierra la página con el mismo
-          "ambient green" que tienen las otras secciones. Solo arriba
-          para no distraer del contenido del footer. */}
-      <div
-        aria-hidden
-        className="absolute inset-x-0 top-0 h-40"
-        style={{
-          background:
-            "radial-gradient(ellipse 60% 100% at 50% 0%, rgba(214,255,0,0.12), transparent 70%)",
-        }}
-      />
-      <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <footer className="border-t border-border/40 bg-background">
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
           <div>
             <Link
