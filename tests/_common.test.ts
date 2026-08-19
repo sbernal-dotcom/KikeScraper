@@ -60,7 +60,7 @@ describe("chunkedParallel", () => {
 
   it("corta el loop si shouldStop devuelve true", async () => {
     let processed = 0;
-    let allow = 4;
+    const allow = 4;
     await chunkedParallel(
       Array.from({ length: 20 }, (_, i) => i),
       2,

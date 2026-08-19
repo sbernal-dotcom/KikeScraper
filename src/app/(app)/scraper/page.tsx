@@ -44,8 +44,9 @@ export default function ScraperPage() {
 
   useEffect(() => {
     let cancel = false;
-    setLoading(true);
-    setError(null);
+    // Sin setLoading(true)/setError(null) acá: el efecto corre una sola
+    // vez al montar y el estado inicial ya es loading=true, error=null.
+    // Llamarlos sincrónicamente encadenaba renders (set-state-in-effect).
     fetchScraperInfo()
       .then((d) => {
         if (!cancel) setData(d);

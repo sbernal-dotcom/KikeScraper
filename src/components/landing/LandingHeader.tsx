@@ -41,11 +41,6 @@ export function LandingHeader() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Al abrir el menú móvil, congelar el header visible.
-  useEffect(() => {
-    if (mobileOpen) setHidden(false);
-  }, [mobileOpen]);
-
   return (
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-transform duration-300 ease-out ${
@@ -103,7 +98,12 @@ export function LandingHeader() {
           {/* Hamburguesa mobile */}
           <button
             type="button"
-            onClick={() => setMobileOpen((v) => !v)}
+            onClick={() => {
+              setMobileOpen((v) => !v);
+              // Al abrir el menú, el header debe quedar visible. Se hace
+              // acá y no en un efecto para no encadenar renders.
+              setHidden(false);
+            }}
             className="inline-flex size-9 items-center justify-center rounded-md border border-border/60 text-foreground md:hidden"
             aria-label={dict.nav.open_nav}
             aria-expanded={mobileOpen}

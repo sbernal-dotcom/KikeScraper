@@ -488,8 +488,9 @@ async function scrapeDetail(
   let precio = extractPrecio(html, qf);
   const opFromHtml = extractOperacion(html, details);
   const tipoOperacion: "venta" | "alquiler" = opFromHtml ?? tipoFromList;
-  let { habitaciones, banos, area_m2, estacionamientos: estacFromHtml } =
-    extractFeatures(html, qf);
+  const features = extractFeatures(html, qf);
+  const estacFromHtml = features.estacionamientos;
+  let { habitaciones, banos, area_m2 } = features;
   const zona = extractLocationText(html);
   // Descripción solo en memoria (regla del proyecto).
   const descRaw = extractDescripcion(html);

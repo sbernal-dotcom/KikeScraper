@@ -36,6 +36,17 @@ const LocaleContext = createContext<LocaleContextValue | null>(null);
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
 
+  // El idioma guardado NO se puede leer en el inicializador de useState:
+  // en el servidor no existe localStorage, así que el HTML se renderiza
+  // con DEFAULT_LOCALE. Si el cliente arrancara con otro valor, React
+  // detectaría una discrepancia de hidratación y descartaría el HTML del
+  // servidor. Leerlo en un efecto post-montaje es lo correcto acá.
+  //
+  // Por eso silenciamos set-state-in-effect: la regla no puede distinguir
+  // este caso (sincronizar con un sistema externo que solo existe en el
+  // navegador) de un setState encadenado por descuido. El costo es un
+  // render extra al montar, únicamente si había preferencia guardada.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (typeof window === "undefined") return;
     const saved = window.localStorage.getItem(STORAGE_KEY);
@@ -46,6 +57,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
       if (navLang === "en") setLocaleState("en");
     }
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (typeof document !== "undefined") {

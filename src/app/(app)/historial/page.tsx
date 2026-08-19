@@ -21,23 +21,36 @@ export default function HistorialPage() {
   const dict = useDict();
   const [days, setDays] = useState<DaysWindow>(30);
   const [source, setSource] = useState<string>("__all__");
-  const [runs, setRuns] = useState<ScraperRun[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Un solo estado con los datos + para qué ventana de días son. Así
+  // `loading` y `error` salen derivados en vez de setearse dentro del
+  // efecto (regla react-hooks/set-state-in-effect).
+  const [fetched, setFetched] = useState<{
+    runs: ScraperRun[];
+    error: string | null;
+    loadedFor: DaysWindow | null;
+  }>({ runs: [], error: null, loadedFor: null });
+
+  const runs = fetched.runs;
+  // Cargando = lo que tengo no corresponde al rango elegido.
+  const loading = fetched.loadedFor !== days;
+  // El error solo vale si es del rango actual; si no, mostramos el
+  // spinner. Replica el comportamiento previo de limpiar el error al
+  // cambiar de rango, sin tocar estado dentro del efecto.
+  const error = loading ? null : fetched.error;
 
   useEffect(() => {
     let cancel = false;
-    setLoading(true);
-    setError(null);
     fetchScraperRuns(days)
       .then((r) => {
-        if (!cancel) setRuns(r);
+        if (!cancel) setFetched({ runs: r, error: null, loadedFor: days });
       })
       .catch((e) => {
-        if (!cancel) setError((e as Error).message);
-      })
-      .finally(() => {
-        if (!cancel) setLoading(false);
+        if (!cancel)
+          setFetched({
+            runs: [],
+            error: (e as Error).message,
+            loadedFor: days,
+          });
       });
     return () => {
       cancel = true;
